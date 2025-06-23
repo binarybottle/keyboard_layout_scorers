@@ -3,34 +3,32 @@ https://github.com/binarybottle/compare_keyboard_layouts
 
 (c) 2021-2025 Arno Klein (arnoklein.info), MIT license
 
---------------------------------------------------------------------------------
+----
 
 # Contents
-1. [Why compare keyboard layouts?](#why)
-2. [Why compare keyboard layouts?](#why)
-3. [Summary of steps and results](#summary)
+1. [Layouts](#layouts")
+2. [Text data](#text-data")
+3. [Score layouts using Dvorak-11 scoring model](#dvorak-11")
+    - [Dvorak-11 scores](#dvorak11-scores)
+4. [Score layouts using Keyboard Layout Analyzer (KLA) measures](#kla-scores)
+    - [KLA distance and tapping measures](#kla-tapping)
+5. [Miscellaneous tests](#misc) 
+    - [Inward roll frequencies](#rolls)
+    - [Interkey speed estimates](#speed)
+    - [Carpalx scores](#carpalx)
+
+--------------------------------------------------------------------------------
 
 ## Why compare keyboard layouts? <a name="why">
-## Keyboard layout scoring methods <a name="scoring-methods">
-## Text data used to calculate scores <a name="text-data">
-## Results <a name="results">
-### Dvorak-inspired scores <a name="dvorak-scores">
-### Keyboard Layout Analyzer scores <a name="kla-scores">
-### Keyboard Layout Analyzer consecutive same-finger key presses <a name="kla-same-finger">
-### Inward roll frequencies <a name="inward-rolls">
 
----
-
-## Why compare keyboard layouts? <a name="why">
-
-Below we compare different prominent key layouts (Colemak, Dvorak, QWERTY, etc.) 
+Below we compare different prominent keyboard layouts (Colemak, Dvorak, QWERTY, etc.) 
 using some large, representative, publicly available data 
 (all text sources are listed below and available on 
 [GitHub](https://github.com/binarybottle/text_data)).
 
 ---
 
-## Keyboard layout scoring methods <a name="scoring-methods">
+## Keyboard layouts <a name="layouts">
 
 | Layout | Year | Website |
 | --- | --- | --- |
@@ -51,7 +49,28 @@ using some large, representative, publicly available data
 
 ---
 
-## Text data used to calculate scores <a name="text-data">
+## Scoring methods <a name="scoring">
+
+| Layout | Year | Website |
+| --- | --- | --- |
+| Engram | 2021 | https://engram.dev |
+| [Halmak 2.2](https://keyboard-design.com/letterlayout.html?layout=halmak-2-2.en.ansi) | 2016 | https://github.com/MadRabbit/halmak |
+| [Hieamtsrn](https://www.keyboard-design.com/letterlayout.html?layout=hieamtsrn.en.ansi) | 2014 | https://mathematicalmulticore.wordpress.com/the-keyboard-layout-project/#comment-4976 |
+| [Colemak Mod-DH](https://keyboard-design.com/letterlayout.html?layout=colemak-mod-DH-full.en.ansi) | 2014 | https://colemakmods.github.io/mod-dh/ | 
+| [Norman](https://keyboard-design.com/letterlayout.html?layout=norman.en.ansi) | 2013 | https://normanlayout.info/ |
+| [Workman](https://keyboard-design.com/letterlayout.html?layout=workman.en.ansi) | 2010 | https://workmanlayout.org/ | 
+| [MTGAP 2.0](https://www.keyboard-design.com/letterlayout.html?layout=mtgap-2-0.en.ansi) | 2010 | https://mathematicalmulticore.wordpress.com/2010/06/21/mtgaps-keyboard-layout-2-0/ |
+| [QGMLWB](https://keyboard-design.com/letterlayout.html?layout=qgmlwb.en.ansi) | 2009 | http://mkweb.bcgsc.ca/carpalx/?full_optimization | 
+| [Colemak](https://keyboard-design.com/letterlayout.html?layout=colemak.en.ansi) | 2006 | https://colemak.com/ | 
+| [Asset](https://keyboard-design.com/letterlayout.html?layout=asset.en.ansi) | 2006 | http://millikeys.sourceforge.net/asset/ | 
+| Capewell-Dvorak | 2004 | http://michaelcapewell.com/projects/keyboard/layout_capewell-dvorak.htm |
+| [Klausler](https://www.keyboard-design.com/letterlayout.html?layout=klausler.en.ansi) | 2002 | https://web.archive.org/web/20031001163722/http://klausler.com/evolved.html |
+| [Dvorak](https://keyboard-design.com/letterlayout.html?layout=dvorak.en.ansi) | 1936 | https://en.wikipedia.org/wiki/Dvorak_keyboard_layout | 
+| [QWERTY](https://keyboard-design.com/letterlayout.html?layout=qwerty.en.ansi) | 1873 | https://en.wikipedia.org/wiki/QWERTY |
+
+---
+
+## Text data for scoring <a name="text-data">
 
 N-gram letter frequencies<br>
     - [Peter Norvig's analysis](http://www.norvig.com/mayzner.html) of data from Google's book scanning project
@@ -77,48 +96,22 @@ Douglas, Ian. (2021, March 28). Keyboard Layout Analysis: Creating the Corpus, B
 
 ## Results <a name="results">
 
-### Dvorak-inspired scores <a name="dvorak-scores">
+### Engram scores <a name="engram-scores">
  
-Dvorak-inspired scoring method scores:
+---
 
-Guiding criteria:
-
-    1.  Assign letters to keys that don't require lateral finger movements.
-    2.  Promote alternating between hands over uncomfortable same-hand transitions.
-    3.  Assign the most common letters to the most comfortable keys.
-    4.  Arrange letters so that more frequent bigrams are easier to type.
-    5.  Promote little-to-index-finger roll-ins over index-to-little-finger roll-outs.
-    6.  Balance finger loads according to their relative strength.
-    7.  Avoid stretching shorter fingers up and longer fingers down.
-    8.  Avoid using the same finger.
-    9.  Avoid skipping over the home row.
-    10. Assign the most common punctuation to keys in the middle of the keyboard.
-    11. Assign easy-to-remember symbols to the Shift-number keys.
-    
-| Layout | Google bigrams | Alice | Memento | Tweets_100K | Tweets_20K | Tweets_MASC | Spoken_MASC | COCA_blogs | iweb | Monkey | Coder | Rosetta |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Engram | 62.48 | 61.67 | 62.30 | 63.03 | 60.28 | 62.49 | 61.56 | 62.19 | 62.38 | 62.23 | 62.51 | 62.48 |
-| Halmak | 62.40 | 61.60 | 62.23 | 62.93 | 60.26 | 62.43 | 61.51 | 62.13 | 62.31 | 62.16 | 62.46 | 62.40 |
-| Hieamtsrn | 62.39 | 61.64 | 62.27 | 62.99 | 60.27 | 62.47 | 61.53 | 62.16 | 62.35 | 62.20 | 62.49 | 62.39 |
-| Norman | 62.35 | 61.57 | 62.20 | 62.86 | 60.21 | 62.39 | 61.47 | 62.08 | 62.27 | 62.12 | 62.40 | 62.35 |
-| Workman | 62.37 | 61.59 | 62.22 | 62.91 | 60.23 | 62.41 | 61.49 | 62.10 | 62.29 | 62.14 | 62.43 | 62.37 |
-| MTGap 2.0 | 62.32 | 61.59 | 62.21 | 62.88 | 60.22 | 62.39 | 61.49 | 62.09 | 62.28 | 62.13 | 62.42 | 62.32 |
-| QGMLWB | 62.31 | 61.58 | 62.21 | 62.90 | 60.25 | 62.40 | 61.49 | 62.10 | 62.29 | 62.14 | 62.43 | 62.31 |
-| Colemak Mod-DH | 62.36 | 61.60 | 62.22 | 62.90 | 60.26 | 62.41 | 61.49 | 62.12 | 62.30 | 62.16 | 62.44 | 62.36 |
-| Colemak | 62.36 | 61.58 | 62.20 | 62.89 | 60.25 | 62.40 | 61.48 | 62.10 | 62.29 | 62.14 | 62.43 | 62.36 |
-| Asset | 62.34 | 61.56 | 62.18 | 62.86 | 60.25 | 62.37 | 61.46 | 62.07 | 62.25 | 62.10 | 62.39 | 62.34 |
-| Capewell-Dvorak | 62.29 | 61.56 | 62.17 | 62.86 | 60.20 | 62.36 | 61.47 | 62.06 | 62.24 | 62.10 | 62.37 | 62.29 |
-| Klausler | 62.34 | 61.58 | 62.20 | 62.89 | 60.25 | 62.39 | 61.48 | 62.09 | 62.27 | 62.12 | 62.41 | 62.34 |
-| Dvorak | 62.31 | 61.56 | 62.17 | 62.85 | 60.23 | 62.35 | 61.46 | 62.06 | 62.24 | 62.09 | 62.35 | 62.31 |
-| QWERTY | 62.19 | 61.49 | 62.08 | 62.72 | 60.17 | 62.25 | 61.39 | 61.96 | 62.13 | 61.99 | 62.25 | 62.19 |
-
+### Dvorak-9 scores <a name="dvorak9-scores">
+ 
 ---
 
 ### Keyboard Layout Analyzer scores <a name="kla-scores"> 
 
 [Keyboard Layout Analyzer](http://patorjk.com/keyboard-layout-analyzer/) (KLA) scores for the same text sources
-    
-> The optimal layout score is based on a weighted calculation that factors in the distance your fingers moved (33%), how often you use particular fingers (33%), and how often you switch fingers and hands while typing (34%).
+    - Finger distances (cm)
+    - Number of taps
+    - Number of same-finger taps 
+
+The optimal layout score is based on a weighted calculation that factors in the distance your fingers moved (33%), how often you use particular fingers (33%), and how often you switch fingers and hands while typing (34%).
     
 Engram scores highest for 7 of the 9 and second highest for 2 of the 9 text sources; Engram scores third and fourth highest for the two software sources, "Coder" and "Rosetta" (higher scores are better):
 
@@ -141,58 +134,27 @@ Engram scores highest for 7 of the 9 and second highest for 2 of the 9 text sour
 
 ---
 
-### Keyboard Layout Analyzer consecutive same-finger key presses <a name="kla-same-finger">
+### Carpalx scores <a name="carpalx-scores">
 
-KLA (and other) distance measures may not accurately reflect natural typing, 
-so below is a more reliable measure of one source of effort and strain -- 
-the tally of consecutive key presses with the same finger for different keys. 
-Engram scores lowest for 6 of the 11 texts, second lowest for two texts, 
-and third or fifth lowest for three texts, two of which are software text 
-sources (lower scores are better):
-
-| Layout | Alice | Memento | Tweets_100K | Tweets_20K | Tweets_MASC | Spoken_MASC | COCA_blogs | iweb | Monkey | Coder | Rosetta |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Engram | 216 | 11476 | 320406 | 120286 | 7728 | 3514 | 137290 | 1064640 | 37534 | 125798 | 5822 |
-| Halmak | 498 | 13640 | 484702 | 170064 | 11456 | 5742 | 268246 | 2029634 | 68858 | 144790 | 5392 |
-| Hieamtsrn | 244 | 12096 | 311000 | 119490 | 8316 | 3192 | 155674 | 1100116 | 40882 | 158698 | 7324 |
-| Norman | 938 | 20012 | 721602 | 213890 | 16014 | 9022 | 595168 | 3885282 | 135844 | 179752 | 7402 |
-| Workman | 550 | 13086 | 451280 | 136692 | 10698 | 6156 | 287622 | 1975564 | 71150 | 132526 | 5550 |
-| MTGap 2.0 | 226 | 14550 | 397690 | 139130 | 10386 | 6252 | 176724 | 1532844 | 58144 | 138484 | 7272 |
-| QGMLWB | 812 | 17820 | 637788 | 189700 | 14364 | 7838 | 456442 | 3027530 | 100750 | 149366 | 8062 |
-| Colemak Mod-DH | 362 | 10960 | 352578 | 151736 | 9298 | 4644 | 153984 | 1233770 | 47438 | 117842 | 5328 |
-| Colemak | 362 | 10960 | 352578 | 151736 | 9298 | 4644 | 153984 | 1233770 | 47438 | 117842 | 5328 |
-| Asset | 520 | 12519 | 519018 | 155246 | 11802 | 5664 | 332860 | 2269342 | 77406 | 140886 | 6020 |
-| Capewell-Dvorak | 556 | 14226 | 501178 | 163878 | 12214 | 6816 | 335056 | 2391416 | 78152 | 151194 | 9008 |
-| Klausler | 408 | 14734 | 455658 | 174998 | 11410 | 5212 | 257878 | 1794604 | 59566 | 135782 | 7444 |
-| Dvorak | 516 | 13970 | 492604 | 171488 | 12208 | 5912 | 263018 | 1993346 | 64994 | 142084 | 6484 |
-
----
+[Carpalx](http://mkweb.bcgsc.ca/carpalx/?keyboard_layouts) scores
+are computed based on literature from the Gutenberg Project.
   
-### Inward roll frequencies <a name="inward-rolls">
+| Layout | home row use (%) | hand symmetry (%, right<0) | hand switching (%) | finger switching (%) | hand runs without row jumps (%) | base effort  | penalties | path effort | total effort |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Engram | 58 | -99 | 61 | 93 | 82 | 0.419 | 0.950 | 0.803 | 2.171 |
+| Hieamtsrn | 65 | -96 | 59 | 93 | 85 | 0.38 | 0.848 | 0.720 | 1.948 |
+| Halmak | 64 | 99 | 63 | 93 | 81 | 0.325 | 1.175 | 0.823 | 2.322 |
+| Norman | 68 | 95 | 52 | 90 | 77 | 0.342 | 0.812 | 0.838 | 1.992 |
+| Workman | 68 | 95 | 52 | 93 | 79 | 0.336 | 0.848 | 0.809 | 1.993 |
+| MTGAP 2.0 | 68 | 98 | 48 | 93 | 76 | 0.327 | 0.839 | 0.815 | 1.981 |
+| QGMLWB | 74 | -97 | 57 | 91 | 84 | 0.382 | 0.570 | 0.716 | 1.668 |
+| BEAKL 15 | 57 | -95 | 59 | 91 | 80 | 0.473 | 0.663 | 0.809 | 1.945 |
+| Colemak Mod-DH | 68 | -94 | 52 | 93 | 78 | 0.335 | 0.842 | 0.781 | 1.958 |
+| Colemak | 74 | -94 | 52 | 93 | 83 | 0.344 | 0.763 | 0.735 | 1.842 |
+| Asset | 74 | 96 | 52 | 91 | 82 | 0.356 | 0.766 | 0.772 | 1.894 |
+| Capewell-Dvorak | 71 | -91 | 59 | 92 | 82 | 0.333 | 0.878 | 0.774 | 1.985 |
+| Klausler | 74 | -94 | 62 | 93 | 86 | 0.341 | 0.797 | 0.729 | 1.867 |
+| Dvorak | 71 | -86 | 62 | 93 | 84 | 0.397 | 0.937 | 0.765 | 2.098 |
+| QWERTY | 34 | 85 | 51 | 89 | 68 | 1 | 1 | 1 | 3 |
 
-Here we tally the number of bigrams (in billions of instances from Norvig's 
-analysis of Google data) that engage inward rolls (little-to-index sequences), 
-within the four columns of one hand, or any column across two hands. 
-Engram scores second highest for 32 keys and highest for 24 keys, 
-where the latter ensures that we are comparing Engram's letters with letters 
-in other layouts (higher scores are better):
-    
-Total inward roll frequency in billions
-
-    Layout             32 / 24 keys
-    Engram:          4.64 / 4.51
-    Halmak:          4.59 / 4.25
-    Hieamtsrn:       4.69 / 4.16
-    Norman:          3.99 / 3.61
-    Workman:         4.16 / 3.63
-    MTGap 2.0:       3.96 / 3.58
-    QGMLWB:          4.36 / 2.81
-    Colemak Mod-DH:  4.15 / 3.51
-    Colemak:         4.17 / 3.16
-    Asset:           4.03 / 3.05
-    Capewell-Dvorak: 4.39 / 3.66
-    Klausler:        4.42 / 3.52
-    Dvorak:          4.40 / 3.20
-    QWERTY:          3.62 / 2.13
-   
 ---

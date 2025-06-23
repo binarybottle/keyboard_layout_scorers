@@ -18,8 +18,8 @@ import seaborn as sns
 import numpy as np
 
 # DEBUG: Set to a number to limit text length for faster testing, or None for full text
-DEBUG_TEXT_LIMIT = 100  # Change to None for full text processing
-DEBUG_TIMEOUT = 60  # Increase timeout for debugging
+DEBUG_TEXT_LIMIT = None  # Change to None for full text processing
+DEBUG_TIMEOUT = 600  # Increase timeout for debugging
 
 # Create output directories
 output_dirs = {
