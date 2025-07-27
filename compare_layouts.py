@@ -247,6 +247,9 @@ class ComprehensiveScorer:
                 '--ten-scores'
             ]
             
+            # Print command
+            print(f"    dvorak9_scorer.py ({score_type}): {' '.join(cmd)}")
+
             if weights_csv and os.path.exists(os.path.join(self.dvorak9_working_dir, weights_csv)):
                 cmd.extend(['--weights-csv', weights_csv])
             else:
@@ -317,6 +320,9 @@ class ComprehensiveScorer:
                 '--positions', positions,
                 '--config', self.engram_config
             ]
+
+            # Print command
+            print(f"    {' '.join(cmd)}")
             
             result = subprocess.run(cmd, capture_output=True, text=True, timeout=self.timeout,
                                   cwd=self.engram_working_dir)
@@ -340,11 +346,17 @@ class ComprehensiveScorer:
             data_line = lines[csv_start + 1]
             try:
                 total_score, item_score, item_pair_score = map(float, data_line.split(','))
+                
+                is_debug = True
+                if is_debug:
+                    print(f"        Engram total: {total_score}, item: {item_score}, item_pair: {item_pair_score}")
+                
                 return {
                     'engram_total': total_score,
                     'engram_item': item_score,
                     'engram_item_pair': item_pair_score
                 }
+
             except Exception as e:
                 print(f"Failed to parse engram scores: {e}")
                 return None
