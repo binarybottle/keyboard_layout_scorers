@@ -84,8 +84,8 @@ class ComprehensiveScorer:
             dvorak9_working_dir: Working directory for dvorak9_scorer.py
             dvorak9_speed_weights: Path to speed weights (relative to dvorak9_working_dir)
             dvorak9_comfort_weights: Path to comfort weights (relative to dvorak9_working_dir)  
-            engram_working_dir: Working directory for score_layout.py
-            engram_config: Config file for score_layout.py (relative to engram_working_dir)
+            engram_working_dir: Working directory for score_complete_layout.py
+            engram_config: Config file for score_complete_layout.py (relative to engram_working_dir)
             engram_bigrams: Path to bigram frequency CSV (relative to engram_working_dir)
             timeout: Timeout for subprocess calls in seconds
         """
@@ -95,7 +95,7 @@ class ComprehensiveScorer:
         self.dvorak9_comfort_weights = dvorak9_comfort_weights
         
         self.engram_working_dir = engram_working_dir
-        self.engram_path = "score_layout.py"  # Define the script name
+        self.engram_path = "score_complete_layout.py"  # Define the script name
         self.engram_config = engram_config
         self.engram_bigrams = engram_bigrams
         
@@ -309,7 +309,7 @@ class ComprehensiveScorer:
             return None
     
     def run_engram_scorer(self, items: str, positions: str) -> Optional[Dict[str, float]]:
-        """Run score_layout.py from optimize_layouts directory."""
+        """Run score_complete_layout.py from optimize_layouts directory."""
         if not self.has_engram:
             return None
             
@@ -328,7 +328,7 @@ class ComprehensiveScorer:
                                   cwd=self.engram_working_dir)
             
             if result.returncode != 0:
-                print(f"Error running score_layout.py: {result.stderr}")
+                print(f"Error running score_complete_layout.py: {result.stderr}")
                 return None
             
             # Parse CSV output (look for the CSV section)
@@ -340,7 +340,7 @@ class ComprehensiveScorer:
                     break
             
             if csv_start == -1 or csv_start + 1 >= len(lines):
-                print("Could not find CSV output in score_layout.py")
+                print("Could not find CSV output")
                 return None
             
             data_line = lines[csv_start + 1]
@@ -362,7 +362,7 @@ class ComprehensiveScorer:
                 return None
             
         except Exception as e:
-            print(f"Error running score_layout.py: {e}")
+            print(f"Error running score_complete_layout.py: {e}")
             return None
     
     def score_layout_comprehensive(self, items: str, positions: str, text: str, text_name: str) -> Dict[str, float]:
