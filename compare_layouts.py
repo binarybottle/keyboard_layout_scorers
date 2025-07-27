@@ -47,7 +47,7 @@ TEXT_SOURCES = {
     "Tweets_MASC": "MASC_tweets_cleaned.txt",
     "Spoken_MASC": "MASC_spoken_transcripts_of_phone_face2face.txt",
     "COCA_blogs": "COCA_corpusdata.org_sample_text_blog_cleaned.txt",
-    "iweb": "iweb-corpus-cleaned-1.txt",
+    "iweb": "iweb-corpus-cleaned-150000-lines.txt",
     "Monkey": "monkey0-7_IanDouglas.txt",
     "Coder": "coder0-7_IanDouglas.txt",
     "Rosetta": "rosettacode.org_TowersOfHanoi_AtoZ.txt"
@@ -234,7 +234,7 @@ class ComprehensiveScorer:
         try:
             # Temp file path with proper output directory
             os.makedirs("./output/tmp", exist_ok=True)
-            temp_text_path = os.path.join("./output", f'temp_text_{score_type}.txt')
+            temp_text_path = os.path.join("./output/tmp", f'temp_text_{score_type}.txt')
             with open(temp_text_path, 'w', encoding='utf-8') as f:
                 f.write(text)
             
