@@ -1,13 +1,11 @@
 #!/usr/bin/env python3
 """
-Distance-based keyboard layout scorer using the unified framework.
+Distance Layout Scorer for scoring keyboard layouts.
 
-This script calculates the total physical distance traveled by fingers when typing text
-on different keyboard layouts. It assumes users have their fingers positioned above
-the home row and measures the Euclidean distance between key positions for each
-character transition.
+(c) Arno Klein (arnoklein.info), MIT License (see LICENSE)
 
-Refactored to use the standardized keyboard layout scoring framework.
+Calculate the total physical distance traveled by fingers when typing text with a specified keyboard layout. 
+This approach assumes users have their fingers positioned above the home row.
 
 Usage:
 

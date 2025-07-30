@@ -1,56 +1,83 @@
 #!/usr/bin/env python3
 """
-Dvorak-9 empirical scoring model for keyboard layout evaluation.
+Dvorak-9 Layout Scorer for scoring keyboard layouts.
+
+(c) Arno Klein (arnoklein.info), MIT License (see LICENSE)
 
 This script implements the 9 evaluation criteria derived from Dvorak's "Typing Behavior" 
 book and patent (1936) with empirical weights based on analysis of real typing performance data.
 
 The 9 scoring criteria for typing bigrams are (0-1, higher = better performance):
-1. Hands - favor alternating hands over same hand
-2. Fingers - avoid same finger repetition  
-3. Skip fingers - favor non-adjacent fingers over adjacent (same hand)
-4. Don't cross home - avoid crossing over the home row (hurdling)
-5. Same row - favor typing within the same row
-6. Home row - favor using the home row
-7. Columns - favor fingers staying in their designated columns
-8. Strum - favor inward rolls over outward rolls (same hand)
-9. Strong fingers - favor stronger fingers over weaker ones
+    1. Hands - favor alternating hands over same hand
+    2. Fingers - avoid same finger repetition  
+    3. Skip fingers - favor non-adjacent fingers over adjacent (same hand)
+    4. Don't cross home - avoid crossing over the home row (hurdling)
+    5. Same row - favor typing within the same row
+    6. Home row - favor using the home row
+    7. Columns - favor fingers staying in their designated columns
+    8. Strum - favor inward rolls over outward rolls (same hand)
+    9. Strong fingers - favor stronger fingers over weaker ones
 
 Three scoring approaches are provided:
-- Pure Dvorak: Unweighted average of 9 criteria (theoretical baseline)
-- Frequency-Weighted: English bigram frequency-weighted average of 9 criteria
-- Empirically-Weighted: Frequency-weighted with empirical combination weights (speed/comfort optimized)
-
-Layout scoring uses English bigram frequencies and precomputed Dvorak-9 scores for all 
-32×32 QWERTY key-pair combinations, enabling fast frequency-weighted evaluation.
-
-Requires precomputed key-pair scores from generate_key_pair_scores.py.
-Optionally uses empirical combination weights for speed or comfort optimization.
+  - Pure Dvorak score: unweighted average of all 9 individual criteria
+  - Frequency-weighted score (English bigram frequency-weighted average of 9 criteria)
+  - Speed- or comfort-weighted score (frequency-weighted with speed or comfort combination weights)
 
 Usage:
-qwerty_layout = "qwertyuiopasdfghjkl;zxcvbnm,./"
-dvorak_layout = "',.pyfgcrlaoeuidhtns;qjkxbmwvz"
+    qwerty_layout = "qwertyuiopasdfghjkl;zxcvbnm,./"
+    dvorak_layout = "',.pyfgcrlaoeuidhtns;qjkxbmwvz"
 
-# Basic scoring (shows all three approaches)
-python dvorak9_scorer.py --letters "etaoinshrlcu" --qwerty_keys "FDESGJWXRTYZ"
+    # Basic scoring (shows all three approaches)
+    python dvorak9_scorer.py --letters "etaoinshrlcu" --qwerty_keys "FDESGJWXRTYZ"
 
-# Speed-weighted scoring
-python dvorak9_scorer.py --letters qwerty_layout --qwerty_keys qwerty_layout \
-  --weights "input/dvorak9/speed_weights.csv"
+    # Speed-weighted scoring
+    python dvorak9_scorer.py --letters qwerty_layout --qwerty_keys qwerty_layout \
+    --weights "input/dvorak9/speed_weights.csv"
 
-# Comfort-weighted scoring
-python dvorak9_scorer.py --letters qwerty_layout --qwerty_keys qwerty_layout \
-  --weights "input/dvorak9/comfort_weights.csv"
+    # Comfort-weighted scoring
+    python dvorak9_scorer.py --letters qwerty_layout --qwerty_keys qwerty_layout \
+    --weights "input/dvorak9/comfort_weights.csv"
 
-# Custom frequency file
-python dvorak9_scorer.py --letters qwerty_layout --qwerty_keys qwerty_layout \
-  --frequency_csv "input/engram/normalized_letter_pair_frequencies_en.csv"
+    # Custom frequency file
+    python dvorak9_scorer.py --letters qwerty_layout --qwerty_keys qwerty_layout \
+    --frequency_csv "input/engram/normalized_letter_pair_frequencies_en.csv"
 
-# CSV output (clean CSV data only)
-python dvorak9_scorer.py --letters qwerty_layout --qwerty_keys qwerty_layout --csv
+    # CSV output (clean CSV data only)
+    python dvorak9_scorer.py --letters qwerty_layout --qwerty_keys qwerty_layout --csv
 
-# Just ten scores output (average score + 9 individual scores)
-python dvorak9_scorer.py --letters qwerty_layout --qwerty_keys qwerty_layout --ten_scores
+    # Just ten scores output (average score + 9 individual scores)
+    python dvorak9_scorer.py --letters qwerty_layout --qwerty_keys qwerty_layout --ten_scores
+
+Required input files:
+  - normalized_letter_pair_frequencies_en.csv - English bigram frequencies
+  - key_pair_scores.csv - Precomputed Dvorak-9 scores  
+  - speed_weights.csv - Speed-based empirical weights (optional)
+  - comfort_weights.csv - Comfort-based empirical weights (optional)
+
+Input file generation:
+  - Precompute Dvorak-9 scores for all possible key-pair combinations (generate_key_pair_scores.py)
+  - Generate empirical weights from typing speed data (generate_combinations_weights_from_speed.py)
+    - Analyzes 136M+ keystroke dataset for speed correlations
+    - Includes linguistic frequency adjustment
+    - Negative correlations indicate speed benefits (faster typing)
+    - FDR-corrected statistical significance testing
+  - Generate empirical weights from comfort preference data (generate_combinations_weights_from_comfort.py)
+    - Analyzes subjective comfort ratings from typing studies
+    - Positive correlations indicate comfort benefits
+    - Extended from 24 to 32 keys using a static assignment for keys outside the home blocks
+    - FDR-corrected statistical significance testing
+
+Data sources:
+  - Typing performance data (136M Keystrokes dataset):
+    - Correctly typed bigrams from correctly typed words only
+    - 32 standard keyboard keys (includes numbers, letters, punctuation)
+    - See [process_3.5M_keystrokes](https://github.com/binarybottle/process_3.5M_keystrokes)
+    - Dhakal et al. Observations on Typing from 136 Million Keystrokes. CHI 2018.
+  - Comfort rating data (subjective comfort preferences from typing preference studies):
+    - [typing_preferences_to_comfort_scores](https://github.com/binarybottle/typing_preferences_to_comfort_scores)
+    - Extended to 32 keys from the original 24 keys:
+      if a bigram contains a key outside the home blocks, 
+      assign it a score just above the highest score for a hurdle (QWERTY RV)
 
 """
 

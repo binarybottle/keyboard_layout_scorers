@@ -1,16 +1,15 @@
 #!/usr/bin/env python3
 """
-Engram Layout Scorer using the unified framework.
+Engram Layout Scorer for scoring keyboard layouts.
 
-A self-contained script for scoring keyboard layouts based on letter frequencies
-and key comfort scores. Works with CSV input files and requires no external 
-dependencies beyond pandas and numpy.
+(c) Arno Klein (arnoklein.info), MIT License (see LICENSE)
 
-This version has all the features of the original, but when --csv is used,
-it outputs ONLY CSV data with no other messages for perfect scripting integration.
+Script for scoring keyboard layouts based on letter- and letter-pair frequencies,
+and key- and key-pair comfort scores:
+  - GitHub: https://github.com/binarybottle/optimize_layouts
+  - OSF: https://osf.io/6dt75/  (DOI: 10.17605/OSF.IO/6DT75)
 
 Usage:
-
     # Basic scoring
     python engram_scorer.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ"
 
@@ -23,7 +22,7 @@ Usage:
     # Score only
     python engram_scorer.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --score-only
 
-Input Files (CSV format, in input/engram/ directory):
+Required input files:
     - normalized_letter_frequencies_en.csv:               
       letter,frequency                           
       e,12.70   
