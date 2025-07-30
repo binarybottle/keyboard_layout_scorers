@@ -2,13 +2,14 @@
 """
 Comprehensive keyboard layout comparison with full scoring matrix:
 - Engram scores (total, item, item_pair)  
-- Dvorak-9 scores: unweighted, speed-weighted, comfort-weighted
+- Dvorak-9 scores: unweighted, speed-weighted, comfort-weighted (text-independent)
+- Distance scores: total distance, average distance, normalized score (text-dependent)
 - All 9 individual Dvorak-9 criteria
 - Tested on Google Ngrams bigram data + multiple text corpora
 
 Usage:
-    python comprehensive_layout_comparison.py --text-dir ../text_data/samples --output output/
-    python comprehensive_layout_comparison.py --sample-mode --output-prefix quick_test
+    python compare_layouts.py --text-dir ../text_data/samples --output output/
+    python compare_layouts.py --sample-mode --output-prefix quick_test
 """
 
 import os
@@ -76,6 +77,7 @@ class ComprehensiveScorer:
                  engram_working_dir: str = "../optimize_layouts", 
                  engram_config: str = "config.yaml",
                  engram_bigrams: str = "input/letter_pair_frequencies_english.csv",
+                 distance_scorer_path: str = "./distance_scorer.py",
                  timeout: int = 180):
         """
         Initialize the comprehensive scorer.
@@ -87,17 +89,20 @@ class ComprehensiveScorer:
             engram_working_dir: Working directory for score_complete_layout.py
             engram_config: Config file for score_complete_layout.py (relative to engram_working_dir)
             engram_bigrams: Path to bigram frequency CSV (relative to engram_working_dir)
+            distance_scorer_path: Path to distance_scorer.py
             timeout: Timeout for subprocess calls in seconds
         """
         self.dvorak9_working_dir = dvorak9_working_dir
-        self.dvorak9_path = "dvorak9_scorer.py"  # Define the script name
+        self.dvorak9_path = "dvorak9_scorer.py"
         self.dvorak9_speed_weights = dvorak9_speed_weights
         self.dvorak9_comfort_weights = dvorak9_comfort_weights
         
         self.engram_working_dir = engram_working_dir
-        self.engram_path = "score_complete_layout.py"  # Define the script name
+        self.engram_path = "score_complete_layout.py"
         self.engram_config = engram_config
         self.engram_bigrams = engram_bigrams
+        
+        self.distance_scorer_path = distance_scorer_path
         
         self.timeout = timeout
         
@@ -108,6 +113,7 @@ class ComprehensiveScorer:
         self.has_engram = os.path.exists(os.path.join(engram_working_dir, self.engram_path))
         self.has_engram_config = os.path.exists(os.path.join(engram_working_dir, engram_config))
         self.has_engram_bigrams = os.path.exists(os.path.join(engram_working_dir, engram_bigrams))
+        self.has_distance_scorer = os.path.exists(distance_scorer_path)
         
         print(f"Scorer availability:")
         print(f"  Dvorak-9: {'✓' if self.has_dvorak9 else '✗'} ({os.path.join(dvorak9_working_dir, self.dvorak9_path)})")
@@ -116,27 +122,28 @@ class ComprehensiveScorer:
         print(f"  Engram:   {'✓' if self.has_engram else '✗'} ({os.path.join(engram_working_dir, self.engram_path)})")
         print(f"  Engram config:   {'✓' if self.has_engram_config else '✗'} ({os.path.join(engram_working_dir, engram_config)})")
         print(f"  Engram bigrams:      {'✓' if self.has_engram_bigrams else '✗'} ({os.path.join(engram_working_dir, engram_bigrams)})")
+        print(f"  Distance scorer: {'✓' if self.has_distance_scorer else '✗'} ({distance_scorer_path})")
 
     def create_layout_mapping(self, layout_chars: List[str]) -> Dict[str, str]:
         """Create mapping from characters to QWERTY positions."""
         char_to_pos = {}
         for i, char in enumerate(layout_chars):
             if i < len(QWERTY_POSITIONS):
-                char_to_pos[char.lower()] = QWERTY_POSITIONS[i]
+                char_to_pos[char.upper()] = QWERTY_POSITIONS[i]
         return char_to_pos
     
     def get_common_characters(self, layouts: Dict[str, List[str]]) -> str:
         """Get characters that appear in all specified layouts."""
         all_chars = None
         for layout_chars in layouts.values():
-            layout_set = set(char.lower() for char in layout_chars if char.isalpha())
+            layout_set = set(char.upper() for char in layout_chars if char.isalpha())
             if all_chars is None:
                 all_chars = layout_set
             else:
                 all_chars &= layout_set
         
-        # Sort by frequency
-        char_priority = "etaoinsrhldcumfpgwybvkxjqz"
+        # Sort by frequency (convert to uppercase)
+        char_priority = "ETAOINSRHLDCUMFPGWYBVKXJQZ"
         common_chars = []
         for char in char_priority:
             if char in all_chars:
@@ -150,7 +157,8 @@ class ComprehensiveScorer:
         return ''.join(common_chars)
     
     def clean_text(self, text: str) -> str:
-        """Clean text for scoring."""
+        """Clean text for scoring by replacing non-ASCII with spaces."""
+        # Replace non-ASCII characters with spaces, then normalize whitespace
         text = re.sub(r'[^\x00-\x7F]+', ' ', text)
         text = re.sub(r'\s+', ' ', text).strip()
         return text
@@ -224,42 +232,29 @@ class ComprehensiveScorer:
         
         return texts
     
-    def run_dvorak9_scorer(self, items: str, positions: str, text: str, 
+    def run_dvorak9_scorer(self, items: str, positions: str, 
                           weights_csv: Optional[str] = None, 
                           score_type: str = "unweighted") -> Optional[Dict[str, float]]:
-        """Run dvorak9_scorer.py from its working directory with specific configuration."""
+        """Run dvorak9_scorer.py from its working directory (text-independent)."""
         if not self.has_dvorak9:
             return None
             
         try:
-            # Temp file path with proper output directory
-            os.makedirs("./output/tmp", exist_ok=True)
-            temp_text_path = os.path.join("./output/tmp", f'temp_text_{score_type}.txt')
-            with open(temp_text_path, 'w', encoding='utf-8') as f:
-                f.write(text)
-            
-            # Build command (use relative paths within the working directory)
+            # Build command (no text file needed for updated dvorak9_scorer.py)
             cmd = [
-                'python3', self.dvorak9_path,  # Use defined script name
-                '--items', items,
-                '--positions', positions,
-                '--text-file', os.path.abspath(temp_text_path),  # Use absolute path for cross-directory access
+                'python3', self.dvorak9_path,
+                '--letters', items,
+                '--qwerty_keys', positions,  # Note: updated parameter name
                 '--ten-scores'
             ]
             
-            # Print command
-            print(f"    dvorak9_scorer.py ({score_type}): {' '.join(cmd)}")
-
             if weights_csv and os.path.exists(os.path.join(self.dvorak9_working_dir, weights_csv)):
-                cmd.extend(['--weights-csv', weights_csv])
-            else:
-                cmd.append('--no-weights')
+                cmd.extend(['--weights', weights_csv])
+            
+            print(f"    dvorak9_scorer.py ({score_type}): {' '.join(cmd)}")
             
             result = subprocess.run(cmd, capture_output=True, text=True, timeout=self.timeout,
                                   cwd=self.dvorak9_working_dir)
-            
-            # Clean up temp file
-            os.unlink(temp_text_path)
             
             if result.returncode != 0:
                 print(f"Error running dvorak9_scorer.py ({score_type}): {result.stderr}")
@@ -309,19 +304,18 @@ class ComprehensiveScorer:
             return None
     
     def run_engram_scorer(self, items: str, positions: str) -> Optional[Dict[str, float]]:
-        """Run score_complete_layout.py from optimize_layouts directory."""
+        """Run score_complete_layout.py from optimize_layouts directory (text-independent)."""
         if not self.has_engram:
             return None
             
         try:
             cmd = [
-                'python3', self.engram_path,  # Use defined script name
+                'python3', self.engram_path,
                 '--items', items,
                 '--positions', positions,
                 '--config', self.engram_config
             ]
 
-            # Print command
             print(f"    {' '.join(cmd)}")
             
             result = subprocess.run(cmd, capture_output=True, text=True, timeout=self.timeout,
@@ -365,35 +359,98 @@ class ComprehensiveScorer:
             print(f"Error running score_complete_layout.py: {e}")
             return None
     
+    def run_distance_scorer(self, items: str, positions: str, text: str, text_name: str) -> Optional[Dict[str, float]]:
+        """Run distance_scorer.py with text input (text-dependent)."""
+        if not self.has_distance_scorer:
+            return None
+            
+        try:
+            # Create temp file for text
+            os.makedirs("./output/tmp", exist_ok=True)
+            temp_text_path = os.path.join("./output/tmp", f'temp_text_distance_{text_name}.txt')
+            with open(temp_text_path, 'w', encoding='utf-8') as f:
+                f.write(text)
+            
+            cmd = [
+                'python3', self.distance_scorer_path,
+                '--letters', items,
+                '--qwerty-keys', positions,
+                '--text-file', temp_text_path,
+                '--csv'
+            ]
+            
+            print(f"    distance_scorer.py: {' '.join(cmd)}")
+            
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=self.timeout)
+            
+            # Clean up temp file
+            os.unlink(temp_text_path)
+            
+            if result.returncode != 0:
+                print(f"Error running distance_scorer.py: {result.stderr}")
+                return None
+            
+            # Parse CSV output
+            lines = result.stdout.strip().split('\n')
+            if len(lines) < 2 or not lines[0].startswith('metric,value'):
+                print("Could not find CSV output from distance_scorer.py")
+                return None
+            
+            scores = {}
+            for line in lines[1:]:
+                if ',' in line:
+                    parts = line.split(',', 1)
+                    if len(parts) == 2:
+                        metric, value = parts
+                        try:
+                            scores[f'distance_{metric}'] = float(value)
+                        except ValueError:
+                            scores[f'distance_{metric}'] = value  # Keep as string for non-numeric
+            
+            return scores
+            
+        except Exception as e:
+            print(f"Error running distance_scorer.py: {e}")
+            return None
+    
     def score_layout_comprehensive(self, items: str, positions: str, text: str, text_name: str) -> Dict[str, float]:
         """Score layout using all available scoring configurations."""
         all_scores = {}
         
         print(f"    Scoring with all configurations...")
         
-        # Engram scoring (text-independent, run once)
-        if self.has_engram:
-            engram_scores = self.run_engram_scorer(items, positions)
-            if engram_scores:
-                all_scores.update(engram_scores)
+        # Text-independent scoring (run once per layout)
+        if text_name == list(TEXT_SOURCES.keys())[0] or text_name == "Bigrams":  # Only run once per layout
+            
+            # Engram scoring
+            if self.has_engram:
+                engram_scores = self.run_engram_scorer(items, positions)
+                if engram_scores:
+                    all_scores.update(engram_scores)
+            
+            # Dvorak-9 unweighted
+            if self.has_dvorak9:
+                unweighted_scores = self.run_dvorak9_scorer(items, positions, None, "unweighted")
+                if unweighted_scores:
+                    all_scores.update(unweighted_scores)
+            
+            # Dvorak-9 speed weights
+            if self.has_dvorak9 and self.has_dvorak9_speed_weights:
+                speed_scores = self.run_dvorak9_scorer(items, positions, self.dvorak9_speed_weights, "speed")
+                if speed_scores:
+                    all_scores.update(speed_scores)
+            
+            # Dvorak-9 comfort weights  
+            if self.has_dvorak9 and self.has_dvorak9_comfort_weights:
+                comfort_scores = self.run_dvorak9_scorer(items, positions, self.dvorak9_comfort_weights, "comfort")
+                if comfort_scores:
+                    all_scores.update(comfort_scores)
         
-        # Dvorak-9 unweighted
-        if self.has_dvorak9:
-            unweighted_scores = self.run_dvorak9_scorer(items, positions, text, None, "unweighted")
-            if unweighted_scores:
-                all_scores.update(unweighted_scores)
-        
-        # Dvorak-9 speed weights
-        if self.has_dvorak9 and self.has_dvorak9_speed_weights:
-            speed_scores = self.run_dvorak9_scorer(items, positions, text, self.dvorak9_speed_weights, "speed")
-            if speed_scores:
-                all_scores.update(speed_scores)
-        
-        # Dvorak-9 comfort weights  
-        if self.has_dvorak9 and self.has_dvorak9_comfort_weights:
-            comfort_scores = self.run_dvorak9_scorer(items, positions, text, self.dvorak9_comfort_weights, "comfort")
-            if comfort_scores:
-                all_scores.update(comfort_scores)
+        # Text-dependent scoring (run for each text)
+        if self.has_distance_scorer:
+            distance_scores = self.run_distance_scorer(items, positions, text, text_name)
+            if distance_scores:
+                all_scores.update(distance_scores)
         
         return all_scores
     
@@ -412,6 +469,7 @@ class ComprehensiveScorer:
         print(f"  Common characters: {len(common_chars)} ({common_chars})")
         
         results = []
+        text_independent_scores = {}  # Cache text-independent scores
         
         for layout_idx, (layout_name, layout_chars) in enumerate(layouts.items()):
             print(f"\n[{layout_idx+1}/{len(layouts)}] Processing {layout_name}...")
@@ -441,6 +499,16 @@ class ComprehensiveScorer:
                 
                 # Get comprehensive scores
                 scores = self.score_layout_comprehensive(items_filtered, positions_filtered, clean_text, text_name)
+                
+                # For the first text, cache text-independent scores
+                if text_idx == 0:
+                    text_independent_scores[layout_name] = {
+                        k: v for k, v in scores.items() 
+                        if not k.startswith('distance_')
+                    }
+                else:
+                    # For subsequent texts, add cached text-independent scores
+                    scores.update(text_independent_scores[layout_name])
                 
                 if scores:
                     result = {
@@ -473,12 +541,14 @@ def create_analysis_tables(df: pd.DataFrame, output_dir: str):
     dvorak9_unweighted_cols = [col for col in df.columns if 'unweighted' in col]
     dvorak9_speed_cols = [col for col in df.columns if 'speed' in col]
     dvorak9_comfort_cols = [col for col in df.columns if 'comfort' in col]
+    distance_cols = [col for col in df.columns if col.startswith('distance_')]
     
     score_groups = {
         'engram': engram_cols,
         'dvorak9_unweighted': dvorak9_unweighted_cols,
         'dvorak9_speed': dvorak9_speed_cols,
-        'dvorak9_comfort': dvorak9_comfort_cols
+        'dvorak9_comfort': dvorak9_comfort_cols,
+        'distance': distance_cols
     }
     
     print(f"\nGenerating analysis tables...")
@@ -515,6 +585,8 @@ def create_analysis_tables(df: pd.DataFrame, output_dir: str):
         primary_metrics.append('dvorak9_speed_total')
     if 'dvorak9_comfort_total' in df.columns:
         primary_metrics.append('dvorak9_comfort_total')
+    if 'distance_normalized_score' in df.columns:
+        primary_metrics.append('distance_normalized_score')
     
     if len(primary_metrics) > 1:
         corr_matrix = df[primary_metrics].corr()
@@ -547,13 +619,13 @@ def main():
 Examples:
 
   # Full comprehensive analysis
-  python comprehensive_layout_comparison.py --text-dir ../text_data/samples --output output/
+  python compare_layouts.py --text-dir ../text_data/samples --output output/
   
   # Quick test with sample texts
-  python comprehensive_layout_comparison.py --sample-mode --output-prefix quick_test
+  python compare_layouts.py --sample-mode --output-prefix quick_test
   
   # Specific layouts only
-  python comprehensive_layout_comparison.py --text-dir ../text_data/samples --layouts "QWERTY,Dvorak,Colemak" --output small_test/
+  python compare_layouts.py --text-dir ../text_data/samples --layouts "QWERTY,Dvorak,Colemak" --output small_test/
         """
     )
     
@@ -573,6 +645,7 @@ Examples:
     parser.add_argument('--engram-working-dir', default='../optimize_layouts')
     parser.add_argument('--engram-config', default='config.yaml')
     parser.add_argument('--engram-bigrams', default='input/letter_pair_frequencies_english.csv')
+    parser.add_argument('--distance-scorer-path', default='./distance_scorer.py')
     
     # Output options
     parser.add_argument('--output', default='./output/',
@@ -596,7 +669,8 @@ Examples:
             dvorak9_comfort_weights=args.dvorak9_comfort_weights,
             engram_working_dir=args.engram_working_dir,
             engram_config=args.engram_config,
-            engram_bigrams=args.engram_bigrams
+            engram_bigrams=args.engram_bigrams,
+            distance_scorer_path=args.distance_scorer_path
         )
         
         # Load texts
@@ -653,6 +727,7 @@ Examples:
             'Dvorak-9 Unweighted': [col for col in score_cols if 'unweighted' in col],
             'Dvorak-9 Speed': [col for col in score_cols if 'speed' in col and 'unweighted' not in col],
             'Dvorak-9 Comfort': [col for col in score_cols if 'comfort' in col],
+            'Distance': [col for col in score_cols if col.startswith('distance_')],
         }
         
         for group_name, group_cols in metric_groups.items():
