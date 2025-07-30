@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Engram Layout Scorer
+Engram Layout Scorer using the unified framework.
 
 A self-contained script for scoring keyboard layouts based on letter frequencies
 and key comfort scores. Works with CSV input files and requires no external 
@@ -10,9 +10,18 @@ This version has all the features of the original, but when --csv is used,
 it outputs ONLY CSV data with no other messages for perfect scripting integration.
 
 Usage:
-    python engram_scorer.py --items "qwertyuiop" --positions "qwertyuiop" 
-    python engram_scorer.py --items "pyfgcrlaoe" --positions "qwertyuiop" --details
-    python engram_scorer.py --items "pyfgcrlaoe" --positions "qwertyuiop" --ignore-cross-hand
+
+    # Basic scoring
+    python engram_scorer.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ"
+
+    # With cross-hand filtering
+    python engram_scorer.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --ignore-cross-hand
+
+    # CSV output
+    python engram_scorer.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --csv
+
+    # Score only
+    python engram_scorer.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --score-only
 
 Input Files (CSV format, in input/engram/ directory):
     - normalized_letter_frequencies_en.csv:               
@@ -33,30 +42,23 @@ For reference:
     Dvorak: "',.pyfgcrlaoeuidhtns;qjkxbmwvz"
     Colemak: "qwfpgjluy;arstdhneiozxcvbkm,./"
 """
-
-import argparse
-import pandas as pd
+import sys
+from typing import Dict, Any, List, Tuple, Optional
+from pathlib import Path
 import numpy as np
-import os
-from typing import Dict, Tuple, Optional
+
+# Import our framework components
+from base_scorer import BaseLayoutScorer, ScoreResult
+from config_loader import load_scorer_config
+from layout_utils import filter_to_letters_only, is_same_hand_pair, get_layout_statistics
+from data_utils import load_csv_with_validation, normalize_frequency_data, detect_distribution_type, validate_data_consistency
+from output_utils import print_results
+from cli_utils import create_standard_parser, handle_common_errors, get_layout_from_args
+
 
 # Default combination strategy for scores
 DEFAULT_COMBINATION_STRATEGY = "multiplicative"  # item_score * item_pair_score
 
-# Keyboard hand mapping for filtering cross-hand bigrams  
-POSITION_HANDS = {
-    # Left hand positions (lowercase)
-    '1': 'L', '2': 'L', '3': 'L', '4': 'L', '5': 'L',
-    'q': 'L', 'w': 'L', 'e': 'L', 'r': 'L', 't': 'L',
-    'a': 'L', 's': 'L', 'd': 'L', 'f': 'L', 'g': 'L',
-    'z': 'L', 'x': 'L', 'c': 'L', 'v': 'L', 'b': 'L',
-    # Right hand positions (lowercase)
-    '6': 'R', '7': 'R', '8': 'R', '9': 'R', '0': 'R',
-    'y': 'R', 'u': 'R', 'i': 'R', 'o': 'R', 'p': 'R',
-    'h': 'R', 'j': 'R', 'k': 'R', 'l': 'R', ';': 'R',
-    'n': 'R', 'm': 'R', ',': 'R', '.': 'R', '/': 'R',
-    "'": 'R', '[': 'R', ']': 'R',
-}
 
 def detect_and_normalize_distribution(scores: np.ndarray, name: str = '', verbose: bool = True) -> np.ndarray:
     """
@@ -111,418 +113,329 @@ def detect_and_normalize_distribution(scores: np.ndarray, name: str = '', verbos
         scaled = (scores - q1) / (q99 - q1)
         return np.clip(scaled, 0, 1)
 
-def load_and_normalize_scores(item_file: str, item_pair_file: str, 
-                             position_file: str, position_pair_file: str,
-                             verbose: bool = True) -> Tuple[Dict, Dict, Dict, Dict]:
-    """
-    Load and normalize all score files.
-    
-    Returns:
-        Tuple of (item_scores, item_pair_scores, position_scores, position_pair_scores)
-    """
-    if verbose:
-        print("Loading and normalizing score files...")
-    
-    # Load and normalize item scores
-    if verbose:
-        print(f"  Loading item scores from: {item_file}")
-    item_df = pd.read_csv(item_file, dtype={'letter': str})
-    scores = item_df['frequency'].values
-    norm_scores = detect_and_normalize_distribution(scores, 'Item scores', verbose)
-    item_scores = {row['letter'].lower(): float(norm_scores[i]) 
-                   for i, (_, row) in enumerate(item_df.iterrows())}
-    
-    # Load and normalize item pair scores
-    if verbose:
-        print(f"  Loading item pair scores from: {item_pair_file}")
-    item_pair_df = pd.read_csv(item_pair_file, dtype={'letter_pair': str})
-    scores = item_pair_df['frequency'].values
-    norm_scores = detect_and_normalize_distribution(scores, 'Item pair scores', verbose)
-    item_pair_scores = {}
-    for i, (_, row) in enumerate(item_pair_df.iterrows()):
-        pair_str = str(row['letter_pair'])
-        if len(pair_str) == 2:
-            key = (pair_str[0].lower(), pair_str[1].lower())
-            item_pair_scores[key] = float(norm_scores[i])
-    
-    # Load and normalize position scores
-    if verbose:
-        print(f"  Loading position scores from: {position_file}")
-    position_df = pd.read_csv(position_file, dtype={'key': str})
-    scores = position_df['comfort_score'].values
-    norm_scores = detect_and_normalize_distribution(scores, 'Position scores', verbose)
-    position_scores = {row['key'].lower(): float(norm_scores[i]) 
-                      for i, (_, row) in enumerate(position_df.iterrows())}
-    
-    # Load and normalize position-pair scores
-    if verbose:
-        print(f"  Loading position-pair scores from: {position_pair_file}")
-    position_pair_df = pd.read_csv(position_pair_file, dtype={'key_pair': str}, keep_default_na=False)
-    scores = position_pair_df['comfort_score'].values
-    norm_scores = detect_and_normalize_distribution(scores, 'position-pair scores', verbose)
-    position_pair_scores = {}
-    for i, (_, row) in enumerate(position_pair_df.iterrows()):
-        pair_str = str(row['key_pair'])
-        if len(pair_str) == 2:
-            key = (pair_str[0].lower(), pair_str[1].lower())
-            position_pair_scores[key] = float(norm_scores[i])
-    
-    if verbose:
-        print(f"  Loaded {len(item_scores)} item scores")
-        print(f"  Loaded {len(item_pair_scores)} item pair scores")
-        print(f"  Loaded {len(position_scores)} position scores")
-        print(f"  Loaded {len(position_pair_scores)} position-pair scores")
-    
-    return item_scores, item_pair_scores, position_scores, position_pair_scores
 
-def apply_combination(item_score: float, item_pair_score: float) -> float:
-    """Apply the default combination strategy for item and item-pair scores."""
-    if DEFAULT_COMBINATION_STRATEGY == "multiplicative":
+def apply_combination_strategy(item_score: float, item_pair_score: float, strategy: str = "multiplicative") -> float:
+    """Apply the specified combination strategy for item and item-pair scores."""
+    if strategy == "multiplicative":
         return item_score * item_pair_score
-    elif DEFAULT_COMBINATION_STRATEGY == "additive":
+    elif strategy == "additive":
         return item_score + item_pair_score
-    elif DEFAULT_COMBINATION_STRATEGY == "weighted_additive":
+    elif strategy == "weighted_additive":
         return 0.6 * item_score + 0.4 * item_pair_score
     else:
-        raise ValueError(f"Unknown combination strategy: {DEFAULT_COMBINATION_STRATEGY}")
+        raise ValueError(f"Unknown combination strategy: {strategy}")
 
-def is_same_hand_pair(pos1: str, pos2: str) -> bool:
-    """Check if two positions are on the same hand of the keyboard."""
-    pos1_lower = pos1.lower()
-    pos2_lower = pos2.lower()
-    if pos1_lower not in POSITION_HANDS or pos2_lower not in POSITION_HANDS:
-        return False
-    return POSITION_HANDS[pos1_lower] == POSITION_HANDS[pos2_lower]
 
-def calculate_layout_score(items_str: str, positions_str: str,
-                          normalized_scores: Tuple,
-                          ignore_cross_hand: bool = False) -> Tuple[float, float, float, dict]:
+class EngramScorer(BaseLayoutScorer):
     """
-    Calculate complete layout score.
+    Engram Layout Scorer using the unified framework.
     
-    Args:
-        items_str: String of items (e.g., 'etaoinsrhl')
-        positions_str: String of positions (e.g., 'FDESVRJKIL')
-        normalized_scores: Tuple of (item_scores, item_pair_scores, position_scores, position_pair_scores)
-        ignore_cross_hand: If True, ignore cross-hand bigrams
-        
-    Returns:
-        Tuple of (total_score, item_component, item_pair_component, filtering_info)
+    Scores keyboard layouts based on letter frequencies and key comfort scores
+    using multiplicative combination of item frequencies and position comfort.
     """
-    item_scores, item_pair_scores, position_scores, position_pair_scores = normalized_scores
     
-    # Create mapping
-    items = list(items_str.lower())
-    positions = list(positions_str.lower())
-    n_items = len(items)
-    
-    if len(items) != len(positions):
-        raise ValueError(f"Items length ({len(items)}) != positions length ({len(positions)})")
-    
-    # Calculate item component
-    item_raw_score = 0.0
-    for item, pos in zip(items, positions):
-        item_score = item_scores.get(item, 0.0)
-        pos_score = position_scores.get(pos, 0.0)
-        item_raw_score += item_score * pos_score
-    
-    item_component = item_raw_score / n_items if n_items > 0 else 0.0
-    
-    # Calculate item-pair component with optional filtering
-    pair_raw_score = 0.0
-    pair_count = 0
-    cross_hand_pairs_filtered = 0
-    
-    for i in range(n_items):
-        for j in range(n_items):
-            if i != j:  # Skip self-pairs
-                item1, item2 = items[i], items[j]
-                pos1, pos2 = positions[i], positions[j]
-                
-                # Filter cross-hand pairs if requested
-                if ignore_cross_hand and not is_same_hand_pair(pos1, pos2):
-                    cross_hand_pairs_filtered += 1
-                    continue
-                
-                # Get scores with defaults
-                item_pair_key = (item1, item2)
-                item_pair_score = item_pair_scores.get(item_pair_key, 1.0)
-                
-                pos_pair_key = (pos1, pos2)
-                pos_pair_score = position_pair_scores.get(pos_pair_key, 1.0)
-                
-                pair_raw_score += item_pair_score * pos_pair_score
-                pair_count += 1
-    
-    pair_component = pair_raw_score / max(1, pair_count)
-    total_score = apply_combination(item_component, pair_component)
-    
-    filtering_info = {
-        'cross_hand_pairs_filtered': cross_hand_pairs_filtered,
-        'pairs_used': pair_count,
-        'total_possible_pairs': n_items * (n_items - 1)
-    }
-    
-    return total_score, item_component, pair_component, filtering_info
-
-def print_detailed_breakdown(items_str: str, positions_str: str, 
-                           normalized_scores: Tuple) -> None:
-    """Print detailed item-by-item scoring breakdown."""
-    item_scores, item_pair_scores, position_scores, position_pair_scores = normalized_scores
-    
-    items = list(items_str.lower())
-    positions = list(positions_str.lower())
-    
-    print(f"\nDetailed Item Breakdown:")
-    print(f"  {'letter':<4} | {'Pos':<3} | {'Item Score':<10} | {'Pos Score':<10} | {'Combined':<10}")
-    print(f"  {'-'*4}-+-{'-'*3}-+-{'-'*10}-+-{'-'*10}-+-{'-'*10}")
-    
-    item_details = []
-    for item, pos in zip(items, positions):
-        item_score = item_scores.get(item, 0.0)
-        pos_score = position_scores.get(pos, 0.0)
-        combined = item_score * pos_score
-        item_details.append((item, pos, item_score, pos_score, combined))
-    
-    # Sort by combined score (highest first)
-    item_details.sort(key=lambda x: x[4], reverse=True)
-    
-    for item, pos, item_score, pos_score, combined in item_details:
-        print(f"  {item:<4} | {pos.upper():<3} | {item_score:<10.6f} | {pos_score:<10.6f} | {combined:<10.6f}")
-
-def validate_positions_in_pair_file(positions_str: str, position_pair_scores: dict, 
-                                   ignore_cross_hand: bool = False, verbose: bool = True) -> None:
-    """
-    Validate that positions have corresponding entries in the position-pair file.
-    """
-    if not verbose:
-        return  # Skip validation output in CSV mode
-        
-    used_positions = set(pos.lower() for pos in positions_str)
-    
-    # Get positions that appear in the position-pair file
-    available_positions = set()
-    for (pos1, pos2) in position_pair_scores.keys():
-        available_positions.add(pos1)
-        available_positions.add(pos2)
-    
-    # Check for missing individual positions
-    missing_positions = used_positions - available_positions
-    
-    if missing_positions:
-        missing_str = ''.join(sorted(missing_positions)).upper()
-        available_str = ''.join(sorted(available_positions)).upper()
-        print(f"  Warning: Missing positions in pair file: {missing_str}")
-        print(f"  Available positions: {available_str}")
-    else:
-        print(f"  ✓ All positions found in position-pair file")
-    
-    # Check for missing position-pairs
-    missing_pairs = []
-    positions_list = list(used_positions)
-    
-    for i in range(len(positions_list)):
-        for j in range(len(positions_list)):
-            if i != j:
-                pos1, pos2 = positions_list[i], positions_list[j]
-                
-                # Skip cross-hand pairs if filtering is enabled
-                if ignore_cross_hand and not is_same_hand_pair(pos1, pos2):
-                    continue
-                    
-                if (pos1, pos2) not in position_pair_scores:
-                    missing_pairs.append(f"{pos1}{pos2}".upper())
-
-    if missing_pairs and len(missing_pairs) <= 10:  # Only show if not too many
-        missing_pairs.sort()
-        missing_pairs_str = ' '.join(missing_pairs)
-        print(f"  Note: Missing position-pairs (using default scores): {missing_pairs_str}")
-    elif missing_pairs:
-        print(f"  Note: {len(missing_pairs)} missing position-pairs (using default scores)")
-
-def filter_letter_pairs(items_str: str, positions_str: str, allow_all: bool, verbose: bool = True) -> Tuple[str, str]:
-    """Filter to letter-position-pairs only unless allow_all is True."""
-    if allow_all:
-        return items_str, positions_str
-    
-    filtered_items = []
-    filtered_positions = []
-    removed_pairs = []
-    
-    for item, pos in zip(items_str, positions_str):
-        if item.isalpha():
-            filtered_items.append(item)
-            filtered_positions.append(pos)
-        else:
-            removed_pairs.append(f"{item}→{pos}")
-    
-    if removed_pairs and verbose:
-        print(f"Note: Removed non-letter pairs: {removed_pairs}")
-    
-    return ''.join(filtered_items), ''.join(filtered_positions)
-
-def main():
-    """Main entry point."""
-    parser = argparse.ArgumentParser(
-        description="Score keyboard layouts based on letter frequencies and key comfort.",
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="""
-Examples:
-  # Basic scoring
-  python engram_scorer.py --items "etaoinsrhl" --positions "qwertyuiop"
-  
-  # With detailed breakdown
-  python engram_scorer.py --items "etaoinsrhl" --positions "qwertyuiop" --details
-  
-  # Ignore cross-hand bigrams (keyboard-specific)
-  python engram_scorer.py --items "etaoinsrhl" --positions "qwertyuiop" --ignore-cross-hand
-  
-  # CSV output format (ONLY CSV data, no other messages)
-  python engram_scorer.py --items "etaoinsrhl" --positions "qwertyuiop" --csv
-
-Input CSV files should be in the input/engram/ directory:
-  - input/engram/normalized_letter_frequencies_en.csv (letter frequencies)
-  - normalized_letter_pair_frequencies_en.csv (bigram frequencies)  
-  - normalized_key_comfort_scores_32keys.csv (key comfort scores)
-  - normalized_key_pair_comfort_scores_32keys_LvsRpairs.csv (key-pair comfort scores)
+    def __init__(self, layout_mapping: Dict[str, str], config: Optional[Dict[str, Any]] = None):
         """
-    )
+        Initialize the Engram scorer.
+        
+        Args:
+            layout_mapping: Dict mapping characters to positions
+            config: Optional configuration dictionary
+        """
+        super().__init__(layout_mapping, config)
+        
+        # Data containers
+        self.item_scores: Dict[str, float] = {}
+        self.item_pair_scores: Dict[Tuple[str, str], float] = {}
+        self.position_scores: Dict[str, float] = {}
+        self.position_pair_scores: Dict[Tuple[str, str], float] = {}
+        
+        # Get scoring options from config
+        scoring_options = self.config.get('scoring_options', {})
+        self.combination_strategy = scoring_options.get('combination_strategy', DEFAULT_COMBINATION_STRATEGY)
+        self.normalization_method = scoring_options.get('normalization_method', 'auto')
+        self.ignore_cross_hand = scoring_options.get('ignore_cross_hand', False)
+        
+        # Get combination weights for weighted additive
+        self.item_weight = scoring_options.get('item_weight', 0.6)
+        self.item_pair_weight = scoring_options.get('item_pair_weight', 0.4)
     
-    parser.add_argument("--items", required=True,
-                       help="String of items (e.g., 'etaoinsrhl')")
-    parser.add_argument("--positions", required=True,
-                       help="String of positions (e.g., 'qwertyuiop')")
+    def load_data_files(self) -> None:
+        """Load and normalize all score files."""
+        data_files = self.config.get('data_files', {})
+        quiet_mode = self.config.get('quiet_mode', False)
+        
+        if not quiet_mode:
+            print("Loading and normalizing score files...")
+        
+        # Load and normalize item scores
+        item_file = data_files.get('item_scores')
+        if not item_file or not Path(item_file).exists():
+            raise FileNotFoundError(f"Item scores file required: {item_file}")
+        
+        if not quiet_mode:
+            print(f"  Loading item scores from: {item_file}")
+        
+        item_df = load_csv_with_validation(item_file, ['letter', 'frequency'])
+        scores = item_df['frequency'].astype(float).values
+        norm_scores = detect_and_normalize_distribution(scores, 'Item scores', not quiet_mode)
+        
+        self.item_scores = {}
+        for i, (_, row) in enumerate(item_df.iterrows()):
+            letter = str(row['letter']).lower()
+            self.item_scores[letter] = float(norm_scores[i])
+        
+        # Load and normalize item pair scores
+        item_pair_file = data_files.get('item_pair_scores')
+        if not item_pair_file or not Path(item_pair_file).exists():
+            raise FileNotFoundError(f"Item pair scores file required: {item_pair_file}")
+        
+        if not quiet_mode:
+            print(f"  Loading item pair scores from: {item_pair_file}")
+        
+        item_pair_df = load_csv_with_validation(item_pair_file, ['letter_pair', 'frequency'])
+        scores = item_pair_df['frequency'].astype(float).values
+        norm_scores = detect_and_normalize_distribution(scores, 'Item pair scores', not quiet_mode)
+        
+        self.item_pair_scores = {}
+        for i, (_, row) in enumerate(item_pair_df.iterrows()):
+            pair_str = str(row['letter_pair'])
+            if len(pair_str) == 2:
+                key = (pair_str[0].lower(), pair_str[1].lower())
+                self.item_pair_scores[key] = float(norm_scores[i])
+        
+        # Load and normalize position scores
+        position_file = data_files.get('position_scores')
+        if not position_file or not Path(position_file).exists():
+            raise FileNotFoundError(f"Position scores file required: {position_file}")
+        
+        if not quiet_mode:
+            print(f"  Loading position scores from: {position_file}")
+        
+        position_df = load_csv_with_validation(position_file, ['key', 'comfort_score'])
+        scores = position_df['comfort_score'].astype(float).values
+        norm_scores = detect_and_normalize_distribution(scores, 'Position scores', not quiet_mode)
+        
+        self.position_scores = {}
+        for i, (_, row) in enumerate(position_df.iterrows()):
+            key = str(row['key']).lower()
+            self.position_scores[key] = float(norm_scores[i])
+        
+        # Load and normalize position-pair scores
+        position_pair_file = data_files.get('position_pair_scores')
+        if not position_pair_file or not Path(position_pair_file).exists():
+            raise FileNotFoundError(f"Position-pair scores file required: {position_pair_file}")
+        
+        if not quiet_mode:
+            print(f"  Loading position-pair scores from: {position_pair_file}")
+        
+        position_pair_df = load_csv_with_validation(position_pair_file, ['key_pair', 'comfort_score'])
+        scores = position_pair_df['comfort_score'].astype(float).values
+        norm_scores = detect_and_normalize_distribution(scores, 'Position-pair scores', not quiet_mode)
+        
+        self.position_pair_scores = {}
+        for i, (_, row) in enumerate(position_pair_df.iterrows()):
+            pair_str = str(row['key_pair'])
+            if len(pair_str) == 2:
+                key = (pair_str[0].lower(), pair_str[1].lower())
+                self.position_pair_scores[key] = float(norm_scores[i])
+        
+        if not quiet_mode:
+            print(f"  Loaded {len(self.item_scores)} item scores")
+            print(f"  Loaded {len(self.item_pair_scores)} item pair scores")
+            print(f"  Loaded {len(self.position_scores)} position scores")
+            print(f"  Loaded {len(self.position_pair_scores)} position-pair scores")
+        
+        # Validate position coverage
+        self._validate_position_coverage(quiet_mode)
     
-    # Input file arguments
-    parser.add_argument("--item-scores", default="input/engram/normalized_letter_frequencies_en.csv",
-                       help="Item scores CSV file (default: input/engram/normalized_letter_frequencies_en.csv)")
-    parser.add_argument("--item-pair-scores", default="input/engram/normalized_letter_pair_frequencies_en.csv",
-                       help="Item pair scores CSV file (default: input/engram/normalized_letter_pair_frequencies_en.csv)")
-    parser.add_argument("--position-scores", default="input/engram/normalized_key_comfort_scores_32keys.csv",
-                       help="Position scores CSV file (default: input/engram/normalized_key_comfort_scores_32keys.csv)")
-    parser.add_argument("--position-pair-scores", default="input/engram/normalized_key_pair_comfort_scores_32keys_LvsRpairs.csv",
-                       help="position-pair scores CSV file (default: input/engram/normalized_key_pair_comfort_scores_32keys_LvsRpairs.csv)")
+    def _validate_position_coverage(self, quiet_mode: bool) -> None:
+        """Validate that positions have corresponding entries in the position-pair file."""
+        if quiet_mode:
+            return
+            
+        used_positions = set(pos.lower() for pos in self.layout_mapping.values())
+        
+        # Get positions that appear in the position-pair file
+        available_positions = set()
+        for (pos1, pos2) in self.position_pair_scores.keys():
+            available_positions.add(pos1)
+            available_positions.add(pos2)
+        
+        # Check for missing individual positions
+        missing_positions = used_positions - available_positions
+        
+        if missing_positions:
+            missing_str = ''.join(sorted(missing_positions)).upper()
+            available_str = ''.join(sorted(available_positions)).upper()
+            print(f"  Warning: Missing positions in pair file: {missing_str}")
+            print(f"  Available positions: {available_str}")
+        else:
+            print(f"  ✓ All positions found in position-pair file")
+    
+    def calculate_layout_score(self) -> Tuple[float, float, float, Dict[str, Any]]:
+        """
+        Calculate complete layout score.
+        
+        Returns:
+            Tuple of (total_score, item_component, item_pair_component, filtering_info)
+        """
+        items = list(self.layout_mapping.keys())
+        positions = list(self.layout_mapping.values())
+        n_items = len(items)
+        
+        # Calculate item component
+        item_raw_score = 0.0
+        for item, pos in zip(items, positions):
+            item_score = self.item_scores.get(item.lower(), 0.0)
+            pos_score = self.position_scores.get(pos.lower(), 0.0)
+            item_raw_score += item_score * pos_score
+        
+        item_component = item_raw_score / n_items if n_items > 0 else 0.0
+        
+        # Calculate item-pair component with optional filtering
+        pair_raw_score = 0.0
+        pair_count = 0
+        cross_hand_pairs_filtered = 0
+        
+        for i in range(n_items):
+            for j in range(n_items):
+                if i != j:  # Skip self-pairs
+                    item1, item2 = items[i].lower(), items[j].lower()
+                    pos1, pos2 = positions[i].lower(), positions[j].lower()
+                    
+                    # Filter cross-hand pairs if requested
+                    if self.ignore_cross_hand and not is_same_hand_pair(pos1, pos2):
+                        cross_hand_pairs_filtered += 1
+                        continue
+                    
+                    # Get scores with defaults
+                    item_pair_key = (item1, item2)
+                    item_pair_score = self.item_pair_scores.get(item_pair_key, 1.0)
+                    
+                    pos_pair_key = (pos1, pos2)
+                    pos_pair_score = self.position_pair_scores.get(pos_pair_key, 1.0)
+                    
+                    pair_raw_score += item_pair_score * pos_pair_score
+                    pair_count += 1
+        
+        pair_component = pair_raw_score / max(1, pair_count)
+        
+        # Apply combination strategy
+        if self.combination_strategy == "weighted_additive":
+            total_score = self.item_weight * item_component + self.item_pair_weight * pair_component
+        else:
+            total_score = apply_combination_strategy(item_component, pair_component, self.combination_strategy)
+        
+        filtering_info = {
+            'cross_hand_pairs_filtered': cross_hand_pairs_filtered,
+            'pairs_used': pair_count,
+            'total_possible_pairs': n_items * (n_items - 1)
+        }
+        
+        return total_score, item_component, pair_component, filtering_info
+    
+    def calculate_scores(self) -> ScoreResult:
+        """
+        Calculate layout scores using Engram methodology.
+        
+        Returns:
+            ScoreResult containing primary score, components, and metadata
+        """
+        # Calculate scores
+        total_score, item_component, pair_component, filtering_info = self.calculate_layout_score()
+        
+        # Get layout statistics
+        layout_stats = get_layout_statistics(self.layout_mapping)
+        
+        # Create result
+        result = ScoreResult(
+            primary_score=total_score,
+            components={
+                'item_component': item_component,
+                'item_pair_component': pair_component,
+            },
+            metadata={
+                'combination_strategy': self.combination_strategy,
+                'normalization_method': self.normalization_method,
+                'ignore_cross_hand': self.ignore_cross_hand,
+                'layout_size': len(self.layout_mapping),
+                'alphabet_coverage': layout_stats.get('alphabet_coverage', 0.0),
+            },
+            validation_info={
+                'total_chars': layout_stats['total_chars'],
+                'letters': layout_stats['letters'],
+                'alphabet_coverage_percentage': layout_stats.get('alphabet_coverage', 0.0) * 100,
+            },
+            detailed_breakdown={
+                'filtering_info': filtering_info,
+                'data_coverage': {
+                    'item_scores_loaded': len(self.item_scores),
+                    'item_pair_scores_loaded': len(self.item_pair_scores),
+                    'position_scores_loaded': len(self.position_scores),
+                    'position_pair_scores_loaded': len(self.position_pair_scores),
+                },
+                'scoring_options': {
+                    'combination_strategy': self.combination_strategy,
+                    'item_weight': self.item_weight,
+                    'item_pair_weight': self.item_pair_weight,
+                },
+            }
+        )
+        
+        return result
 
-    # Options
-    parser.add_argument("--details", action="store_true",
-                       help="Show detailed scoring breakdown")
-    parser.add_argument("--csv", action="store_true",
-                       help="Output ONLY CSV format (total_score,item_score,item_pair_score)")
-    parser.add_argument("--nonletter-items", action="store_true",
-                       help="Allow non-letter characters in --items (default: letters only)")
-    parser.add_argument("--ignore-cross-hand", action="store_true",
-                       help="Ignore bigrams that cross hands (keyboard-specific)")
-    parser.add_argument("--quiet", action="store_true",
-                       help="Suppress verbose output")
 
-    args = parser.parse_args()
+@handle_common_errors
+def main() -> int:
+    """Main entry point using the standardized framework."""
+    
+    # Create standardized CLI parser
+    cli_parser = create_standard_parser('engram_scorer')
+    args = cli_parser.parse_args()
     
     try:
-        # Key change: verbose is False when --csv is used (for clean CSV output)
-        verbose = not args.csv and not args.quiet
+        # Load configuration
+        config = load_scorer_config('engram_scorer', args.config)
         
-        # Check if files exist - but only show error if not in CSV mode
-        required_files = [args.item_scores, args.item_pair_scores, 
-                         args.position_scores, args.position_pair_scores]
-        missing_files = [f for f in required_files if not os.path.exists(f)]
+        # Override with command-line arguments
+        config['quiet_mode'] = args.quiet
         
-        if missing_files:
-            if not args.csv:
-                print(f"Error: Missing required files: {missing_files}")
-                print("\nRequired CSV files:")
-                print(f"  --item-scores: {args.item_scores}")
-                print(f"  --item-pair-scores: {args.item_pair_scores}")
-                print(f"  --position-scores: {args.position_scores}")
-                print(f"  --position-pair-scores: {args.position_pair_scores}")
+        # Handle cross-hand filtering
+        if hasattr(args, 'ignore_cross_hand') and args.ignore_cross_hand:
+            if 'scoring_options' not in config:
+                config['scoring_options'] = {}
+            config['scoring_options']['ignore_cross_hand'] = True
+        
+        # Get layout mapping from arguments
+        letters, positions, layout_mapping = get_layout_from_args(args)
+        
+        # Filter to letters only (same as original behavior)
+        layout_mapping = filter_to_letters_only(layout_mapping)
+        
+        if not layout_mapping:
+            print("Error: No letters found in layout")
             return 1
         
-        if verbose:
-            print("Engram Layout Scorer")
-            print("=" * 50)
-
-        # Validate input lengths
-        if len(args.items) != len(args.positions):
-            if not args.csv:
-                print(f"Error: Item count ({len(args.items)}) != Position count ({len(args.positions)})")
-            return 1
-
-        # Filter to letter pairs if requested
-        valid_items, valid_positions = filter_letter_pairs(
-            args.items, args.positions, args.nonletter_items, verbose)
-
-        if len(valid_items) == 0:
-            if not args.csv:
-                print("Error: No letters found in items string")
-            return 1
+        # Create and run scorer
+        scorer = EngramScorer(layout_mapping, config)
+        result = scorer.score_layout()
         
-        # Load and normalize scores
-        normalized_scores = load_and_normalize_scores(
-            args.item_scores, args.item_pair_scores,
-            args.position_scores, args.position_pair_scores,
-            verbose=verbose
-        )
+        # Print results using framework output utilities
+        output_format = args.output_format
+        output_config = config.get('output_formats', {}).get(output_format, {})
         
-        # Validate positions
-        if verbose:
-            print("\nValidating positions...")
-        validate_positions_in_pair_file(
-            valid_positions, normalized_scores[3], args.ignore_cross_hand, verbose)
-        
-        # Display layout
-        if verbose:
-            print(f"\nLayout: {valid_items} → {valid_positions.upper()}")
-        
-        # Calculate scores
-        total_score, item_score, item_pair_score, filtering_info = calculate_layout_score(
-            valid_items, valid_positions, normalized_scores, args.ignore_cross_hand
-        )
-
-        if args.csv:
-            # CSV output format - ONLY CSV data, no other output
-            print("total_score,item_score,item_pair_score")
-            print(f"{total_score:.12f},{item_score:.12f},{item_pair_score:.12f}")
-        else:
-            # Human-readable output
-            print(f"\nLayout Score Results:")
-            print(f"  Total score:         {total_score:.12f}")
-            print(f"  Item component:      {item_score:.12f}")
-            print(f"  Item-pair component: {item_pair_score:.12f}")
-            print(f"  Combination strategy: {DEFAULT_COMBINATION_STRATEGY}")
-        
-        # Show filtering information (only if verbose)
-        if args.ignore_cross_hand and verbose:
-            info = filtering_info
-            total_possible = info['total_possible_pairs']
-            filtered = info['cross_hand_pairs_filtered']
-            used = info['pairs_used']
-            print(f"\nCross-hand filtering:")
-            print(f"  Total possible pairs:      {total_possible}")
-            print(f"  Cross-hand pairs filtered: {filtered}")
-            print(f"  Same-hand pairs used:      {used}")
-            if total_possible > 0:
-                print(f"  Filtering ratio:           {filtered/total_possible*100:.1f}%")
-        
-        # Show detailed breakdown if requested (only if verbose)
-        if args.details and verbose:
-            print_detailed_breakdown(valid_items, valid_positions, normalized_scores)
+        print_results(result, output_format, output_config)
         
         return 0
-                    
-    except FileNotFoundError as e:
-        if not args.csv:
-            print(f"Error: {e}")
-            print("Please check that all CSV input files exist.")
-        return 1
-    except ValueError as e:
-        if not args.csv:
-            print(f"Input Error: {e}")
-        return 1
+        
     except Exception as e:
-        if not args.csv:
-            print(f"Unexpected error: {e}")
+        if not args.quiet:
+            print(f"Error: {e}")
             import traceback
             traceback.print_exc()
         return 1
 
+
 if __name__ == "__main__":
-    exit(main())
+    sys.exit(main())

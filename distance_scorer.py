@@ -1,47 +1,45 @@
 #!/usr/bin/env python3
 """
-Distance-based keyboard layout scorer.
+Distance-based keyboard layout scorer using the unified framework.
 
 This script calculates the total physical distance traveled by fingers when typing text
 on different keyboard layouts. It assumes users have their fingers positioned above
 the home row and measures the Euclidean distance between key positions for each
 character transition.
 
-Features:
-- Uses physical staggered keyboard layout positions (19mm spacing)
-- Calculates per-bigram distance and total distance
-- Supports different layout mappings
-- Provides distance statistics and normalized scores
-- Can output detailed per-bigram analysis
+Refactored to use the standardized keyboard layout scoring framework.
 
 Usage:
-    # Basic distance scoring
-    python distance_scorer.py --letters "ETAOIN" --qwerty-keys "FDESRJ" --text "the text"
-    
-    # With text file input
-    python distance_scorer.py --letters "ETAOIN" --qwerty-keys "FDESRJ" --text-file "sample.txt"
-    
-    # CSV output format
-    python distance_scorer.py --letters "ETAOIN" --qwerty-keys "FDESRJ" --text "the text" --csv
-    
-    # Detailed bigram analysis
-    python distance_scorer.py --letters "ETAOIN" --qwerty-keys "FDESRJ" --text "the text" --detailed
 
-Example layouts:
-    qwerty_layout = "QWERTYUIOPASDFGHJKL;ZXCVBNM,./"
-    dvorak_layout = "',.PYFGCRLAOEUIDHTNS;QJKXBMWVZ"
+  # Basic usage
+  python distance_scorer_new.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --text "the quick brown fox jumps over the lazy dog"
+
+  # With text file
+  python distance_scorer_new.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --text-file sample.txt
+
+  # CSV output
+  python distance_scorer_new.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --text "hello world" --csv
+
+  # Score only
+  python distance_scorer_new.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --text "hello world" --score-only
 """
 
-import argparse
 import sys
-import re
-from collections import defaultdict, Counter
-from typing import Dict, List, Tuple, Optional
+from typing import Dict, Any, List, Tuple, Optional
 from math import sqrt
+from pathlib import Path
 
-# Keyboard layout definitions
-# from https://github.com/binarybottle/typing_preferences_to_comfort_scores/tree/main
-staggered_position_map = {
+# Import our new framework components
+from base_scorer import BaseLayoutScorer, ScoreResult
+from config_loader import load_scorer_config
+from layout_utils import filter_to_letters_only
+from text_utils import extract_bigrams, clean_text_for_analysis, validate_text_input
+from output_utils import print_results
+from cli_utils import create_standard_parser, handle_common_errors, get_layout_from_args
+
+
+# Physical keyboard layout definitions (same as original)
+STAGGERED_POSITION_MAP = {
     # Top row (no stagger reference point)
     'q': (0, 0),    'w': (19, 0),   'e': (38, 0),   'r': (57, 0),   't': (76, 0),
     # Home row (staggered 5mm right from top row)
@@ -56,7 +54,7 @@ staggered_position_map = {
     'n': (110, 38), 'm': (129, 38), ',': (148, 38), '.': (167, 38), '/': (186, 38)
 }
 
-finger_map = {
+FINGER_MAP = {
     'q': 4, 'w': 3, 'e': 2, 'r': 1, 't': 1,
     'a': 4, 's': 3, 'd': 2, 'f': 1, 'g': 1,
     'z': 4, 'x': 3, 'c': 2, 'v': 1, 'b': 1,
@@ -66,7 +64,7 @@ finger_map = {
     '[': 4, "'": 4
 }
 
-column_map = {
+COLUMN_MAP = {
     'q': 1, 'w': 2, 'e': 3, 'r': 4, 't': 5, 
     'a': 1, 's': 2, 'd': 3, 'f': 4, 'g': 5, 
     'z': 1, 'x': 2, 'c': 3, 'v': 4, 'b': 5,
@@ -86,75 +84,70 @@ def calculate_euclidean_distance(pos1: Tuple[float, float], pos2: Tuple[float, f
 
 def same_hand(char1: str, char2: str) -> bool:
     """Check if two characters are typed by the same hand."""
-    return (column_map[char1] < 6 and column_map[char2] < 6) or \
-           (column_map[char1] > 5 and column_map[char2] > 5)
+    return (COLUMN_MAP[char1] < 6 and COLUMN_MAP[char2] < 6) or \
+           (COLUMN_MAP[char1] > 5 and COLUMN_MAP[char2] > 5)
 
 
 def same_finger(char1: str, char2: str) -> bool:
     """Check if two characters are typed by the same finger."""
-    return same_hand(char1, char2) and finger_map[char1] == finger_map[char2]
+    return same_hand(char1, char2) and FINGER_MAP[char1] == FINGER_MAP[char2]
 
 
-class DistanceScorer:
+class DistanceScorer(BaseLayoutScorer):
     """
-    Distance-based keyboard layout scorer.
+    Distance-based keyboard layout scorer using the unified framework.
     
     Calculates the total physical distance traveled by fingers when typing text
     on a given keyboard layout.
     """
     
-    def __init__(self, layout_mapping: Dict[str, str], csv_mode: bool = False):
+    def __init__(self, layout_mapping: Dict[str, str], config: Optional[Dict[str, Any]] = None):
         """
         Initialize the distance scorer.
         
         Args:
-            layout_mapping: Dict mapping characters to QWERTY positions (e.g., {'a': 'F', 'b': 'D'})
-            csv_mode: If True, suppress warning messages for clean CSV output
+            layout_mapping: Dict mapping characters to QWERTY positions
+            config: Optional configuration dictionary
         """
-        # Convert to uppercase for consistency
-        self.layout_mapping = {char.upper(): pos.upper() for char, pos in layout_mapping.items()}
-        self.csv_mode = csv_mode
+        super().__init__(layout_mapping, config)
         
-        # Create reverse mapping for quick lookup
-        self.position_to_char = {pos.upper(): char for char, pos in self.layout_mapping.items()}
+        # Distance scorer doesn't need external data files
+        self._data_loaded = True
         
         # Validate that all mapped positions exist in our position map
-        if not csv_mode:  # Only show warnings in non-CSV mode
-            for char, pos in self.layout_mapping.items():
-                if pos.lower() not in staggered_position_map:
-                    print(f"Warning: Position '{pos}' for character '{char}' not found in position map")
+        self._validate_positions()
+    
+    def _validate_positions(self) -> None:
+        """Validate that all layout positions exist in the physical position map."""
+        issues = []
+        quiet_mode = self.config.get('quiet_mode', False)
+        
+        for char, pos in self.layout_mapping.items():
+            if pos.lower() not in STAGGERED_POSITION_MAP:
+                issues.append(f"Position '{pos}' for character '{char}' not found in position map")
+        
+        if issues and not quiet_mode:
+            print("Position validation warnings:")
+            for issue in issues:
+                print(f"  {issue}")
+            print()
+    
+    def load_data_files(self) -> None:
+        """
+        Load required data files for scoring.
+        
+        Distance scorer uses built-in position data, so no external files needed.
+        """
+        # No external data files needed for distance scoring
+        pass
     
     def get_physical_position(self, char: str) -> Optional[Tuple[float, float]]:
         """Get the physical position of a character based on the layout mapping."""
         char_upper = char.upper()
         if char_upper in self.layout_mapping:
             qwerty_pos = self.layout_mapping[char_upper].lower()
-            return staggered_position_map.get(qwerty_pos)
+            return STAGGERED_POSITION_MAP.get(qwerty_pos)
         return None
-    
-    def clean_text(self, text: str) -> str:
-        """Clean text by replacing non-alphabetic characters with spaces and converting to uppercase."""
-        # Replace non-alphabetic characters with spaces to avoid false bigrams
-        cleaned = re.sub(r'[^a-zA-Z]', ' ', text.upper())
-        # Normalize multiple spaces to single spaces
-        cleaned = re.sub(r'\s+', ' ', cleaned).strip()
-        return cleaned
-    
-    def extract_bigrams(self, text: str) -> List[Tuple[str, str]]:
-        """Extract all consecutive character pairs from text, respecting word boundaries."""
-        cleaned_text = self.clean_text(text)
-        bigrams = []
-        
-        # Split into words to avoid cross-word bigrams
-        words = cleaned_text.split()
-        
-        for word in words:
-            # Extract bigrams within each word
-            for i in range(len(word) - 1):
-                char1, char2 = word[i], word[i + 1]
-                bigrams.append((char1, char2))
-        
-        return bigrams
     
     def calculate_bigram_distance(self, char1: str, char2: str) -> float:
         """Calculate the distance traveled for a single bigram."""
@@ -170,17 +163,21 @@ class DistanceScorer:
         
         return calculate_euclidean_distance(pos1, pos2)
     
-    def analyze_text(self, text: str) -> Dict:
+    def analyze_text(self, text: str) -> Dict[str, Any]:
         """
         Analyze text and calculate comprehensive distance statistics.
         
+        Args:
+            text: Input text to analyze
+            
         Returns:
             Dict containing various distance metrics and statistics
         """
         if not text.strip():
             return self._empty_results()
         
-        bigrams = self.extract_bigrams(text)
+        # Use framework text utilities
+        bigrams = extract_bigrams(text, respect_word_boundaries=True, normalize_case=True)
         
         if len(bigrams) == 0:
             return self._empty_results()
@@ -190,7 +187,6 @@ class DistanceScorer:
         same_finger_distances = []
         same_hand_distances = []
         different_hand_distances = []
-        bigram_counts = Counter()
         
         total_distance = 0.0
         valid_bigrams = 0
@@ -205,18 +201,16 @@ class DistanceScorer:
                 
                 # Categorize by finger/hand usage
                 if char1 in self.layout_mapping and char2 in self.layout_mapping:
-                    qwerty_pos1 = self.layout_mapping[char1].lower()
-                    qwerty_pos2 = self.layout_mapping[char2].lower()
+                    qwerty_pos1 = self.layout_mapping[char1.upper()].lower()
+                    qwerty_pos2 = self.layout_mapping[char2.upper()].lower()
                     
-                    if same_finger(qwerty_pos1, qwerty_pos2):
-                        same_finger_distances.append(distance)
-                    elif same_hand(qwerty_pos1, qwerty_pos2):
-                        same_hand_distances.append(distance)
-                    else:
-                        different_hand_distances.append(distance)
-            
-            # Count bigram frequency regardless of distance calculation
-            bigram_counts[(char1, char2)] += 1
+                    if qwerty_pos1 in FINGER_MAP and qwerty_pos2 in FINGER_MAP:
+                        if same_finger(qwerty_pos1, qwerty_pos2):
+                            same_finger_distances.append(distance)
+                        elif same_hand(qwerty_pos1, qwerty_pos2):
+                            same_hand_distances.append(distance)
+                        else:
+                            different_hand_distances.append(distance)
         
         # Calculate statistics
         if valid_bigrams > 0:
@@ -231,25 +225,6 @@ class DistanceScorer:
         avg_same_hand = sum(same_hand_distances) / len(same_hand_distances) if same_hand_distances else 0.0
         avg_different_hand = sum(different_hand_distances) / len(different_hand_distances) if different_hand_distances else 0.0
         
-        # Find most expensive bigrams
-        bigram_distance_map = {}
-        for char1, char2 in bigrams:
-            bigram_key = (char1, char2)
-            if bigram_key not in bigram_distance_map:
-                distance = self.calculate_bigram_distance(char1, char2)
-                if distance > 0:
-                    bigram_distance_map[bigram_key] = distance
-        
-        # Sort by distance * frequency to find most impactful bigrams
-        bigram_impact = []
-        for (char1, char2), count in bigram_counts.items():
-            distance = bigram_distance_map.get((char1, char2), 0.0)
-            impact = distance * count
-            if impact > 0:
-                bigram_impact.append(((char1, char2), distance, count, impact))
-        
-        bigram_impact.sort(key=lambda x: x[3], reverse=True)  # Sort by impact
-        
         return {
             'total_distance': total_distance,
             'average_distance': avg_distance,
@@ -258,19 +233,15 @@ class DistanceScorer:
             'total_bigrams': len(bigrams),
             'valid_bigrams': valid_bigrams,
             'coverage': valid_bigrams / len(bigrams) if bigrams else 0.0,
-            'unique_bigrams': len(bigram_counts),
             'avg_same_finger_distance': avg_same_finger,
             'avg_same_hand_distance': avg_same_hand,
             'avg_different_hand_distance': avg_different_hand,
             'same_finger_count': len(same_finger_distances),
             'same_hand_count': len(same_hand_distances),
             'different_hand_count': len(different_hand_distances),
-            'top_bigrams_by_impact': bigram_impact[:10],  # Top 10 most impactful
-            'bigram_distances': bigram_distances,
-            'bigram_counts': bigram_counts
         }
     
-    def _empty_results(self) -> Dict:
+    def _empty_results(self) -> Dict[str, Any]:
         """Return empty results structure."""
         return {
             'total_distance': 0.0,
@@ -280,134 +251,106 @@ class DistanceScorer:
             'total_bigrams': 0,
             'valid_bigrams': 0,
             'coverage': 0.0,
-            'unique_bigrams': 0,
             'avg_same_finger_distance': 0.0,
             'avg_same_hand_distance': 0.0,
             'avg_different_hand_distance': 0.0,
             'same_finger_count': 0,
             'same_hand_count': 0,
             'different_hand_count': 0,
-            'top_bigrams_by_impact': [],
-            'bigram_distances': [],
-            'bigram_counts': Counter()
         }
     
-    def score_layout(self, text: str) -> float:
+    def calculate_scores(self) -> ScoreResult:
         """
-        Calculate a normalized distance score for the layout.
-        
-        Lower distances are better, so we return the inverse of average distance.
-        Score is normalized to a 0-1 scale where higher is better.
+        Calculate layout scores using distance analysis.
         
         Returns:
-            float: Normalized score where higher values indicate better (lower distance) layouts
+            ScoreResult containing primary score, components, and metadata
         """
-        results = self.analyze_text(text)
-        avg_distance = results['average_distance']
+        # Get text from config or raise error
+        text = self.config.get('text', '')
         
+        if not text:
+            # Create empty result for missing text
+            result = ScoreResult(
+                primary_score=0.0,
+                components={
+                    'total_distance': 0.0,
+                    'average_distance': 0.0,
+                    'coverage': 0.0,
+                },
+                metadata={'error': 'No text provided for analysis'}
+            )
+            return result
+        
+        # Validate text input
+        text_issues = validate_text_input(text)
+        if text_issues:
+            quiet_mode = self.config.get('quiet_mode', False)
+            if not quiet_mode:
+                print("Text validation warnings:")
+                for issue in text_issues:
+                    print(f"  {issue}")
+                print()
+        
+        # Analyze the text
+        analysis = self.analyze_text(text)
+        
+        # Calculate normalized score (same as original)
+        avg_distance = analysis['average_distance']
         if avg_distance == 0:
-            return 0.0
+            normalized_score = 0.0
+        else:
+            # Convert distance to score where lower distance = higher score
+            normalized_score = 1000.0 / (avg_distance + 1000.0)
         
-        # Normalize: convert distance to score where lower distance = higher score
-        # Using inverse relationship: score = 1000 / (avg_distance + 1000)
-        # This gives scores roughly in 0-1 range, with lower distances getting higher scores
-        normalized_score = 1000.0 / (avg_distance + 1000.0)
+        # Create result using framework structure
+        result = ScoreResult(
+            primary_score=normalized_score,
+            components={
+                'total_distance': analysis['total_distance'],
+                'average_distance': analysis['average_distance'],
+                'max_distance': analysis['max_distance'],
+                'min_distance': analysis['min_distance'],
+                'coverage': analysis['coverage'],
+            },
+            metadata={
+                'text_length': len(text),
+                'distance_metric': self.config.get('scoring_options', {}).get('distance_metric', 'euclidean'),
+            },
+            validation_info={
+                'total_bigrams': analysis['total_bigrams'],
+                'valid_bigrams': analysis['valid_bigrams'],
+                'coverage_percentage': analysis['coverage'] * 100,
+            },
+            detailed_breakdown={
+                'finger_categories': {
+                    'same_finger_avg': analysis['avg_same_finger_distance'],
+                    'same_hand_avg': analysis['avg_same_hand_distance'],
+                    'different_hand_avg': analysis['avg_different_hand_distance'],
+                    'same_finger_count': analysis['same_finger_count'],
+                    'same_hand_count': analysis['same_hand_count'],
+                    'different_hand_count': analysis['different_hand_count'],
+                },
+            }
+        )
         
-        return normalized_score
+        return result
 
 
-def print_results(results: Dict, detailed: bool = False) -> None:
-    """Print formatted results from distance analysis."""
-    print("\nDistance-based Layout Analysis")
-    print("=" * 50)
+@handle_common_errors
+def main() -> int:
+    """Main entry point using the standardized framework."""
     
-    print(f"Total distance traveled:    {results['total_distance']:8.1f} mm")
-    print(f"Average distance per bigram: {results['average_distance']:8.1f} mm")
-    print(f"Maximum bigram distance:    {results['max_distance']:8.1f} mm")
-    print(f"Minimum bigram distance:    {results['min_distance']:8.1f} mm")
-    
-    print(f"\nBigram statistics:")
-    print(f"Total bigrams processed:    {results['total_bigrams']:8d}")
-    print(f"Valid bigrams (calculable): {results['valid_bigrams']:8d}")
-    print(f"Coverage:                   {results['coverage']*100:8.1f}%")
-    print(f"Unique bigrams:             {results['unique_bigrams']:8d}")
-    
-    print(f"\nDistance by category:")
-    print(f"Same finger average:        {results['avg_same_finger_distance']:8.1f} mm ({results['same_finger_count']} bigrams)")
-    print(f"Same hand average:          {results['avg_same_hand_distance']:8.1f} mm ({results['same_hand_count']} bigrams)")
-    print(f"Different hand average:     {results['avg_different_hand_distance']:8.1f} mm ({results['different_hand_count']} bigrams)")
-    
-    # Calculate normalized score
-    avg_distance = results['average_distance']
-    if avg_distance > 0:
-        normalized_score = 1000.0 / (avg_distance + 1000.0)
-        print(f"\nNormalized score (0-1):     {normalized_score:8.6f}  (higher = better)")
-    
-    if detailed and results['top_bigrams_by_impact']:
-        print(f"\nTop 10 bigrams by impact (distance × frequency):")
-        print(f"{'Bigram':<8} {'Distance':<10} {'Count':<8} {'Impact':<10}")
-        print("-" * 40)
-        for (char1, char2), distance, count, impact in results['top_bigrams_by_impact'][:10]:
-            print(f"{char1}{char2:<6} {distance:8.1f} mm {count:8d} {impact:8.1f}")
-
-
-def output_csv_error(error_msg: str) -> None:
-    """Output error in CSV format for consistency."""
-    print("error,message")
-    print(f"error,\"{error_msg}\"")
-
-
-def main() -> None:
-    """Main CLI interface."""
-    parser = argparse.ArgumentParser(
-        description="Calculate distance-based scores for keyboard layouts",
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="""
-Examples:
-
-  # Basic distance scoring
-  python distance_scorer.py --letters "ETAOIN" --qwerty-keys "FDESRJ" --text "the quick brown fox"
-  
-  # From text file
-  python distance_scorer.py --letters "ETAOIN" --qwerty-keys "FDESRJ" --text-file "sample.txt"
-  
-  # CSV output
-  python distance_scorer.py --letters "ETAOIN" --qwerty-keys "FDESRJ" --text "the text" --csv
-  
-  # Simple score output (just the normalized score)
-  python distance_scorer.py --letters "ETAOIN" --qwerty-keys "FDESRJ" --text "the text" --score-only
-
-  # Detailed analysis
-  python distance_scorer.py --letters "ETAOIN" --qwerty-keys "FDESRJ" --text "the text" --detailed
-        """
-    )
-    
-    parser.add_argument("--letters", required=True,
-                       help="String of characters in the layout (e.g., 'etaoinshrlcu')")
-    parser.add_argument("--qwerty-keys", required=True,
-                       help="String of corresponding QWERTY positions (e.g., 'FDESGJWXRTYZ')")
-    parser.add_argument("--text",
-                       help="Text to analyze (alternative to --text-file)")
-    parser.add_argument("--text-file",
-                       help="Path to text file to analyze (alternative to --text)")
-    parser.add_argument("--csv", action="store_true",
-                       help="Output in CSV format")
-    parser.add_argument("--score-only", action="store_true",
-                       help="Output only the normalized score")
-    parser.add_argument("--detailed", action="store_true",
-                       help="Show detailed bigram analysis")
-    
-    args = parser.parse_args()
+    # Create standardized CLI parser
+    cli_parser = create_standard_parser('distance_scorer')
+    args = cli_parser.parse_args()
     
     try:
-        # Validate inputs
-        if len(args.letters) != len(args.qwerty_keys):
-            error_msg = f"Character count ({len(args.letters)}) != Position count ({len(args.qwerty_keys)})"
-            if args.csv:
-                output_csv_error(error_msg)
-            else:
-                print(f"Error: {error_msg}")
-            return 1
+        # Load configuration
+        config = load_scorer_config('distance_scorer', args.config)
+        
+        # Override with command-line arguments
+        config['quiet_mode'] = args.quiet
         
         # Get text input
         if args.text_file:
@@ -415,95 +358,50 @@ Examples:
                 with open(args.text_file, 'r', encoding='utf-8') as f:
                     text = f.read()
             except FileNotFoundError:
-                error_msg = f"Text file not found: {args.text_file}"
-                if args.csv:
-                    output_csv_error(error_msg)
-                else:
-                    print(f"Error: {error_msg}")
+                print(f"Error: Text file not found: {args.text_file}")
                 return 1
         elif args.text:
             text = args.text
         else:
-            error_msg = "Must provide either --text or --text-file"
-            if args.csv:
-                output_csv_error(error_msg)
-            else:
-                print(f"Error: {error_msg}")
+            print("Error: Must provide either --text or --text-file")
             return 1
         
         if not text.strip():
-            error_msg = "Empty text provided"
-            if args.csv:
-                output_csv_error(error_msg)
-            else:
-                print(f"Error: {error_msg}")
+            print("Error: Empty text provided")
             return 1
         
-        # Filter to only letters, keeping corresponding positions
-        letter_pairs = [(char, pos) for char, pos in zip(args.letters, args.qwerty_keys) if char.isalpha()]
+        # Add text to config
+        config['text'] = text
         
-        if not letter_pairs:
-            error_msg = "No letters found in --letters"
-            if args.csv:
-                output_csv_error(error_msg)
-            else:
-                print(f"Error: {error_msg}")
+        # Get layout mapping from arguments
+        letters, positions, layout_mapping = get_layout_from_args(args)
+        
+        # Filter to letters only (same as original behavior)
+        layout_mapping = filter_to_letters_only(layout_mapping)
+        
+        if not layout_mapping:
+            print("Error: No letters found in layout")
             return 1
         
-        # Create layout mapping
-        filtered_letters = ''.join(pair[0] for pair in letter_pairs)
-        filtered_positions = ''.join(pair[1] for pair in letter_pairs)
-        layout_mapping = dict(zip(filtered_letters.upper(), filtered_positions.upper()))
+        # Create and run scorer
+        scorer = DistanceScorer(layout_mapping, config)
+        result = scorer.score_layout()
         
-        # Show layout info only in non-CSV mode
-        if not args.csv and not args.score_only:
-            print(f"Layout: {filtered_letters} → {filtered_positions}")
-            print(f"Text length: {len(text):,} characters")
+        # Print results using framework output utilities
+        output_format = args.output_format
+        output_config = config.get('output_formats', {}).get(output_format, {})
         
-        # Calculate distance scores (pass csv_mode flag to suppress warnings)
-        scorer = DistanceScorer(layout_mapping, csv_mode=args.csv)
-        results = scorer.analyze_text(text)
+        print_results(result, output_format, output_config)
         
-        if args.score_only:
-            # Output just the normalized score
-            normalized_score = scorer.score_layout(text)
-            print(f"{normalized_score:.6f}")
-        
-        elif args.csv:
-            # CSV output - ONLY CSV data
-            print("metric,value")
-            print(f"total_distance,{results['total_distance']:.6f}")
-            print(f"average_distance,{results['average_distance']:.6f}")
-            print(f"max_distance,{results['max_distance']:.6f}")
-            print(f"min_distance,{results['min_distance']:.6f}")
-            print(f"total_bigrams,{results['total_bigrams']}")
-            print(f"valid_bigrams,{results['valid_bigrams']}")
-            print(f"coverage,{results['coverage']:.6f}")
-            print(f"unique_bigrams,{results['unique_bigrams']}")
-            print(f"avg_same_finger_distance,{results['avg_same_finger_distance']:.6f}")
-            print(f"avg_same_hand_distance,{results['avg_same_hand_distance']:.6f}")
-            print(f"avg_different_hand_distance,{results['avg_different_hand_distance']:.6f}")
-            print(f"same_finger_count,{results['same_finger_count']}")
-            print(f"same_hand_count,{results['same_hand_count']}")
-            print(f"different_hand_count,{results['different_hand_count']}")
-            
-            # Add normalized score
-            normalized_score = scorer.score_layout(text)
-            print(f"normalized_score,{normalized_score:.6f}")
-        
-        else:
-            # Human-readable output
-            print_results(results, args.detailed)
+        return 0
         
     except Exception as e:
-        error_msg = str(e)
-        if args.csv:
-            output_csv_error(error_msg)
-        else:
-            print(f"Error: {error_msg}")
+        if not args.quiet:
+            print(f"Error: {e}")
             import traceback
             traceback.print_exc()
         return 1
+
 
 if __name__ == "__main__":
     sys.exit(main())
