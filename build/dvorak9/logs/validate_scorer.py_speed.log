@@ -1,0 +1,205 @@
+> poetry run python3 validate_scorer.py --weights input/dvorak9/speed_weights.csv
+Dvorak-9 Comprehensive Scoring Validation
+============================================================
+Using canonical scoring implementation from dvorak9_scorer.py
+Testing weighted scoring with: input/dvorak9/speed_weights.csv
+============================================================
+
+=== CANONICAL IMPLEMENTATION VALIDATION ===
+Testing canonical scoring function:
+  TH: ✓ (total score: 6.50)
+  ER: ✓ (total score: 6.00)
+  AN: ✓ (total score: 6.50)
+  IN: ✓ (total score: 3.50)
+  ON: ✓ (total score: 3.50)
+
+✓ Canonical implementation validation complete
+
+=== SPECIFIC TEST CASES ===
+
+Different hands: FJ
+  ✓ hands: expected 1.0, got 1.0
+  ✓ All checks passed
+
+Same hand: FD
+  ✓ hands: expected 0.0, got 0.0
+  ✓ All checks passed
+
+Same finger strum: FF
+  ✓ strum: expected 0.0, got 0.0
+  ✓ All checks passed
+
+Different hands strum: FJ
+  ✓ strum: expected 1.0, got 1.0
+  ✓ All checks passed
+
+Inward roll (L): AF
+  ✓ strum: expected 1.0, got 1.0
+  ✓ All checks passed
+
+Outward roll (L): FA
+  ✓ strum: expected 0.0, got 0.0
+  ✓ All checks passed
+
+Same finger: FF
+  ✓ skip_fingers: expected 0.0, got 0.0
+  ✓ All checks passed
+
+Adjacent fingers: FD
+  ✓ skip_fingers: expected 0.0, got 0
+  ✓ All checks passed
+
+Skip 1 finger: FS
+  ✓ skip_fingers: expected 0.5, got 0.5
+  ✓ All checks passed
+
+Skip 2 fingers: FA
+  ✓ skip_fingers: expected 1.0, got 1.0
+  ✓ All checks passed
+
+Different hands skip: FJ
+  ✓ skip_fingers: expected 1.0, got 1.0
+  ✓ All checks passed
+
+Same hand hurdling: QZ
+  ✓ dont_cross_home: expected 0.0, got 0.0
+  ✓ All checks passed
+
+Different hands hurdling: QM
+  ✓ dont_cross_home: expected 1.0, got 1.0
+  ✓ All checks passed
+
+Same hand no hurdling: QA
+  ✓ dont_cross_home: expected 1.0, got 1.0
+  ✓ All checks passed
+
+Both home row: FJ
+  ✓ home_row: expected 1.0, got 1.0
+  ✓ All checks passed
+
+One home row: FR
+  ✓ home_row: expected 0.5, got 0.5
+  ✓ All checks passed
+
+Neither home row: QZ
+  ✓ home_row: expected 0.0, got 0.0
+  ✓ All checks passed
+
+============================================================
+Testing all possible bigrams (basic criteria)...
+Testing 32 keys = 1024 possible bigrams (basic criteria)
+✅ Basic criteria results:
+   All bigrams: output/dvorak9_scores_all_bigrams.csv
+   Unique patterns: output/dvorak9_scores_unique_all_bigrams.csv
+   Total bigrams: 1024
+   Unique score combinations: 135
+
+=== SCORE PATTERN ANALYSIS ===
+Found 135 unique score patterns:
+
+Pattern 1 (64 bigrams): (1.0, 1.0, 1.0, 1.0, 0.0, 0.5, 1.0, 1.0, 0.5)
+  Total score: 7.0
+  Examples: QJ, QK, WJ, WK, EL, E;, RL, R;...
+
+Pattern 2 (44 bigrams): (1.0, 1.0, 1.0, 1.0, 0.0, 0.5, 0.5, 1.0, 0.5)
+  Total score: 6.5
+  Examples: QH, WH, E', R', TL, T;, YA, YS...
+
+Pattern 3 (32 bigrams): (1.0, 1.0, 1.0, 1.0, 1.0, 0.0, 1.0, 1.0, 0.5)
+  Total score: 7.5
+  Examples: QU, QI, WU, WI, EO, EP, RO, RP...
+
+Pattern 4 (32 bigrams): (1.0, 1.0, 1.0, 1.0, 0.0, 0.5, 1.0, 1.0, 0.0)
+  Total score: 6.5
+  Examples: QL, Q;, WL, W;, OA, OS, PA, PS...
+
+Pattern 5 (32 bigrams): (1.0, 1.0, 1.0, 1.0, 0.0, 0.0, 1.0, 1.0, 0.5)
+  Total score: 6.5
+  Examples: QM, Q,, WM, W,, E., E/, R., R/...
+
+Pattern 6 (32 bigrams): (1.0, 1.0, 1.0, 1.0, 0.0, 0.5, 0.5, 1.0, 1.0)
+  Total score: 7.0
+  Examples: EH, RH, TJ, TK, YD, YF, UG, IG...
+
+Pattern 7 (32 bigrams): (1.0, 1.0, 1.0, 1.0, 0.0, 0.5, 1.0, 1.0, 1.0)
+  Total score: 7.5
+  Examples: EJ, EK, RJ, RK, UD, UF, ID, IF...
+
+Pattern 8 (20 bigrams): (1.0, 1.0, 1.0, 1.0, 1.0, 0.0, 0.5, 1.0, 0.5)
+  Total score: 7.0
+  Examples: QY, WY, E[, R[, TO, TP, YQ, YW...
+
+Pattern 9 (20 bigrams): (1.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.5, 1.0, 0.5)
+  Total score: 6.0
+  Examples: QN, WN, T., T/, YZ, YX, OB, PB...
+
+Pattern 10 (16 bigrams): (1.0, 1.0, 1.0, 1.0, 1.0, 0.0, 1.0, 1.0, 0.0)
+  Total score: 7.0
+  Examples: QO, QP, WO, WP, OQ, OW, PQ, PW...
+
+=== CRITERION SCORE DISTRIBUTIONS ===
+
+HANDS:
+  0.0:  514 bigrams ( 50.2%)
+  1.0:  510 bigrams ( 49.8%)
+
+FINGERS:
+  0.0:  142 bigrams ( 13.9%)
+  1.0:  882 bigrams ( 86.1%)
+
+SKIP_FINGERS:
+  0:  298 bigrams ( 29.1%)
+  0.5:  120 bigrams ( 11.7%)
+  1.0:  606 bigrams ( 59.2%)
+
+DONT_CROSS_HOME:
+  0.0:  110 bigrams ( 10.7%)
+  1.0:  914 bigrams ( 89.3%)
+
+SAME_ROW:
+  0.0:  682 bigrams ( 66.6%)
+  1.0:  342 bigrams ( 33.4%)
+
+HOME_ROW:
+  0.0:  441 bigrams ( 43.1%)
+  0.5:  462 bigrams ( 45.1%)
+  1.0:  121 bigrams ( 11.8%)
+
+COLUMNS:
+  0.0:   64 bigrams (  6.2%)
+  0.5:  384 bigrams ( 37.5%)
+  1.0:  576 bigrams ( 56.2%)
+
+STRUM:
+  0.0:  328 bigrams ( 32.0%)
+  1.0:  696 bigrams ( 68.0%)
+
+STRONG_FINGERS:
+  0.0:  196 bigrams ( 19.1%)
+  0.5:  504 bigrams ( 49.2%)
+  1.0:  324 bigrams ( 31.6%)
+
+============================================================
+Testing frequency-weighted scoring...
+
+Testing weighted scoring:
+  Weights file: input/dvorak9/speed_weights.csv
+  Weights type: speed
+  Output file: output/dvorak9_weighted_scores_speed.csv
+  Testing with 19 character layout
+Loaded 669 bigram frequencies from input/engram/normalized_letter_pair_frequencies_en.csv
+Loaded 1024 precomputed key-pair scores from input/dvorak9/key_pair_scores.csv
+✅ Weighted scoring test completed:
+   Layout score: 0.0987
+   Scoring mode: weighted
+   Bigrams analyzed: 361
+
+============================================================
+Validation complete!
+✅ SUCCESS: Using canonical implementation from dvorak9_scorer.py
+
+Check output files in 'output/':
+  - dvorak9_scores_all_bigrams.csv (individual criterion scores 0-1)
+  - dvorak9_scores_unique_all_bigrams.csv (unique score patterns)
+  - dvorak9_weighted_scores_speed.csv (empirical combination scores)
+  ✓ Tested with input/dvorak9/speed_weights.csv

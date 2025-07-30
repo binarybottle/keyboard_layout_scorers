@@ -1,0 +1,2 @@
+layout,positions,layout_score,normalized_score,bigram_count,scoring_mode,weights_type,weights_file,ind_hands,ind_fingers,ind_skip_fingers,ind_dont_cross_home,ind_same_row,ind_home_row,ind_columns,ind_strum,ind_strong_fingers
+etaoinshrdlcumwfgyp,DKTPYGCRLFASUIXZHVB,0.13357138336515395,0.19613054301669058,361,weighted,comfort,input/comfort_weights.csv,0.4876626188529331,0.8574385482235583,0.6062100449442771,0.9518400371720119,0.3357418865444305,0.46414942876842613,0.7164963245630145,0.6731515127206976,0.7042243922759941

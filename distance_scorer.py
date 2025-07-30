@@ -103,23 +103,26 @@ class DistanceScorer:
     on a given keyboard layout.
     """
     
-    def __init__(self, layout_mapping: Dict[str, str]):
+    def __init__(self, layout_mapping: Dict[str, str], csv_mode: bool = False):
         """
         Initialize the distance scorer.
         
         Args:
             layout_mapping: Dict mapping characters to QWERTY positions (e.g., {'a': 'F', 'b': 'D'})
+            csv_mode: If True, suppress warning messages for clean CSV output
         """
         # Convert to uppercase for consistency
         self.layout_mapping = {char.upper(): pos.upper() for char, pos in layout_mapping.items()}
+        self.csv_mode = csv_mode
         
         # Create reverse mapping for quick lookup
         self.position_to_char = {pos.upper(): char for char, pos in self.layout_mapping.items()}
         
         # Validate that all mapped positions exist in our position map
-        for char, pos in self.layout_mapping.items():
-            if pos.lower() not in staggered_position_map:
-                print(f"Warning: Position '{pos}' for character '{char}' not found in position map")
+        if not csv_mode:  # Only show warnings in non-CSV mode
+            for char, pos in self.layout_mapping.items():
+                if pos.lower() not in staggered_position_map:
+                    print(f"Warning: Position '{pos}' for character '{char}' not found in position map")
     
     def get_physical_position(self, char: str) -> Optional[Tuple[float, float]]:
         """Get the physical position of a character based on the layout mapping."""
@@ -348,6 +351,12 @@ def print_results(results: Dict, detailed: bool = False) -> None:
             print(f"{char1}{char2:<6} {distance:8.1f} mm {count:8d} {impact:8.1f}")
 
 
+def output_csv_error(error_msg: str) -> None:
+    """Output error in CSV format for consistency."""
+    print("error,message")
+    print(f"error,\"{error_msg}\"")
+
+
 def main() -> None:
     """Main CLI interface."""
     parser = argparse.ArgumentParser(
@@ -393,7 +402,11 @@ Examples:
     try:
         # Validate inputs
         if len(args.letters) != len(args.qwerty_keys):
-            print(f"Error: Character count ({len(args.letters)}) != Position count ({len(args.qwerty_keys)})")
+            error_msg = f"Character count ({len(args.letters)}) != Position count ({len(args.qwerty_keys)})"
+            if args.csv:
+                output_csv_error(error_msg)
+            else:
+                print(f"Error: {error_msg}")
             return 1
         
         # Get text input
@@ -402,23 +415,39 @@ Examples:
                 with open(args.text_file, 'r', encoding='utf-8') as f:
                     text = f.read()
             except FileNotFoundError:
-                print(f"Error: Text file not found: {args.text_file}")
+                error_msg = f"Text file not found: {args.text_file}"
+                if args.csv:
+                    output_csv_error(error_msg)
+                else:
+                    print(f"Error: {error_msg}")
                 return 1
         elif args.text:
             text = args.text
         else:
-            print("Error: Must provide either --text or --text-file")
+            error_msg = "Must provide either --text or --text-file"
+            if args.csv:
+                output_csv_error(error_msg)
+            else:
+                print(f"Error: {error_msg}")
             return 1
         
         if not text.strip():
-            print("Error: Empty text provided")
+            error_msg = "Empty text provided"
+            if args.csv:
+                output_csv_error(error_msg)
+            else:
+                print(f"Error: {error_msg}")
             return 1
         
         # Filter to only letters, keeping corresponding positions
         letter_pairs = [(char, pos) for char, pos in zip(args.letters, args.qwerty_keys) if char.isalpha()]
         
         if not letter_pairs:
-            print("Error: No letters found in --letters")
+            error_msg = "No letters found in --letters"
+            if args.csv:
+                output_csv_error(error_msg)
+            else:
+                print(f"Error: {error_msg}")
             return 1
         
         # Create layout mapping
@@ -426,11 +455,13 @@ Examples:
         filtered_positions = ''.join(pair[1] for pair in letter_pairs)
         layout_mapping = dict(zip(filtered_letters.upper(), filtered_positions.upper()))
         
-        print(f"Layout: {filtered_letters} → {filtered_positions}")
-        print(f"Text length: {len(text):,} characters")
+        # Show layout info only in non-CSV mode
+        if not args.csv and not args.score_only:
+            print(f"Layout: {filtered_letters} → {filtered_positions}")
+            print(f"Text length: {len(text):,} characters")
         
-        # Calculate distance scores
-        scorer = DistanceScorer(layout_mapping)
+        # Calculate distance scores (pass csv_mode flag to suppress warnings)
+        scorer = DistanceScorer(layout_mapping, csv_mode=args.csv)
         results = scorer.analyze_text(text)
         
         if args.score_only:
@@ -439,7 +470,7 @@ Examples:
             print(f"{normalized_score:.6f}")
         
         elif args.csv:
-            # CSV output
+            # CSV output - ONLY CSV data
             print("metric,value")
             print(f"total_distance,{results['total_distance']:.6f}")
             print(f"average_distance,{results['average_distance']:.6f}")
@@ -465,9 +496,13 @@ Examples:
             print_results(results, args.detailed)
         
     except Exception as e:
-        print(f"Error: {e}")
-        import traceback
-        traceback.print_exc()
+        error_msg = str(e)
+        if args.csv:
+            output_csv_error(error_msg)
+        else:
+            print(f"Error: {error_msg}")
+            import traceback
+            traceback.print_exc()
         return 1
 
 if __name__ == "__main__":

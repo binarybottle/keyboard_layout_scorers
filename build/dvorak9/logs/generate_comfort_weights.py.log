@@ -1,0 +1,224 @@
+> poetry run python3 generate_comfort_weights.py
+Dvorak-9 Comfort-Based Weight Generation (30-Key Extended)
+============================================================
+Input file: input/engram/normalized_key_pair_comfort_scores_32keys_LvsRpairs.csv
+
+Loading comfort data from input/engram/normalized_key_pair_comfort_scores_32keys_LvsRpairs.csv...
+✅ Loaded 612 position-pairs with comfort scores
+   Columns: ['key_pair', 'comfort_score', 'uncertainty', 'Unnamed: 3']
+   Removed 1 rows with missing key_pair values
+   Working with 611 valid position-pairs
+   Sample comfort scores:
+     'FF': 1.000 (±0.084) [unknown]
+     'JJ': 1.000 (±0.084) [unknown]
+     'DF': 0.895 (±0.013) [unknown]
+     'KJ': 0.895 (±0.013) [unknown]
+     'DD': 0.894 (±0.086) [unknown]
+   Comfort score range: 0.000 to 1.000
+   Average uncertainty: 0.039
+
+Analyzing comfort correlations for 611 position-pairs...
+Using extended 30-key comfort dataset with actual comfort scores for all bigrams
+✅ Processed 611 valid bigrams from extended dataset
+Calculating Dvorak criterion scores...
+✅ Valid sequences for correlation: 611
+
+📊 INDIVIDUAL CRITERIA ANALYSIS:
+    hands: r = -0.198, p = 0.000 (contradicts Dvorak)
+    fingers: r = 0.008, p = 0.837 (supports Dvorak)
+    skip_fingers: r = -0.122, p = 0.003 (contradicts Dvorak)
+    dont_cross_home: r = 0.460, p = 0.000 (supports Dvorak)
+    same_row: r = 0.264, p = 0.000 (supports Dvorak)
+    home_row: r = 0.311, p = 0.000 (supports Dvorak)
+    columns: r = 0.341, p = 0.000 (supports Dvorak)
+    strum: r = -0.002, p = 0.970 (contradicts Dvorak)
+    strong_fingers: r = 0.061, p = 0.132 (supports Dvorak)
+
+================================================================================
+COMPREHENSIVE CRITERION COMBINATION ANALYSIS
+================================================================================
+Testing all 511 combinations on 611 bigrams
+Using extended 30-key comfort dataset
+Comfort score range: 0.000 to 1.000
+Testing all combinations of 9 criteria...
+
+📊 1-WAY COMBINATIONS:
+   Testing ALL 9 combinations of 1 criteria...
+   Top 5 combinations:
+     1. dont_cross_home
+        r = 0.4602***, supports Dvorak
+     2. columns
+        r = 0.3413***, supports Dvorak
+     3. home_row
+        r = 0.3107***, supports Dvorak
+     4. same_row
+        r = 0.2641***, supports Dvorak
+     5. hands
+        r = -0.1984***, contradicts Dvorak
+
+📊 2-WAY COMBINATIONS:
+   Testing ALL 36 combinations of 2 criteria...
+   Top 5 combinations:
+     1. dont_cross_home + columns
+        r = 0.6810***, supports Dvorak
+     2. home_row + columns
+        r = 0.4358***, supports Dvorak
+     3. same_row + home_row
+        r = 0.4291***, supports Dvorak
+     4. dont_cross_home + same_row
+        r = 0.4133***, supports Dvorak
+     5. dont_cross_home + home_row
+        r = 0.3977***, supports Dvorak
+
+📊 3-WAY COMBINATIONS:
+   Testing ALL 84 combinations of 3 criteria...
+   Top 5 combinations:
+     1. dont_cross_home + columns + strong_fingers
+        r = 0.6079***, supports Dvorak
+     2. dont_cross_home + home_row + columns
+        r = 0.5940***, supports Dvorak
+     3. dont_cross_home + same_row + columns
+        r = 0.5567***, supports Dvorak
+     4. same_row + home_row + columns
+        r = 0.5169***, supports Dvorak
+     5. fingers + dont_cross_home + columns
+        r = 0.4988***, supports Dvorak
+
+📊 4-WAY COMBINATIONS:
+   Testing ALL 126 combinations of 4 criteria...
+   Top 5 combinations:
+     1. dont_cross_home + same_row + home_row + columns
+        r = 0.5894***, supports Dvorak
+     2. dont_cross_home + home_row + columns + strong_fingers
+        r = 0.5861***, supports Dvorak
+     3. dont_cross_home + same_row + columns + strong_fingers
+        r = 0.5490***, supports Dvorak
+     4. same_row + home_row + columns + strong_fingers
+        r = 0.5423***, supports Dvorak
+     5. fingers + dont_cross_home + home_row + columns
+        r = 0.5067***, supports Dvorak
+
+📊 5-WAY COMBINATIONS:
+   Testing ALL 126 combinations of 5 criteria...
+   Top 5 combinations:
+     1. dont_cross_home + same_row + home_row + columns + strong_fingers
+        r = 0.5939***, supports Dvorak
+     2. fingers + dont_cross_home + same_row + home_row + columns
+        r = 0.5335***, supports Dvorak
+     3. fingers + dont_cross_home + home_row + columns + strong_fingers
+        r = 0.5167***, supports Dvorak
+     4. dont_cross_home + same_row + home_row + columns + strum
+        r = 0.4989***, supports Dvorak
+     5. fingers + dont_cross_home + same_row + columns + strong_fingers
+        r = 0.4857***, supports Dvorak
+
+📊 6-WAY COMBINATIONS:
+   Testing ALL 84 combinations of 6 criteria...
+   Top 5 combinations:
+     1. fingers + dont_cross_home + same_row + home_row + columns + strong_fingers
+        r = 0.5349***, supports Dvorak
+     2. dont_cross_home + same_row + home_row + columns + strum + strong_fingers
+        r = 0.4991***, supports Dvorak
+     3. skip_fingers + dont_cross_home + same_row + home_row + columns + strong_fingers
+        r = 0.4577***, supports Dvorak
+     4. fingers + dont_cross_home + same_row + home_row + columns + strum
+        r = 0.4201***, supports Dvorak
+     5. hands + dont_cross_home + same_row + home_row + columns + strong_fingers
+        r = 0.4116***, supports Dvorak
+
+📊 7-WAY COMBINATIONS:
+   Testing ALL 36 combinations of 7 criteria...
+   Top 5 combinations:
+     1. fingers + dont_cross_home + same_row + home_row + columns + strum + strong_fingers
+        r = 0.4196***, supports Dvorak
+     2. fingers + skip_fingers + dont_cross_home + same_row + home_row + columns + strong_fingers
+        r = 0.3807***, supports Dvorak
+     3. skip_fingers + dont_cross_home + same_row + home_row + columns + strum + strong_fingers
+        r = 0.3572***, supports Dvorak
+     4. hands + fingers + dont_cross_home + same_row + home_row + columns + strong_fingers
+        r = 0.3541***, supports Dvorak
+     5. hands + dont_cross_home + same_row + home_row + columns + strum + strong_fingers
+        r = 0.3354***, supports Dvorak
+
+📊 8-WAY COMBINATIONS:
+   Testing ALL 9 combinations of 8 criteria...
+   Top 5 combinations:
+     1. fingers + skip_fingers + dont_cross_home + same_row + home_row + columns + strum + strong_fingers
+        r = 0.2970***, supports Dvorak
+     2. hands + fingers + dont_cross_home + same_row + home_row + columns + strum + strong_fingers
+        r = 0.2839***, supports Dvorak
+     3. hands + skip_fingers + dont_cross_home + same_row + home_row + columns + strum + strong_fingers
+        r = 0.2583***, supports Dvorak
+     4. hands + fingers + skip_fingers + dont_cross_home + same_row + home_row + columns + strong_fingers
+        r = 0.2516***, supports Dvorak
+     5. hands + fingers + skip_fingers + dont_cross_home + same_row + home_row + columns + strum
+        r = 0.1934***, supports Dvorak
+
+📊 9-WAY COMBINATIONS:
+   Testing ALL 1 combinations of 9 criteria...
+   Top 5 combinations:
+     1. hands + fingers + skip_fingers + dont_cross_home + same_row + home_row + columns + strum + strong_fingers
+        r = 0.2074***, supports Dvorak
+
+================================================================================
+COMFORT-BASED FDR ANALYSIS
+================================================================================
+Using extended 30-key comfort dataset with FDR multiple testing correction
+
+📊 INDIVIDUAL CRITERIA (9 tests):
+Criterion              r      p-val    FDR p-val  Significant  Dvorak
+---------------------------------------------------------------------------
+hands              -0.198   0.000     0.000  ✅            ❌ Contradict
+fingers             0.008   0.837     0.941  ❌            ✅ Support
+skip fingers       -0.122   0.003     0.004  ✅            ❌ Contradict
+don't cross home    0.460   0.000     0.000  ✅            ✅ Support
+same row            0.264   0.000     0.000  ✅            ✅ Support
+home row            0.311   0.000     0.000  ✅            ✅ Support
+columns             0.341   0.000     0.000  ✅            ✅ Support
+strum              -0.002   0.970     0.970  ❌            ❌ Contradict
+strong fingers      0.061   0.132     0.170  ❌            ✅ Support
+
+📊 ALL COMBINATIONS (511 tests):
+💾 ALL COMBINATIONS SAVED TO: comfort_weights.csv
+Significant after FDR: 404/511 (79.1%)
+
+Top 10 significant combinations:
+K  Combination                           r       FDR p-val  Dvorak
+---------------------------------------------------------------------------
+2  dont_cross_home + columns             0.681     0.000  ✅
+3  dont_cross_home + columns + strong_...   0.608     0.000  ✅
+3  dont_cross_home + home_row + column...   0.594     0.000  ✅
+5  dont_cross_home + same_row + home_r...   0.594     0.000  ✅
+4  dont_cross_home + same_row + home_r...   0.589     0.000  ✅
+4  dont_cross_home + home_row + column...   0.586     0.000  ✅
+3  dont_cross_home + same_row + column...   0.557     0.000  ✅
+4  dont_cross_home + same_row + column...   0.549     0.000  ✅
+4  same_row + home_row + columns + str...   0.542     0.000  ✅
+6  fingers + dont_cross_home + same_ro...   0.535     0.000  ✅
+💾 SIGNIFICANT COMBINATIONS SAVED TO: comfort_weights.csv
+
+🏆 STRONGEST SIGNIFICANT COMBINATION:
+   dont_cross_home + columns
+   r = 0.6810 (FDR p = 0.000)
+   Uses 2 criteria
+   Supports Dvorak principles
+
+📊 SUMMARY
+==================================================
+Extended 30-key comfort analysis results:
+  • Individual criteria: 6/9 significant after FDR
+    Best: don't cross home (r = 0.460)
+  • Combinations: 404/511 significant after FDR
+    Best: dont_cross_home + columns...
+          r = 0.681
+          Uses 2 criteria
+  • Effect sizes: All correlations represent comfort-criterion relationships
+  • Positive correlation = higher Dvorak score → more comfortable
+
+============================================================
+COMFORT ANALYSIS COMPLETE
+============================================================
+✅ Generated comfort-based weights for Dvorak-9 scoring
+✅ Covers all 30 standard typing keys using extended comfort dataset
+✅ Use 'comfort_weights.csv' with dvorak9_scorer.py
+✅ Interpretation: Positive correlation = supports Dvorak (more comfortable)

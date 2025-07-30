@@ -1,0 +1,512 @@
+combination,k_way,correlation,p_value,abs_correlation,p_fdr_corrected,significant_after_fdr,supports_dvorak
+hands + fingers + home_row + strong_fingers,4,-0.20164768217124276,0.0,0.20164768217124276,0.0,True,True
+hands + fingers + skip_fingers + home_row + strong_fingers,5,-0.20103443903369717,0.0,0.20103443903369717,0.0,True,True
+hands + fingers + skip_fingers + home_row,4,-0.19747458471297277,0.0,0.19747458471297277,0.0,True,True
+hands + fingers + home_row,3,-0.196666998172726,0.0,0.196666998172726,0.0,True,True
+hands + fingers + home_row + strum + strong_fingers,5,-0.19630786555590096,0.0,0.19630786555590096,0.0,True,True
+hands + fingers + skip_fingers + home_row + strum + strong_fingers,6,-0.19583526705876295,0.0,0.19583526705876295,0.0,True,True
+hands + fingers + skip_fingers + dont_cross_home + home_row + strum + strong_fingers,7,-0.19248325556167617,0.0,0.19248325556167617,0.0,True,True
+hands + fingers + skip_fingers + home_row + strum,5,-0.1918616773721932,0.0,0.1918616773721932,0.0,True,True
+hands + fingers + home_row + strum,4,-0.1911299463572769,0.0,0.1911299463572769,0.0,True,True
+hands + fingers + skip_fingers + dont_cross_home + home_row + strong_fingers,6,-0.19025923367349185,0.0,0.19025923367349185,0.0,True,True
+hands + fingers + dont_cross_home + home_row + strum + strong_fingers,6,-0.18969840402898003,0.0,0.18969840402898003,0.0,True,True
+hands + fingers,2,-0.18958799298586781,0.0,0.18958799298586781,0.0,True,True
+hands + fingers + skip_fingers + dont_cross_home + home_row + strum,6,-0.18942734127930164,0.0,0.18942734127930164,0.0,True,True
+hands + fingers + dont_cross_home + home_row + strong_fingers,5,-0.18858248044228498,0.0,0.18858248044228498,0.0,True,True
+hands + fingers + skip_fingers + dont_cross_home + home_row,5,-0.1878957308022422,0.0,0.1878957308022422,0.0,True,True
+hands + fingers + dont_cross_home + home_row + strum,5,-0.18737252162855283,0.0,0.18737252162855283,0.0,True,True
+hands + skip_fingers + home_row + strum + strong_fingers,5,-0.1870677621309583,0.0,0.1870677621309583,0.0,True,True
+hands + skip_fingers + home_row + strum,4,-0.18655882133061055,0.0,0.18655882133061055,0.0,True,True
+fingers + skip_fingers + home_row + strong_fingers,4,-0.18580532860741003,0.0,0.18580532860741003,0.0,True,True
+hands + fingers + dont_cross_home + home_row,4,-0.18575159275155936,0.0,0.18575159275155936,0.0,True,True
+fingers,1,-0.18482676554075458,0.0,0.18482676554075458,0.0,True,True
+hands + skip_fingers + home_row,3,-0.1848011607011827,0.0,0.1848011607011827,0.0,True,True
+fingers + skip_fingers + home_row + strum + strong_fingers,5,-0.18474534162820241,0.0,0.18474534162820241,0.0,True,True
+hands + home_row + strum + strong_fingers,4,-0.1825404923634585,0.0,0.1825404923634585,0.0,True,True
+hands + home_row + strum,3,-0.18202362858248655,0.0,0.18202362858248655,0.0,True,True
+hands + skip_fingers + home_row + strong_fingers,4,-0.18189047316436838,0.0,0.18189047316436838,0.0,True,True
+fingers + skip_fingers + dont_cross_home + home_row + strum + strong_fingers,6,-0.18138719741833934,0.0,0.18138719741833934,0.0,True,True
+hands + skip_fingers + dont_cross_home + home_row + strum + strong_fingers,6,-0.1800440124360612,0.0,0.1800440124360612,0.0,True,True
+hands + skip_fingers + dont_cross_home + home_row + strum,5,-0.1798791422182575,0.0,0.1798791422182575,0.0,True,True
+hands + fingers + home_row + columns + strong_fingers,5,-0.1798543600472358,0.0,0.1798543600472358,0.0,True,True
+hands + fingers + skip_fingers,3,-0.17938903817741567,0.0,0.17938903817741567,0.0,True,True
+hands + fingers + skip_fingers + home_row + columns + strong_fingers,6,-0.17863589383517692,0.0,0.17863589383517692,0.0,True,True
+hands + fingers + strong_fingers,3,-0.17757895286731853,0.0,0.17757895286731853,0.0,True,True
+hands + skip_fingers + dont_cross_home + home_row + strong_fingers,5,-0.17742229711601473,0.0,0.17742229711601473,0.0,True,True
+hands + fingers + skip_fingers + same_row + home_row + strong_fingers,6,-0.17719941587623037,0.0,0.17719941587623037,0.0,True,True
+hands + fingers + strum,3,-0.17657086692421095,0.0,0.17657086692421095,0.0,True,True
+hands + home_row,2,-0.17654851183235998,0.0,0.17654851183235998,0.0,True,True
+skip_fingers + home_row + strum + strong_fingers,4,-0.17592899867696835,0.0,0.17592899867696835,0.0,True,True
+hands + skip_fingers + dont_cross_home + home_row,4,-0.1758752632205774,0.0,0.1758752632205774,0.0,True,True
+hands + fingers + skip_fingers + same_row + home_row + strum + strong_fingers,7,-0.17558436185540505,0.0,0.17558436185540505,0.0,True,True
+hands + fingers + same_row + home_row + strong_fingers,5,-0.17511061261273445,0.0,0.17511061261273445,0.0,True,True
+fingers + skip_fingers + dont_cross_home + home_row + strong_fingers,5,-0.17497835953606372,0.0,0.17497835953606372,0.0,True,True
+hands + dont_cross_home + home_row + strum + strong_fingers,5,-0.17489727377516123,0.0,0.17489727377516123,0.0,True,True
+hands + dont_cross_home + home_row + strum,4,-0.17457362921559846,0.0,0.17457362921559846,0.0,True,True
+hands + fingers + same_row + home_row + strum + strong_fingers,6,-0.17397314905969596,0.0,0.17397314905969596,0.0,True,True
+hands + fingers + home_row + columns + strum + strong_fingers,6,-0.17389108337825696,0.0,0.17389108337825696,0.0,True,True
+hands + fingers + skip_fingers + home_row + columns + strum + strong_fingers,7,-0.17343820205735688,0.0,0.17343820205735688,0.0,True,True
+hands + fingers + skip_fingers + strum,4,-0.17313220747229566,0.0,0.17313220747229566,0.0,True,True
+hands + fingers + skip_fingers + strong_fingers,4,-0.17224845932278546,0.0,0.17224845932278546,0.0,True,True
+hands + dont_cross_home + home_row,3,-0.17199194892930544,0.0,0.17199194892930544,0.0,True,True
+hands + home_row + strong_fingers,3,-0.17195325612878556,0.0,0.17195325612878556,0.0,True,True
+hands + fingers + dont_cross_home,3,-0.17065906608605053,0.0,0.17065906608605053,0.0,True,True
+fingers + skip_fingers + home_row + strum,4,-0.1705575329097725,0.0,0.1705575329097725,0.0,True,True
+hands + fingers + skip_fingers + dont_cross_home,4,-0.17052054512504766,0.0,0.17052054512504766,0.0,True,True
+fingers + skip_fingers + same_row + home_row + strong_fingers,5,-0.17048109737610734,0.0,0.17048109737610734,0.0,True,True
+hands + fingers + skip_fingers + dont_cross_home + home_row + columns + strum + strong_fingers,8,-0.17039611704240407,0.0,0.17039611704240407,0.0,True,True
+hands + fingers + skip_fingers + dont_cross_home + same_row + home_row + strum + strong_fingers,8,-0.1703611231422252,0.0,0.1703611231422252,0.0,True,True
+hands + dont_cross_home + home_row + strong_fingers,4,-0.17008932996316325,0.0,0.17008932996316325,0.0,True,True
+hands + fingers + skip_fingers + home_row + columns,5,-0.17001203292017952,0.0,0.17001203292017952,0.0,True,True
+fingers + home_row + strum + strong_fingers,4,-0.16957384965773684,0.0,0.16957384965773684,0.0,True,True
+hands + fingers + home_row + columns,4,-0.16918085663994184,0.0,0.16918085663994184,0.0,True,True
+hands + fingers + dont_cross_home + strum,4,-0.16898055950474358,0.0,0.16898055950474358,0.0,True,True
+skip_fingers + dont_cross_home + home_row + strum + strong_fingers,5,-0.16888138499972438,0.0,0.16888138499972438,0.0,True,True
+hands + fingers + skip_fingers + dont_cross_home + home_row + columns + strong_fingers,7,-0.16879792250102238,0.0,0.16879792250102238,0.0,True,True
+hands + fingers + skip_fingers + dont_cross_home + strum,5,-0.16842774736949892,0.0,0.16842774736949892,0.0,True,True
+hands + fingers + skip_fingers + dont_cross_home + same_row + home_row + strong_fingers,7,-0.16816514481653982,0.0,0.16816514481653982,0.0,True,True
+fingers + skip_fingers + dont_cross_home + home_row + strum,5,-0.16813247041647866,0.0,0.16813247041647866,0.0,True,True
+fingers + skip_fingers + same_row + home_row + strum + strong_fingers,6,-0.16780392900889943,0.0,0.16780392900889943,0.0,True,True
+hands + fingers + dont_cross_home + home_row + columns + strum + strong_fingers,7,-0.16761042584776872,0.0,0.16761042584776872,0.0,True,True
+hands + fingers + dont_cross_home + home_row + columns + strong_fingers,6,-0.1675364331096236,0.0,0.1675364331096236,0.0,True,True
+hands + fingers + skip_fingers + same_row + home_row,5,-0.16745926223912952,0.0,0.16745926223912952,0.0,True,True
+fingers + skip_fingers + home_row,3,-0.16733060083749893,0.0,0.16733060083749893,0.0,True,True
+hands + fingers + skip_fingers + same_row + home_row + strum,6,-0.1672478334497151,0.0,0.1672478334497151,0.0,True,True
+fingers + home_row + strong_fingers,3,-0.16715819506280047,0.0,0.16715819506280047,0.0,True,True
+hands + skip_fingers,2,-0.16708621199754767,0.0,0.16708621199754767,0.0,True,True
+hands + fingers + skip_fingers + same_row + strong_fingers,5,-0.16707749464714025,0.0,0.16707749464714025,0.0,True,True
+hands + fingers + strum + strong_fingers,4,-0.16698477263828854,0.0,0.16698477263828854,0.0,True,True
+hands + skip_fingers + strum,3,-0.16660255885970235,0.0,0.16660255885970235,0.0,True,True
+hands + fingers + dont_cross_home + same_row + home_row + strum + strong_fingers,7,-0.16646881917694875,0.0,0.16646881917694875,0.0,True,True
+fingers + skip_fingers + strong_fingers,3,-0.16630590028347275,0.0,0.16630590028347275,0.0,True,True
+hands + fingers + same_row + home_row,4,-0.16620214610404255,0.0,0.16620214610404255,0.0,True,True
+hands + skip_fingers + home_row + columns + strum + strong_fingers,6,-0.16597075164763195,0.0,0.16597075164763195,0.0,True,True
+hands,1,-0.1657841026830345,0.0,0.1657841026830345,0.0,True,True
+skip_fingers + home_row + strum,3,-0.16520056507965786,0.0,0.16520056507965786,0.0,True,True
+hands + fingers + same_row + home_row + strum,5,-0.16508892208849046,0.0,0.16508892208849046,0.0,True,True
+hands + fingers + dont_cross_home + same_row + home_row + strong_fingers,6,-0.16508682695922822,0.0,0.16508682695922822,0.0,True,True
+skip_fingers + home_row + strong_fingers,3,-0.16497858684098163,0.0,0.16497858684098163,0.0,True,True
+hands + fingers + skip_fingers + home_row + columns + strum,6,-0.16487346932694022,0.0,0.16487346932694022,0.0,True,True
+hands + fingers + skip_fingers + same_row + strum + strong_fingers,6,-0.16425923188197086,0.0,0.16425923188197086,0.0,True,True
+hands + fingers + skip_fingers + strum + strong_fingers,5,-0.1641846501708851,0.0,0.1641846501708851,0.0,True,True
+fingers + dont_cross_home + home_row + strum + strong_fingers,5,-0.16415681239478122,0.0,0.16415681239478122,0.0,True,True
+hands + strum,2,-0.1639914800398879,0.0,0.1639914800398879,0.0,True,True
+hands + skip_fingers + same_row + home_row + strum + strong_fingers,6,-0.1637271419634842,0.0,0.1637271419634842,0.0,True,True
+hands + fingers + home_row + columns + strum,5,-0.16372276960540344,0.0,0.16372276960540344,0.0,True,True
+fingers + skip_fingers,2,-0.16368568799885497,0.0,0.16368568799885497,0.0,True,True
+hands + fingers + skip_fingers + dont_cross_home + home_row + columns + strum,7,-0.16268474421404522,0.0,0.16268474421404522,0.0,True,True
+fingers + skip_fingers + dont_cross_home + same_row + home_row + strum + strong_fingers,7,-0.16257530116983343,0.0,0.16257530116983343,0.0,True,True
+hands + fingers + skip_fingers + dont_cross_home + same_row + home_row + strum,7,-0.16251257358176013,0.0,0.16251257358176013,0.0,True,True
+hands + skip_fingers + home_row + columns + strong_fingers,5,-0.16222749249828494,0.0,0.16222749249828494,0.0,True,True
+hands + home_row + columns + strum + strong_fingers,5,-0.1616926004645981,0.0,0.1616926004645981,0.0,True,True
+fingers + skip_fingers + strum,3,-0.16150939248953664,0.0,0.16150939248953664,0.0,True,True
+fingers + skip_fingers + dont_cross_home + same_row + home_row + strong_fingers,6,-0.16138375570370087,0.0,0.16138375570370087,0.0,True,True
+hands + fingers + skip_fingers + dont_cross_home + home_row + columns,6,-0.1611912526304747,0.0,0.1611912526304747,0.0,True,True
+skip_fingers + dont_cross_home + home_row + strong_fingers,4,-0.16057118813283064,0.0,0.16057118813283064,0.0,True,True
+hands + skip_fingers + home_row + columns + strum,5,-0.16033552665239448,0.0,0.16033552665239448,0.0,True,True
+hands + fingers + dont_cross_home + home_row + columns + strum,6,-0.16028812980838725,0.0,0.16028812980838725,0.0,True,True
+fingers + skip_fingers + strum + strong_fingers,4,-0.15999375618877532,0.0,0.15999375618877532,0.0,True,True
+hands + fingers + dont_cross_home + same_row + home_row + strum,6,-0.1596141596475547,0.0,0.1596141596475547,0.0,True,True
+hands + fingers + skip_fingers + same_row + home_row + columns + strong_fingers,7,-0.15934499068227906,0.0,0.15934499068227906,0.0,True,True
+hands + fingers + dont_cross_home + home_row + columns,5,-0.15927974891959124,0.0,0.15927974891959124,0.0,True,True
+hands + fingers + skip_fingers + dont_cross_home + strong_fingers,5,-0.15924345040204507,0.0,0.15924345040204507,0.0,True,True
+hands + skip_fingers + home_row + columns,4,-0.1591514769701999,0.0,0.1591514769701999,0.0,True,True
+hands + skip_fingers + dont_cross_home + strum,4,-0.15906603889061505,0.0,0.15906603889061505,0.0,True,True
+hands + skip_fingers + dont_cross_home + home_row + columns + strum + strong_fingers,7,-0.1590190779008676,0.0,0.1590190779008676,0.0,True,True
+skip_fingers + dont_cross_home + home_row + strum,4,-0.15849221351576692,0.0,0.15849221351576692,0.0,True,True
+hands + fingers + dont_cross_home + strong_fingers,4,-0.15848759289955558,0.0,0.15848759289955558,0.0,True,True
+hands + skip_fingers + same_row + home_row + strum,5,-0.1583890365495813,0.0,0.1583890365495813,0.0,True,True
+hands + fingers + skip_fingers + dont_cross_home + strum + strong_fingers,6,-0.15837587948999854,0.0,0.15837587948999854,0.0,True,True
+hands + fingers + skip_fingers + dont_cross_home + same_row + home_row,6,-0.15816914006081156,0.0,0.15816914006081156,0.0,True,True
+hands + fingers + skip_fingers + same_row + home_row + columns + strum + strong_fingers,8,-0.15815608204541312,0.0,0.15815608204541312,0.0,True,True
+hands + fingers + dont_cross_home + strum + strong_fingers,5,-0.15798543220445663,0.0,0.15798543220445663,0.0,True,True
+hands + fingers + same_row + strum + strong_fingers,5,-0.15791757014835964,0.0,0.15791757014835964,0.0,True,True
+fingers + skip_fingers + dont_cross_home + home_row,4,-0.15768476920042815,0.0,0.15768476920042815,0.0,True,True
+fingers + skip_fingers + home_row + columns + strum + strong_fingers,6,-0.15763570944079522,0.0,0.15763570944079522,0.0,True,True
+hands + fingers + skip_fingers + same_row,4,-0.15762200467822365,0.0,0.15762200467822365,0.0,True,True
+hands + fingers + dont_cross_home + same_row + home_row,5,-0.15711168033628756,0.0,0.15711168033628756,0.0,True,True
+hands + skip_fingers + dont_cross_home + same_row + home_row + strum + strong_fingers,7,-0.15707154048586733,0.0,0.15707154048586733,0.0,True,True
+hands + same_row + home_row + strum + strong_fingers,5,-0.15702251795323857,0.0,0.15702251795323857,0.0,True,True
+hands + fingers + skip_fingers + dont_cross_home + same_row + strum + strong_fingers,7,-0.15679803258047195,0.0,0.15679803258047195,0.0,True,True
+fingers + skip_fingers + dont_cross_home + strum,4,-0.15677793834916026,0.0,0.15677793834916026,0.0,True,True
+fingers + skip_fingers + home_row + columns + strong_fingers,5,-0.15669392910737745,0.0,0.15669392910737745,0.0,True,True
+hands + skip_fingers + dont_cross_home + home_row + columns + strong_fingers,6,-0.15662291441621656,0.0,0.15662291441621656,0.0,True,True
+hands + fingers + skip_fingers + same_row + strum,5,-0.15660066894329305,0.0,0.15660066894329305,0.0,True,True
+fingers + dont_cross_home + home_row + strong_fingers,4,-0.15654703017995558,0.0,0.15654703017995558,0.0,True,True
+hands + fingers + same_row + strong_fingers,4,-0.1565192047744924,0.0,0.1565192047744924,0.0,True,True
+hands + fingers + skip_fingers + dont_cross_home + same_row + strong_fingers,6,-0.1565162285908298,0.0,0.1565162285908298,0.0,True,True
+hands + skip_fingers + dont_cross_home + same_row + home_row + strong_fingers,6,-0.15644476229211296,0.0,0.15644476229211296,0.0,True,True
+hands + skip_fingers + same_row + home_row + strong_fingers,5,-0.15643290640430157,0.0,0.15643290640430157,0.0,True,True
+hands + home_row + columns + strum,4,-0.15600430548394836,0.0,0.15600430548394836,0.0,True,True
+skip_fingers + same_row + home_row + strum + strong_fingers,5,-0.155840247115659,0.0,0.155840247115659,0.0,True,True
+hands + dont_cross_home + strum,3,-0.15520850409300344,0.0,0.15520850409300344,0.0,True,True
+skip_fingers + strum,2,-0.1548048128391261,0.0,0.1548048128391261,0.0,True,True
+fingers + skip_fingers + dont_cross_home + home_row + columns + strum + strong_fingers,7,-0.15458384189604082,0.0,0.15458384189604082,0.0,True,True
+fingers + skip_fingers + dont_cross_home,3,-0.1545414711477258,0.0,0.1545414711477258,0.0,True,True
+skip_fingers + home_row,2,-0.15434771424414653,0.0,0.15434771424414653,0.0,True,True
+hands + skip_fingers + dont_cross_home,3,-0.15434461531413646,0.0,0.15434461531413646,0.0,True,True
+fingers + skip_fingers + dont_cross_home + strum + strong_fingers,5,-0.15419433187908205,0.0,0.15419433187908205,0.0,True,True
+hands + fingers + same_row + home_row + columns + strum + strong_fingers,7,-0.15409540197254742,0.0,0.15409540197254742,0.0,True,True
+hands + skip_fingers + dont_cross_home + home_row + columns + strum,6,-0.1539990789072507,0.0,0.1539990789072507,0.0,True,True
+home_row + strum + strong_fingers,3,-0.15394733147469883,0.0,0.15394733147469883,0.0,True,True
+hands + skip_fingers + strum + strong_fingers,4,-0.15386676752368456,0.0,0.15386676752368456,0.0,True,True
+hands + dont_cross_home + home_row + columns + strum + strong_fingers,6,-0.15376909210442533,0.0,0.15376909210442533,0.0,True,True
+fingers + skip_fingers + same_row + home_row,4,-0.15362269372268136,0.0,0.15362269372268136,0.0,True,True
+hands + fingers + columns,3,-0.15346267745409417,0.0,0.15346267745409417,0.0,True,True
+fingers + skip_fingers + dont_cross_home + strong_fingers,4,-0.15332394955760306,0.0,0.15332394955760306,0.0,True,True
+hands + fingers + skip_fingers + dont_cross_home + same_row + home_row + columns + strum + strong_fingers,9,-0.15330455914991023,0.0,0.15330455914991023,0.0,True,True
+hands + home_row + columns + strong_fingers,4,-0.15323307652193377,0.0,0.15323307652193377,0.0,True,True
+hands + fingers + same_row + home_row + columns + strong_fingers,6,-0.15316119231240685,0.0,0.15316119231240685,0.0,True,True
+fingers + skip_fingers + same_row + home_row + strum,5,-0.15312085195702838,0.0,0.15312085195702838,0.0,True,True
+hands + skip_fingers + strong_fingers,3,-0.15294523667231014,0.0,0.15294523667231014,0.0,True,True
+hands + fingers + columns + strong_fingers,4,-0.15270975852965366,0.0,0.15270975852965366,0.0,True,True
+hands + same_row + home_row + strum,4,-0.1524123111201461,0.0,0.1524123111201461,0.0,True,True
+hands + skip_fingers + same_row + strum + strong_fingers,5,-0.1521614953880655,0.0,0.1521614953880655,0.0,True,True
+hands + fingers + same_row + strum,4,-0.15177863507528028,0.0,0.15177863507528028,0.0,True,True
+hands + dont_cross_home + same_row + home_row + strum + strong_fingers,6,-0.1517777946113371,0.0,0.1517777946113371,0.0,True,True
+hands + home_row + columns,3,-0.15172453836085967,0.0,0.15172453836085967,0.0,True,True
+hands + fingers + same_row,3,-0.15106951930682133,0.0,0.15106951930682133,0.0,True,True
+hands + skip_fingers + same_row + home_row,4,-0.15080043235966506,0.0,0.15080043235966506,0.0,True,True
+hands + skip_fingers + dont_cross_home + same_row + home_row + strum,6,-0.15079696916410226,0.0,0.15079696916410226,0.0,True,True
+skip_fingers,1,-0.1507890101295716,0.0,0.1507890101295716,0.0,True,True
+hands + dont_cross_home,2,-0.1507578596382187,0.0,0.1507578596382187,0.0,True,True
+hands + fingers + skip_fingers + dont_cross_home + same_row + strum,6,-0.15014454657152698,0.0,0.15014454657152698,0.0,True,True
+fingers + skip_fingers + same_row + strum + strong_fingers,5,-0.1501371918539575,0.0,0.1501371918539575,0.0,True,True
+skip_fingers + home_row + columns + strum + strong_fingers,5,-0.1501052404583329,0.0,0.1501052404583329,0.0,True,True
+hands + fingers + skip_fingers + dont_cross_home + same_row + home_row + columns + strong_fingers,8,-0.15007321605746488,0.0,0.15007321605746488,0.0,True,True
+hands + skip_fingers + dont_cross_home + same_row + home_row,5,-0.14987485041019025,0.0,0.14987485041019025,0.0,True,True
+hands + dont_cross_home + home_row + columns + strong_fingers,5,-0.14980916634946112,0.0,0.14980916634946112,0.0,True,True
+hands + skip_fingers + dont_cross_home + home_row + columns,5,-0.14978717639178785,0.0,0.14978717639178785,0.0,True,True
+hands + fingers + skip_fingers + dont_cross_home + same_row,5,-0.14969550024944536,0.0,0.14969550024944536,0.0,True,True
+skip_fingers + strum + strong_fingers,3,-0.1496397833437168,0.0,0.1496397833437168,0.0,True,True
+fingers + same_row + home_row + strum + strong_fingers,5,-0.14938040419372792,0.0,0.14938040419372792,0.0,True,True
+hands + fingers + skip_fingers + same_row + columns + strong_fingers,6,-0.14936195012342907,0.0,0.14936195012342907,0.0,True,True
+fingers + home_row + strum,3,-0.14922366130464595,0.0,0.14922366130464595,0.0,True,True
+skip_fingers + dont_cross_home + same_row + home_row + strum + strong_fingers,6,-0.14918411165491252,0.0,0.14918411165491252,0.0,True,True
+hands + strum + strong_fingers,3,-0.1489425571548114,0.0,0.1489425571548114,0.0,True,True
+hands + fingers + skip_fingers + same_row + home_row + columns,6,-0.1488591764716456,0.0,0.1488591764716456,0.0,True,True
+hands + dont_cross_home + home_row + columns + strum,5,-0.14866308540206147,0.0,0.14866308540206147,0.0,True,True
+hands + fingers + dont_cross_home + same_row + strum + strong_fingers,6,-0.14845743553767857,0.0,0.14845743553767857,0.0,True,True
+fingers + skip_fingers + dont_cross_home + same_row + home_row + strum,6,-0.14836973729375016,0.0,0.14836973729375016,0.0,True,True
+hands + fingers + skip_fingers + same_row + home_row + columns + strum,7,-0.1476847531499506,0.0,0.1476847531499506,0.0,True,True
+dont_cross_home + home_row + strum + strong_fingers,4,-0.1476782659767686,0.0,0.1476782659767686,0.0,True,True
+hands + skip_fingers + same_row + home_row + columns + strum + strong_fingers,7,-0.1475743568987937,0.0,0.1475743568987937,0.0,True,True
+hands + skip_fingers + same_row + strong_fingers,4,-0.14752086331721853,0.0,0.14752086331721853,0.0,True,True
+hands + skip_fingers + same_row + strum,4,-0.14738997364532305,0.0,0.14738997364532305,0.0,True,True
+hands + fingers + skip_fingers + columns + strong_fingers,5,-0.1471807442437392,0.0,0.1471807442437392,0.0,True,True
+skip_fingers + dont_cross_home + strum,3,-0.14717045317745148,0.0,0.14717045317745148,0.0,True,True
+hands + fingers + dont_cross_home + same_row + home_row + columns + strum + strong_fingers,8,-0.1469783168481185,0.0,0.1469783168481185,0.0,True,True
+skip_fingers + strong_fingers,2,-0.1468555258771945,0.0,0.1468555258771945,0.0,True,True
+hands + fingers + skip_fingers + same_row + columns + strum + strong_fingers,7,-0.1468029598726318,0.0,0.1468029598726318,0.0,True,True
+fingers + skip_fingers + dont_cross_home + home_row + columns + strong_fingers,6,-0.1467893377684827,0.0,0.1467893377684827,0.0,True,True
+hands + skip_fingers + dont_cross_home + strum + strong_fingers,5,-0.14637425362170042,0.0,0.14637425362170042,0.0,True,True
+hands + dont_cross_home + home_row + columns,4,-0.1460851608500427,0.0,0.1460851608500427,0.0,True,True
+fingers + skip_fingers + same_row + strong_fingers,4,-0.14606134058132206,0.0,0.14606134058132206,0.0,True,True
+hands + same_row + home_row + strong_fingers,4,-0.14577861457661004,0.0,0.14577861457661004,0.0,True,True
+hands + dont_cross_home + same_row + home_row + strum,5,-0.14552237905636686,0.0,0.14552237905636686,0.0,True,True
+skip_fingers + dont_cross_home + home_row,3,-0.14541485276114544,0.0,0.14541485276114544,0.0,True,True
+hands + skip_fingers + dont_cross_home + same_row + strum + strong_fingers,6,-0.14525123950606267,0.0,0.14525123950606267,0.0,True,True
+skip_fingers + dont_cross_home + same_row + home_row + strong_fingers,5,-0.14505260984324922,0.0,0.14505260984324922,0.0,True,True
+skip_fingers + same_row + home_row + strong_fingers,4,-0.1450396731998699,0.0,0.1450396731998699,0.0,True,True
+hands + fingers + skip_fingers + columns,4,-0.14502189324032025,0.0,0.14502189324032025,0.0,True,True
+fingers + skip_fingers + dont_cross_home + same_row + home_row,5,-0.14419837498569715,0.0,0.14419837498569715,0.0,True,True
+hands + dont_cross_home + same_row + home_row + strong_fingers,5,-0.1441834030253485,0.0,0.1441834030253485,0.0,True,True
+skip_fingers + same_row + home_row + strum,4,-0.14416999887955198,0.0,0.14416999887955198,0.0,True,True
+fingers + skip_fingers + same_row + home_row + columns + strum + strong_fingers,7,-0.1441093717802132,0.0,0.1441093717802132,0.0,True,True
+fingers + dont_cross_home + home_row + strum,4,-0.14400170562848716,0.0,0.14400170562848716,0.0,True,True
+fingers + home_row,2,-0.14380850097260525,0.0,0.14380850097260525,0.0,True,True
+fingers + skip_fingers + same_row + home_row + columns + strong_fingers,6,-0.14359058919000292,0.0,0.14359058919000292,0.0,True,True
+hands + fingers + skip_fingers + dont_cross_home + same_row + home_row + columns + strum,8,-0.1433519396336836,0.0,0.1433519396336836,0.0,True,True
+skip_fingers + dont_cross_home + home_row + columns + strum + strong_fingers,6,-0.14311381997606581,0.0,0.14311381997606581,0.0,True,True
+hands + fingers + dont_cross_home + same_row + strum,5,-0.14305047939803428,0.0,0.14305047939803428,0.0,True,True
+hands + skip_fingers + dont_cross_home + same_row + strong_fingers,5,-0.14294050501112907,0.0,0.14294050501112907,0.0,True,True
+hands + fingers + dont_cross_home + same_row + home_row + columns + strong_fingers,7,-0.1426838668078886,0.0,0.1426838668078886,0.0,True,True
+hands + skip_fingers + dont_cross_home + strong_fingers,4,-0.14268162664690243,0.0,0.14268162664690243,0.0,True,True
+fingers + skip_fingers + dont_cross_home + same_row + strum + strong_fingers,6,-0.14267183635954578,0.0,0.14267183635954578,0.0,True,True
+hands + fingers + same_row + home_row + columns + strum,6,-0.1424745091126196,0.0,0.1424745091126196,0.0,True,True
+hands + fingers + columns + strum + strong_fingers,5,-0.14233428506983417,0.0,0.14233428506983417,0.0,True,True
+hands + fingers + columns + strum,4,-0.14224767744767022,0.0,0.14224767744767022,0.0,True,True
+hands + fingers + dont_cross_home + same_row + strong_fingers,5,-0.14220107599990028,0.0,0.14220107599990028,0.0,True,True
+skip_fingers + dont_cross_home + strum + strong_fingers,4,-0.14215195913965087,0.0,0.14215195913965087,0.0,True,True
+hands + fingers + same_row + home_row + columns,5,-0.14185891014745686,0.0,0.14185891014745686,0.0,True,True
+hands + strong_fingers,2,-0.14185624393145732,0.0,0.14185624393145732,0.0,True,True
+hands + skip_fingers + same_row,3,-0.14143657442652485,0.0,0.14143657442652485,0.0,True,True
+hands + same_row + home_row,3,-0.1413545608054695,0.0,0.1413545608054695,0.0,True,True
+hands + dont_cross_home + same_row + home_row,4,-0.1413545608054695,0.0,0.1413545608054695,0.0,True,True
+hands + skip_fingers + dont_cross_home + same_row + home_row + columns + strum + strong_fingers,8,-0.140687736633576,0.0,0.140687736633576,0.0,True,True
+hands + same_row + strum + strong_fingers,4,-0.14063199423446404,0.0,0.14063199423446404,0.0,True,True
+hands + dont_cross_home + strum + strong_fingers,4,-0.14043595162508307,0.0,0.14043595162508307,0.0,True,True
+hands + skip_fingers + same_row + home_row + columns + strong_fingers,6,-0.14021571884670853,0.0,0.14021571884670853,0.0,True,True
+hands + skip_fingers + dont_cross_home + same_row + home_row + columns + strong_fingers,7,-0.13990353759422702,0.0,0.13990353759422702,0.0,True,True
+hands + fingers + skip_fingers + dont_cross_home + same_row + home_row + columns,7,-0.13989915200907724,0.0,0.13989915200907724,0.0,True,True
+hands + skip_fingers + same_row + home_row + columns + strum,6,-0.13983634542392612,0.0,0.13983634542392612,0.0,True,True
+hands + fingers + skip_fingers + dont_cross_home + same_row + columns + strum + strong_fingers,8,-0.13976654534726565,0.0,0.13976654534726565,0.0,True,True
+home_row + strum,2,-0.13972740193789257,0.0,0.13972740193789257,0.0,True,True
+hands + skip_fingers + dont_cross_home + same_row + strum,5,-0.13963581809058126,0.0,0.13963581809058126,0.0,True,True
+hands + fingers + skip_fingers + columns + strum + strong_fingers,6,-0.1394987237195536,0.0,0.1394987237195536,0.0,True,True
+fingers + dont_cross_home + same_row + home_row + strum + strong_fingers,6,-0.13941918942289444,0.0,0.13941918942289444,0.0,True,True
+hands + fingers + skip_fingers + columns + strum,5,-0.13926431028710476,0.0,0.13926431028710476,0.0,True,True
+fingers + skip_fingers + dont_cross_home + same_row + home_row + columns + strum + strong_fingers,8,-0.13924917952072566,0.0,0.13924917952072566,0.0,True,True
+hands + fingers + skip_fingers + dont_cross_home + same_row + columns + strong_fingers,7,-0.1387011136574194,0.0,0.1387011136574194,0.0,True,True
+hands + same_row + home_row + columns + strum + strong_fingers,6,-0.13866713612034562,0.0,0.13866713612034562,0.0,True,True
+skip_fingers + home_row + columns + strong_fingers,4,-0.13844963203395447,0.0,0.13844963203395447,0.0,True,True
+hands + same_row + strum,3,-0.13824159115609644,0.0,0.13824159115609644,0.0,True,True
+fingers + skip_fingers + same_row + strum,4,-0.13823010998233087,0.0,0.13823010998233087,0.0,True,True
+hands + skip_fingers + dont_cross_home + same_row,4,-0.1382026256050236,0.0,0.1382026256050236,0.0,True,True
+skip_fingers + same_row + strum + strong_fingers,4,-0.13797025004845156,0.0,0.13797025004845156,0.0,True,True
+skip_fingers + dont_cross_home,2,-0.13764191757484728,0.0,0.13764191757484728,0.0,True,True
+hands + fingers + dont_cross_home + columns,4,-0.13761358635459148,0.0,0.13761358635459148,0.0,True,True
+hands + fingers + dont_cross_home + same_row,4,-0.13749092461515375,0.0,0.13749092461515375,0.0,True,True
+hands + fingers + skip_fingers + dont_cross_home + columns,5,-0.13741744204356723,0.0,0.13741744204356723,0.0,True,True
+hands + fingers + dont_cross_home + same_row + home_row + columns + strum,7,-0.13739832861935422,0.0,0.13739832861935422,0.0,True,True
+hands + fingers + same_row + columns + strum + strong_fingers,6,-0.1371772490804994,0.0,0.1371772490804994,0.0,True,True
+skip_fingers + dont_cross_home + strong_fingers,3,-0.13667931085686794,0.0,0.13667931085686794,0.0,True,True
+skip_fingers + dont_cross_home + same_row + home_row + strum,5,-0.13654908493491769,0.0,0.13654908493491769,0.0,True,True
+hands + dont_cross_home + strong_fingers,3,-0.13605024227786114,0.0,0.13605024227786114,0.0,True,True
+hands + skip_fingers + same_row + columns + strum + strong_fingers,6,-0.13596672023227518,0.0,0.13596672023227518,0.0,True,True
+hands + fingers + skip_fingers + same_row + columns + strum,6,-0.1359640961472818,0.0,0.1359640961472818,0.0,True,True
+hands + skip_fingers + columns,3,-0.1355893634715467,0.0,0.1355893634715467,0.0,True,True
+hands + fingers + skip_fingers + dont_cross_home + columns + strong_fingers,6,-0.1355674190479473,0.0,0.1355674190479473,0.0,True,True
+hands + fingers + skip_fingers + same_row + columns,5,-0.13554578694864555,0.0,0.13554578694864555,0.0,True,True
+fingers + skip_fingers + dont_cross_home + same_row + strong_fingers,5,-0.13551109656757196,0.0,0.13551109656757196,0.0,True,True
+hands + fingers + dont_cross_home + columns + strum,5,-0.13542058383961678,0.0,0.13542058383961678,0.0,True,True
+fingers + same_row + home_row + strong_fingers,4,-0.1352545326969408,0.0,0.1352545326969408,0.0,True,True
+hands + fingers + skip_fingers + dont_cross_home + columns + strum,6,-0.13503541570439423,0.0,0.13503541570439423,0.0,True,True
+hands + fingers + dont_cross_home + columns + strong_fingers,5,-0.13492470060486686,0.0,0.13492470060486686,0.0,True,True
+hands + columns,2,-0.1348763981186485,0.0,0.1348763981186485,0.0,True,True
+hands + dont_cross_home + same_row + strum + strong_fingers,5,-0.1347947281064314,0.0,0.1347947281064314,0.0,True,True
+fingers + skip_fingers + home_row + columns + strum,5,-0.13464718938504416,0.0,0.13464718938504416,0.0,True,True
+fingers + skip_fingers + columns + strong_fingers,4,-0.13462141584311096,0.0,0.13462141584311096,0.0,True,True
+skip_fingers + same_row + home_row,3,-0.13448982153221667,0.0,0.13448982153221667,0.0,True,True
+hands + skip_fingers + columns + strum,4,-0.13431017052634023,0.0,0.13431017052634023,0.0,True,True
+fingers + skip_fingers + dont_cross_home + same_row + home_row + columns + strong_fingers,7,-0.13416706965734135,0.0,0.13416706965734135,0.0,True,True
+hands + fingers + skip_fingers + dont_cross_home + columns + strum + strong_fingers,7,-0.13403528059852007,0.0,0.13403528059852007,0.0,True,True
+hands + fingers + dont_cross_home + columns + strum + strong_fingers,6,-0.13373394028205074,0.0,0.13373394028205074,0.0,True,True
+hands + skip_fingers + same_row + home_row + columns,5,-0.1336597598195033,0.0,0.1336597598195033,0.0,True,True
+skip_fingers + dont_cross_home + same_row + home_row,4,-0.13356660849952826,0.0,0.13356660849952826,0.0,True,True
+skip_fingers + same_row + home_row + columns + strum + strong_fingers,6,-0.13340091151873712,0.0,0.13340091151873712,0.0,True,True
+skip_fingers + dont_cross_home + home_row + columns + strong_fingers,5,-0.13289436118414505,0.0,0.13289436118414505,0.0,True,True
+hands + dont_cross_home + same_row + home_row + columns + strum + strong_fingers,7,-0.1327708032047748,0.0,0.1327708032047748,0.0,True,True
+hands + columns + strum,3,-0.13265993950371613,0.0,0.13265993950371613,0.0,True,True
+hands + fingers + dont_cross_home + same_row + home_row + columns,6,-0.13256118202702125,0.0,0.13256118202702125,0.0,True,True
+fingers + dont_cross_home + strum + strong_fingers,4,-0.13233098132293308,0.0,0.13233098132293308,0.0,True,True
+hands + skip_fingers + dont_cross_home + same_row + home_row + columns + strum,7,-0.13229277591614588,0.0,0.13229277591614588,0.0,True,True
+hands + skip_fingers + dont_cross_home + same_row + home_row + columns,6,-0.13214734111192,0.0,0.13214734111192,0.0,True,True
+fingers + skip_fingers + dont_cross_home + home_row + columns + strum,6,-0.13212639221517417,0.0,0.13212639221517417,0.0,True,True
+fingers + strum,2,-0.1320654519047586,0.0,0.1320654519047586,0.0,True,True
+hands + fingers + same_row + columns + strong_fingers,5,-0.13192115700626378,0.0,0.13192115700626378,0.0,True,True
+fingers + skip_fingers + dont_cross_home + same_row + strum,5,-0.13173440644938386,0.0,0.13173440644938386,0.0,True,True
+hands + skip_fingers + same_row + columns + strong_fingers,5,-0.13158208229202142,0.0,0.13158208229202142,0.0,True,True
+hands + skip_fingers + columns + strong_fingers,4,-0.13156276381165877,0.0,0.13156276381165877,0.0,True,True
+hands + skip_fingers + columns + strum + strong_fingers,5,-0.1312755164228589,0.0,0.1312755164228589,0.0,True,True
+hands + same_row + home_row + columns + strum,5,-0.13119166613535607,0.0,0.13119166613535607,0.0,True,True
+skip_fingers + dont_cross_home + same_row + strum + strong_fingers,5,-0.131083499730259,0.0,0.131083499730259,0.0,True,True
+fingers + skip_fingers + columns + strum + strong_fingers,5,-0.13090168181427936,0.0,0.13090168181427936,0.0,True,True
+dont_cross_home + home_row + strum,3,-0.1308724055105809,0.0,0.1308724055105809,0.0,True,True
+fingers + skip_fingers + same_row,3,-0.13071508690661232,0.0,0.13071508690661232,0.0,True,True
+hands + dont_cross_home + same_row + strum,4,-0.1305140365996441,0.0,0.1305140365996441,0.0,True,True
+fingers + dont_cross_home + home_row,3,-0.1303623886633771,0.0,0.1303623886633771,0.0,True,True
+fingers + home_row + columns + strum + strong_fingers,5,-0.1302675191536478,0.0,0.1302675191536478,0.0,True,True
+skip_fingers + home_row + columns + strum,4,-0.13006298300358082,0.0,0.13006298300358082,0.0,True,True
+hands + fingers + skip_fingers + dont_cross_home + same_row + columns + strum,7,-0.13000509581838038,0.0,0.13000509581838038,0.0,True,True
+fingers + dont_cross_home + home_row + columns + strum + strong_fingers,6,-0.1293719866634601,0.0,0.1293719866634601,0.0,True,True
+skip_fingers + same_row + strum,3,-0.12885788851511784,0.0,0.12885788851511784,0.0,True,True
+hands + skip_fingers + dont_cross_home + same_row + columns + strum + strong_fingers,7,-0.12837106642988155,0.0,0.12837106642988155,0.0,True,True
+fingers + dont_cross_home + strum,3,-0.12822462178545366,0.0,0.12822462178545366,0.0,True,True
+hands + fingers + dont_cross_home + same_row + columns + strum + strong_fingers,7,-0.128184849235724,0.0,0.128184849235724,0.0,True,True
+fingers + skip_fingers + home_row + columns,4,-0.12816867508843371,0.0,0.12816867508843371,0.0,True,True
+hands + fingers + skip_fingers + dont_cross_home + same_row + columns,6,-0.12798192742536393,0.0,0.12798192742536393,0.0,True,True
+fingers + strum + strong_fingers,3,-0.12796737414774376,0.0,0.12796737414774376,0.0,True,True
+hands + fingers + same_row + columns + strum,5,-0.12784730879068373,0.0,0.12784730879068373,0.0,True,True
+hands + skip_fingers + same_row + columns + strum,5,-0.12782819263097958,0.0,0.12782819263097958,0.0,True,True
+same_row + home_row + strum + strong_fingers,4,-0.12765009599081664,0.0,0.12765009599081664,0.0,True,True
+hands + skip_fingers + dont_cross_home + columns + strum,5,-0.12722517856154755,0.0,0.12722517856154755,0.0,True,True
+hands + columns + strum + strong_fingers,4,-0.12686415005516255,0.0,0.12686415005516255,0.0,True,True
+skip_fingers + dont_cross_home + same_row + home_row + columns + strum + strong_fingers,7,-0.1265036021929718,0.0,0.1265036021929718,0.0,True,True
+fingers + skip_fingers + same_row + columns + strum + strong_fingers,6,-0.12633979605171003,0.0,0.12633979605171003,0.0,True,True
+hands + skip_fingers + dont_cross_home + same_row + columns + strong_fingers,6,-0.1262645491369677,0.0,0.1262645491369677,0.0,True,True
+fingers + same_row + home_row + strum,4,-0.12602699161526465,0.0,0.12602699161526465,0.0,True,True
+fingers + same_row + strum + strong_fingers,4,-0.1256684076683968,0.0,0.1256684076683968,0.0,True,True
+fingers + skip_fingers + dont_cross_home + columns + strum + strong_fingers,6,-0.12544287818924585,0.0,0.12544287818924585,0.0,True,True
+hands + dont_cross_home + same_row + home_row + columns + strum,6,-0.12410109482551936,0.0,0.12410109482551936,0.0,True,True
+hands + dont_cross_home + columns + strum,4,-0.12390238517679196,0.0,0.12390238517679196,0.0,True,True
+hands + skip_fingers + dont_cross_home + columns + strum + strong_fingers,6,-0.12350787452959008,0.0,0.12350787452959008,0.0,True,True
+skip_fingers + dont_cross_home + home_row + columns + strum,5,-0.12335920265797452,0.0,0.12335920265797452,0.0,True,True
+hands + skip_fingers + dont_cross_home + columns,4,-0.12324224977662766,0.0,0.12324224977662766,0.0,True,True
+fingers + skip_fingers + dont_cross_home + columns + strong_fingers,5,-0.12303433653719528,0.0,0.12303433653719528,0.0,True,True
+fingers + skip_fingers + same_row + home_row + columns + strum,6,-0.12269490876179806,0.0,0.12269490876179806,0.0,True,True
+fingers + skip_fingers + dont_cross_home + same_row,4,-0.12266849127515748,0.0,0.12266849127515748,0.0,True,True
+skip_fingers + columns + strum + strong_fingers,4,-0.12260698624990755,0.0,0.12260698624990755,0.0,True,True
+fingers + dont_cross_home,2,-0.12252447979074817,0.0,0.12252447979074817,0.0,True,True
+fingers + dont_cross_home + same_row + home_row + strong_fingers,5,-0.12251879358085727,0.0,0.12251879358085727,0.0,True,True
+hands + same_row + home_row + columns + strong_fingers,5,-0.12221264318739822,0.0,0.12221264318739822,0.0,True,True
+hands + columns + strong_fingers,3,-0.12193647891675945,0.0,0.12193647891675945,0.0,True,True
+fingers + dont_cross_home + same_row + strum + strong_fingers,5,-0.12144470991181226,0.0,0.12144470991181226,0.0,True,True
+hands + same_row + columns + strum + strong_fingers,5,-0.1214391542376174,0.0,0.1214391542376174,0.0,True,True
+hands + fingers + same_row + columns,4,-0.12141044374228513,0.0,0.12141044374228513,0.0,True,True
+skip_fingers + dont_cross_home + same_row + strum,4,-0.12105651027093453,0.0,0.12105651027093453,0.0,True,True
+hands + skip_fingers + same_row + columns,4,-0.12097171609748063,0.0,0.12097171609748063,0.0,True,True
+fingers + dont_cross_home + strong_fingers,3,-0.12013030035027131,0.0,0.12013030035027131,0.0,True,True
+hands + skip_fingers + dont_cross_home + columns + strong_fingers,5,-0.12006095733542639,0.0,0.12006095733542639,0.0,True,True
+dont_cross_home + same_row + home_row + strum + strong_fingers,5,-0.12003389100354353,0.0,0.12003389100354353,0.0,True,True
+hands + dont_cross_home + columns,3,-0.11997977806212744,0.0,0.11997977806212744,0.0,True,True
+hands + dont_cross_home + same_row + home_row + columns + strong_fingers,6,-0.1199448507904556,0.0,0.1199448507904556,0.0,True,True
+hands + skip_fingers + dont_cross_home + same_row + columns + strum,6,-0.11988555400390985,0.0,0.11988555400390985,0.0,True,True
+hands + fingers + dont_cross_home + same_row + columns + strum,6,-0.11978673232353898,0.0,0.11978673232353898,0.0,True,True
+fingers + skip_fingers + dont_cross_home + same_row + columns + strum + strong_fingers,7,-0.119328760859098,0.0,0.119328760859098,0.0,True,True
+fingers + skip_fingers + dont_cross_home + home_row + columns,5,-0.11876074526171428,0.0,0.11876074526171428,0.0,True,True
+skip_fingers + columns + strong_fingers,3,-0.1187218974352452,0.0,0.1187218974352452,0.0,True,True
+fingers + dont_cross_home + same_row + home_row + strum,5,-0.11842198754553929,0.0,0.11842198754553929,0.0,True,True
+fingers + skip_fingers + dont_cross_home + same_row + home_row + columns + strum,7,-0.11810371937060603,0.0,0.11810371937060603,0.0,True,True
+hands + dont_cross_home + columns + strum + strong_fingers,5,-0.1179458517005974,0.0,0.1179458517005974,0.0,True,True
+fingers + strong_fingers,2,-0.11747824053588934,0.0,0.11747824053588934,0.0,True,True
+hands + fingers + dont_cross_home + same_row + columns + strong_fingers,6,-0.11741481998519797,0.0,0.11741481998519797,0.0,True,True
+hands + skip_fingers + dont_cross_home + same_row + columns,5,-0.11712428830000582,0.0,0.11712428830000582,0.0,True,True
+fingers + skip_fingers + same_row + columns + strong_fingers,5,-0.11684604905283227,0.0,0.11684604905283227,0.0,True,True
+skip_fingers + home_row + columns,3,-0.11677204332763626,0.0,0.11677204332763626,0.0,True,True
+hands + same_row + strong_fingers,3,-0.11672989105653749,0.0,0.11672989105653749,0.0,True,True
+strum,1,-0.11654166697006996,0.0,0.11654166697006996,0.0,True,True
+fingers + same_row + home_row + columns + strum + strong_fingers,6,-0.11653645565698738,0.0,0.11653645565698738,0.0,True,True
+hands + same_row,2,-0.11648523319778085,0.0,0.11648523319778085,0.0,True,True
+skip_fingers + same_row + home_row + columns + strong_fingers,5,-0.11607495283219127,0.0,0.11607495283219127,0.0,True,True
+hands + same_row + columns + strum,4,-0.11597504450060413,0.0,0.11597504450060413,0.0,True,True
+home_row + columns + strum + strong_fingers,4,-0.11592671895922532,0.0,0.11592671895922532,0.0,True,True
+skip_fingers + dont_cross_home + same_row + home_row + columns + strong_fingers,6,-0.11576079650242577,0.0,0.11576079650242577,0.0,True,True
+skip_fingers + same_row + columns + strum + strong_fingers,5,-0.11543410162349776,0.0,0.11543410162349776,0.0,True,True
+fingers + skip_fingers + same_row + home_row + columns,5,-0.11527108725200098,0.0,0.11527108725200098,0.0,True,True
+hands + same_row + home_row + columns,4,-0.1150945003716351,0.0,0.1150945003716351,0.0,True,True
+skip_fingers + dont_cross_home + columns + strum + strong_fingers,5,-0.114826740025733,0.0,0.114826740025733,0.0,True,True
+hands + dont_cross_home + same_row + home_row + columns,5,-0.11476974535325103,0.0,0.11476974535325103,0.0,True,True
+skip_fingers + same_row + home_row + columns + strum,5,-0.11475925280375879,0.0,0.11475925280375879,0.0,True,True
+hands + dont_cross_home + same_row + columns + strum + strong_fingers,6,-0.11471109595737088,0.0,0.11471109595737088,0.0,True,True
+dont_cross_home + strum + strong_fingers,3,-0.11453807737810967,0.0,0.11453807737810967,0.0,True,True
+hands + dont_cross_home + columns + strong_fingers,4,-0.1139235246029792,0.0,0.1139235246029792,0.0,True,True
+fingers + home_row + columns + strong_fingers,4,-0.11379311678314737,0.0,0.11379311678314737,0.0,True,True
+dont_cross_home + home_row + columns + strum + strong_fingers,5,-0.11365643107709755,0.0,0.11365643107709755,0.0,True,True
+dont_cross_home + strum,2,-0.1132459285933662,0.0,0.1132459285933662,0.0,True,True
+fingers + skip_fingers + columns + strum,4,-0.11227222980163477,0.0,0.11227222980163477,0.0,True,True
+hands + dont_cross_home + same_row + strong_fingers,4,-0.11221140695307837,0.0,0.11221140695307837,0.0,True,True
+dont_cross_home + home_row + strong_fingers,3,-0.11190930671771648,0.0,0.11190930671771648,0.0,True,True
+fingers + dont_cross_home + home_row + columns + strong_fingers,5,-0.11131150067382396,0.0,0.11131150067382396,0.0,True,True
+fingers + dont_cross_home + same_row + home_row + columns + strum + strong_fingers,7,-0.11129259202968657,0.0,0.11129259202968657,0.0,True,True
+fingers + skip_fingers + dont_cross_home + columns + strum,5,-0.11103516297356011,0.0,0.11103516297356011,0.0,True,True
+same_row + home_row + strum,3,-0.11088867966028153,0.0,0.11088867966028153,0.0,True,True
+skip_fingers + same_row + strong_fingers,3,-0.11080432309831859,0.0,0.11080432309831859,0.0,True,True
+hands + dont_cross_home + same_row,3,-0.11058527892306617,0.0,0.11058527892306617,0.0,True,True
+strum + strong_fingers,2,-0.10918341931419773,0.0,0.10918341931419773,0.0,True,True
+fingers + same_row + home_row,3,-0.10871236787008819,0.0,0.10871236787008819,0.0,True,True
+hands + fingers + dont_cross_home + same_row + columns,5,-0.10847493032439653,0.0,0.10847493032439653,0.0,True,True
+skip_fingers + dont_cross_home + same_row + columns + strum + strong_fingers,6,-0.1078849194103264,0.0,0.1078849194103264,0.0,True,True
+hands + dont_cross_home + same_row + columns + strum,5,-0.10767638724203514,0.0,0.10767638724203514,0.0,True,True
+skip_fingers + dont_cross_home + columns + strong_fingers,4,-0.10732580216301599,0.0,0.10732580216301599,0.0,True,True
+skip_fingers + columns + strum,3,-0.10721655758745711,0.0,0.10721655758745711,0.0,True,True
+skip_fingers + dont_cross_home + same_row + home_row + columns + strum,6,-0.10694753200271481,0.0,0.10694753200271481,0.0,True,True
+skip_fingers + dont_cross_home + home_row + columns,4,-0.10686649581708191,0.0,0.10686649581708191,0.0,True,True
+skip_fingers + dont_cross_home + same_row + strong_fingers,4,-0.10642699411733912,0.0,0.10642699411733912,0.0,True,True
+fingers + skip_fingers + dont_cross_home + same_row + columns + strong_fingers,6,-0.10632486415837883,0.0,0.10632486415837883,0.0,True,True
+fingers + skip_fingers + dont_cross_home + same_row + home_row + columns,6,-0.1058127476623466,0.0,0.1058127476623466,0.0,True,True
+fingers + skip_fingers + columns,3,-0.10555592132802705,0.0,0.10555592132802705,0.0,True,True
+fingers + same_row + strum,3,-0.10492320586960896,0.0,0.10492320586960896,0.0,True,True
+fingers + dont_cross_home + home_row + columns + strum,5,-0.10393760950416468,0.0,0.10393760950416468,0.0,True,True
+skip_fingers + dont_cross_home + columns + strum,4,-0.10309640748837966,0.0,0.10309640748837966,0.0,True,True
+fingers + dont_cross_home + same_row + strum,4,-0.10283319421400729,0.0,0.10283319421400729,0.0,True,True
+dont_cross_home + same_row + home_row + strum,4,-0.10188119527113534,0.0,0.10188119527113534,0.0,True,True
+fingers + skip_fingers + same_row + columns + strum,5,-0.10186401024767816,0.0,0.10186401024767816,0.0,True,True
+fingers + skip_fingers + dont_cross_home + columns,4,-0.10173559221019257,0.0,0.10173559221019257,0.0,True,True
+skip_fingers + same_row,2,-0.10118954491580608,0.0,0.10118954491580608,0.0,True,True
+fingers + home_row + columns + strum,4,-0.10113702843352614,0.0,0.10113702843352614,0.0,True,True
+fingers + skip_fingers + dont_cross_home + same_row + columns + strum,6,-0.09872884694761586,0.0,0.09872884694761586,0.0,True,True
+home_row + strong_fingers,2,-0.09826059010949602,0.0,0.09826059010949602,0.0,True,True
+skip_fingers + dont_cross_home + same_row,3,-0.09797595262666987,0.0,0.09797595262666987,0.0,True,True
+fingers + dont_cross_home + same_row + home_row,4,-0.09673860114931494,0.0,0.09673860114931494,0.0,True,True
+skip_fingers + columns,2,-0.09572475906144189,0.0,0.09572475906144189,0.0,True,True
+fingers + same_row + strong_fingers,3,-0.09473053969697141,0.0,0.09473053969697141,0.0,True,True
+dont_cross_home + home_row,2,-0.09436935535897424,0.0,0.09436935535897424,0.0,True,True
+skip_fingers + same_row + home_row + columns,4,-0.09388312879039509,0.0,0.09388312879039509,0.0,True,True
+home_row,1,-0.09371754065029389,0.0,0.09371754065029389,0.0,True,True
+skip_fingers + same_row + columns + strum,4,-0.09361498782777161,0.0,0.09361498782777161,0.0,True,True
+columns,1,0.09351974798435429,0.0,0.09351974798435429,0.0,True,False
+fingers + dont_cross_home + columns + strum + strong_fingers,5,-0.09346553930098292,0.0,0.09346553930098292,0.0,True,True
+home_row + columns + strum,3,-0.0927553789004838,0.0,0.0927553789004838,0.0,True,True
+same_row + home_row + columns + strum + strong_fingers,5,-0.0925638724470911,0.0,0.0925638724470911,0.0,True,True
+same_row + strum + strong_fingers,3,-0.09254041072863582,0.0,0.09254041072863582,0.0,True,True
+dont_cross_home + same_row + strum + strong_fingers,4,-0.09235133069566857,0.0,0.09235133069566857,0.0,True,True
+skip_fingers + dont_cross_home + same_row + home_row + columns,5,-0.09197717867823195,0.0,0.09197717867823195,0.0,True,True
+dont_cross_home + home_row + columns + strum,4,-0.09179940833947402,0.0,0.09179940833947402,0.0,True,True
+fingers + dont_cross_home + same_row + columns + strum + strong_fingers,6,-0.09173499896795048,0.0,0.09173499896795048,0.0,True,True
+hands + same_row + columns + strong_fingers,4,-0.09155364062475094,0.0,0.09155364062475094,0.0,True,True
+fingers + same_row + home_row + columns + strong_fingers,5,-0.09091742137147847,0.0,0.09091742137147847,0.0,True,True
+fingers + dont_cross_home + same_row + strong_fingers,4,-0.09069737611028329,0.0,0.09069737611028329,0.0,True,True
+dont_cross_home + same_row + home_row + columns + strum + strong_fingers,6,-0.08882240586269413,0.0,0.08882240586269413,0.0,True,True
+skip_fingers + dont_cross_home + same_row + columns + strum,5,-0.08851095795355272,0.0,0.08851095795355272,0.0,True,True
+fingers + skip_fingers + same_row + columns,4,-0.08746246785024263,0.0,0.08746246785024263,0.0,True,True
+skip_fingers + dont_cross_home + columns,3,-0.08717283283842289,0.0,0.08717283283842289,0.0,True,True
+fingers + dont_cross_home + same_row + home_row + columns + strum,6,-0.08700361007817403,0.0,0.08700361007817403,0.0,True,True
+hands + same_row + columns,3,-0.08676282291346725,0.0,0.08676282291346725,0.0,True,True
+fingers + same_row + columns + strum + strong_fingers,5,-0.08656627096995875,0.0,0.08656627096995875,0.0,True,True
+fingers + same_row + home_row + columns + strum,5,-0.08643108098393917,0.0,0.08643108098393917,0.0,True,True
+hands + dont_cross_home + same_row + columns + strong_fingers,5,-0.08586264932525217,0.0,0.08586264932525217,0.0,True,True
+fingers + dont_cross_home + same_row + home_row + columns + strong_fingers,6,-0.08504787549657773,0.0,0.08504787549657773,0.0,True,True
+fingers + skip_fingers + dont_cross_home + same_row + columns,5,-0.08366467510469205,0.0,0.08366467510469205,0.0,True,True
+skip_fingers + same_row + columns + strong_fingers,4,-0.08086409377114563,0.0,0.08086409377114563,0.0,True,True
+hands + dont_cross_home + same_row + columns,4,-0.08034720928640648,0.0,0.08034720928640648,0.0,True,True
+fingers + columns + strum + strong_fingers,4,-0.07868027667773855,0.0,0.07868027667773855,0.0,True,True
+fingers + dont_cross_home + home_row + columns,4,-0.07865527108978614,0.0,0.07865527108978614,0.0,True,True
+fingers + home_row + columns,3,-0.07833110351310678,0.0,0.07833110351310678,0.0,True,True
+dont_cross_home + columns + strum + strong_fingers,4,-0.07736826025656893,0.0,0.07736826025656893,0.0,True,True
+dont_cross_home + same_row + strum,3,-0.07659819330361613,0.0,0.07659819330361613,0.0,True,True
+same_row + strum,2,-0.0761394422517707,0.0,0.0761394422517707,0.0,True,True
+fingers + dont_cross_home + columns + strum,4,-0.07609776807862877,0.0,0.07609776807862877,0.0,True,True
+skip_fingers + dont_cross_home + same_row + columns + strong_fingers,5,-0.07588255185931234,0.0,0.07588255185931234,0.0,True,True
+fingers + same_row,2,-0.06995659848981069,0.0,0.06995659848981069,0.0,True,True
+fingers + dont_cross_home + columns + strong_fingers,4,-0.06982452759833796,0.0,0.06982452759833796,0.0,True,True
+fingers + dont_cross_home + same_row,3,-0.06967154358474753,0.0,0.06967154358474753,0.0,True,True
+same_row + home_row + columns + strum,4,-0.06886828714359353,0.0,0.06886828714359353,0.0,True,True
+fingers + dont_cross_home + same_row + columns + strum,5,-0.06803020261483383,0.0,0.06803020261483383,0.0,True,True
+dont_cross_home + same_row + home_row + columns + strum,5,-0.06758029971400299,0.0,0.06758029971400299,0.0,True,True
+dont_cross_home + same_row + home_row + strong_fingers,4,-0.06535310129124114,0.0,0.06535310129124114,0.0,True,True
+columns + strong_fingers,2,0.06437304237491734,0.0,0.06437304237491734,0.0,True,False
+dont_cross_home + columns + strum,3,-0.06397885384963739,0.0,0.06397885384963739,0.0,True,True
+same_row + home_row + strong_fingers,3,-0.06370528242520636,0.0,0.06370528242520636,0.0,True,True
+columns + strum + strong_fingers,3,-0.06255223031159907,0.0,0.06255223031159907,0.0,True,True
+dont_cross_home + home_row + columns + strong_fingers,4,-0.062203198017562945,0.0,0.062203198017562945,0.0,True,True
+dont_cross_home + same_row + columns + strum + strong_fingers,5,-0.06015107750342128,0.0,0.06015107750342128,0.0,True,True
+fingers + columns + strum,3,-0.05955359518699326,0.0,0.05955359518699326,0.0,True,True
+skip_fingers + dont_cross_home + same_row + columns,4,-0.057160631473957585,0.0,0.057160631473957585,0.0,True,True
+fingers + same_row + columns + strum,4,-0.057122458831519556,0.0,0.057122458831519556,0.0,True,True
+skip_fingers + same_row + columns,3,-0.057039102099948585,0.0,0.057039102099948585,0.0,True,True
+fingers + same_row + home_row + columns,4,-0.05701912314860599,0.0,0.05701912314860599,0.0,True,True
+dont_cross_home,1,-0.056931087964418245,0.0,0.056931087964418245,0.0,True,True
+fingers + dont_cross_home + same_row + home_row + columns,5,-0.05688704153393889,0.0,0.05688704153393889,0.0,True,True
+fingers + dont_cross_home + same_row + columns + strong_fingers,5,-0.056186617373487714,0.0,0.056186617373487714,0.0,True,True
+same_row + columns,2,0.05524793492820719,0.0,0.05524793492820719,0.0,True,False
+dont_cross_home + strong_fingers,2,-0.05411162013999359,0.0,0.05411162013999359,0.0,True,True
+same_row + columns + strum + strong_fingers,4,-0.05226380173460471,0.0,0.05226380173460471,0.0,True,True
+fingers + columns + strong_fingers,3,-0.04904548953134011,0.0,0.04904548953134011,0.0,True,True
+columns + strum,2,-0.04871598145453964,0.0,0.04871598145453964,0.0,True,True
+fingers + same_row + columns + strong_fingers,4,-0.04693597298893308,0.0,0.04693597298893308,0.0,True,True
+fingers + dont_cross_home + columns,3,-0.0464931296031991,0.0,0.0464931296031991,0.0,True,True
+dont_cross_home + same_row + strong_fingers,3,-0.045299717749127714,0.0,0.045299717749127714,0.0,True,True
+same_row + home_row,2,-0.04346328094823964,0.0,0.04346328094823964,0.0,True,True
+dont_cross_home + same_row + home_row,3,-0.04337349890768244,0.0,0.04337349890768244,0.0,True,True
+dont_cross_home + same_row + columns + strum,4,-0.0400216806978823,0.0,0.0400216806978823,0.0,True,True
+dont_cross_home + home_row + columns,3,-0.03909149394365428,0.0,0.03909149394365428,0.0,True,True
+home_row + columns + strong_fingers,3,-0.03906591350379803,0.0,0.03906591350379803,0.0,True,True
+dont_cross_home + same_row + home_row + columns + strong_fingers,5,-0.032671308279561335,0.0,0.032671308279561335,0.0,True,True
+fingers + dont_cross_home + same_row + columns,4,-0.03050141861616373,0.0,0.03050141861616373,0.0,True,True
+same_row + columns + strum,3,-0.02833739672432815,0.0,0.02833739672432815,0.0,True,True
+same_row + columns + strong_fingers,3,0.024828825042367043,0.0,0.024828825042367043,0.0,True,False
+dont_cross_home + same_row,2,-0.02465339047467026,0.0,0.02465339047467026,0.0,True,True
+home_row + columns,2,-0.022891837035995607,0.0,0.022891837035995607,0.0,True,True
+same_row + home_row + columns + strong_fingers,4,-0.021028165523819132,0.0,0.021028165523819132,0.0,True,True
+same_row + strong_fingers,2,-0.020843684887584712,0.0,0.020843684887584712,0.0,True,True
+fingers + columns,2,-0.019758568957018965,0.0,0.019758568957018965,0.0,True,True
+dont_cross_home + columns,2,0.01416636709436276,0.0,0.01416636709436276,0.0,True,False
+dont_cross_home + same_row + columns + strong_fingers,4,-0.013018661715820196,0.0,0.013018661715820196,0.0,True,True
+fingers + same_row + columns,3,-0.011749896372907841,4.8206259988456556e-260,0.011749896372907841,4.8779007631883766e-260,True,True
+dont_cross_home + same_row + home_row + columns,4,-0.01033059911469447,1.7143672030884233e-201,0.01033059911469447,1.73130759047072e-201,True,True
+dont_cross_home + same_row + columns,3,0.009711674640499879,2.595307381251611e-178,0.009711674640499879,2.615783179131308e-178,True,False
+same_row,1,0.007229038885280795,1.0977061799404253e-99,0.007229038885280795,1.1041886967510973e-99,True,False
+same_row + home_row + columns,3,0.005045461272779328,1.656457574477852e-49,0.005045461272779328,1.6629662486408298e-49,True,False
+strong_fingers,1,-0.0028411635054410808,8.127076147058673e-17,0.0028411635054410808,8.143011590484279e-17,True,True
+dont_cross_home + columns + strong_fingers,3,-0.0010443359876254408,0.00220120187661314,0.0010443359876254408,0.00220120187661314,True,True

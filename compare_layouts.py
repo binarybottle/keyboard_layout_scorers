@@ -186,7 +186,7 @@ class ComprehensiveScorer:
         total_bigrams = 0
         
         for _, row in bigram_freq.iterrows():
-            bigram = str(row['item_pair']).lower()
+            bigram = str(row['letter_pair']).lower()
             frequency = int(row['score'])
             
             # Filter to only alphabetic bigrams
@@ -325,34 +325,39 @@ class ComprehensiveScorer:
                 print(f"Error running score_complete_layout.py: {result.stderr}")
                 return None
             
-            # Parse CSV output (look for the CSV section)
+            # Parse verbose output for CSV section at the end
             lines = result.stdout.strip().split('\n')
-            csv_start = -1
-            for i, line in enumerate(lines):
-                if line.startswith('total_score,item_score,item_pair_score'):
-                    csv_start = i
-                    break
-            
-            if csv_start == -1 or csv_start + 1 >= len(lines):
-                print("Could not find CSV output")
-                return None
-            
-            data_line = lines[csv_start + 1]
-            try:
-                total_score, item_score, item_pair_score = map(float, data_line.split(','))
-                
-                is_debug = True
-                if is_debug:
-                    print(f"        Engram total: {total_score}, item: {item_score}, item_pair: {item_pair_score}")
-                
-                return {
-                    'engram_total': total_score,
-                    'engram_item': item_score,
-                    'engram_item_pair': item_pair_score
-                }
 
-            except Exception as e:
-                print(f"Failed to parse engram scores: {e}")
+            # Look for the CSV header and data (should be the last 2 lines)
+            csv_header_line = -1
+            for i in range(len(lines) - 1, -1, -1):  # Search backwards
+                if lines[i].strip() == 'total_score,item_score,item_pair_score':
+                    csv_header_line = i
+                    break
+
+            if csv_header_line != -1 and csv_header_line + 1 < len(lines):
+                data_line = lines[csv_header_line + 1].strip()
+                try:
+                    total_score, item_score, item_pair_score = map(float, data_line.split(','))
+                    
+                    is_debug = True
+                    if is_debug:
+                        print(f"        Engram total: {total_score}, item: {item_score}, item_pair: {item_pair_score}")
+                    
+                    return {
+                        'engram_total': total_score,
+                        'engram_item': item_score,
+                        'engram_item_pair': item_pair_score
+                    }
+                except Exception as e:
+                    print(f"Failed to parse engram scores: {e}")
+                    print(f"Data line was: '{data_line}'")
+                    return None
+            else:
+                print("Could not find CSV section in engram output")
+                print(f"Last 5 lines:")
+                for i, line in enumerate(lines[-5:]):
+                    print(f"  Line {len(lines)-5+i}: '{line}'")
                 return None
             
         except Exception as e:
@@ -388,12 +393,18 @@ class ComprehensiveScorer:
             
             if result.returncode != 0:
                 print(f"Error running distance_scorer.py: {result.stderr}")
+                print(f"stdout: {result.stdout}")
                 return None
             
             # Parse CSV output
             lines = result.stdout.strip().split('\n')
             if len(lines) < 2 or not lines[0].startswith('metric,value'):
                 print("Could not find CSV output from distance_scorer.py")
+                print(f"Expected 'metric,value' header, got {len(lines)} lines:")
+                for i, line in enumerate(lines[:5]):  # Show first 5 lines
+                    print(f"  Line {i}: '{line}'")
+                if len(lines) > 5:
+                    print(f"  ... and {len(lines) - 5} more lines")
                 return None
             
             scores = {}
