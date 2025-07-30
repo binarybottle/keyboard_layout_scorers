@@ -10,8 +10,8 @@ import argparse
 import sys
 from typing import Dict, Any, List, Optional, Tuple
 from pathlib import Path
-from config_loader import get_config_loader
-from layout_utils import create_layout_mapping, validate_layout_mapping
+from framework.config_loader import get_config_loader
+from framework.layout_utils import create_layout_mapping, validate_layout_mapping
 
 
 class StandardCLIParser:

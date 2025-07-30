@@ -60,12 +60,12 @@ from collections import defaultdict, Counter
 from pathlib import Path
 
 # Import our framework components
-from base_scorer import BaseLayoutScorer, ScoreResult
-from config_loader import load_scorer_config
-from layout_utils import filter_to_letters_only
-from data_utils import load_bigram_frequencies, load_key_value_csv, validate_data_consistency
-from output_utils import print_results
-from cli_utils import create_standard_parser, handle_common_errors, get_layout_from_args
+from framework.base_scorer import BaseLayoutScorer, ScoreResult
+from framework.config_loader import load_scorer_config
+from framework.layout_utils import filter_to_letters_only
+from framework.data_utils import load_bigram_frequencies, load_key_value_csv, validate_data_consistency
+from framework.output_utils import print_results
+from framework.cli_utils import create_standard_parser, handle_common_errors, get_layout_from_args
 
 
 # QWERTY keyboard layout with (row, finger, hand) mapping (same as original)

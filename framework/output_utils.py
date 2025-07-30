@@ -7,7 +7,7 @@ Common functions for formatting and displaying scoring results in various format
 
 from typing import Dict, Any, List, Optional
 import sys
-from base_scorer import ScoreResult
+from framework.base_scorer import ScoreResult
 
 
 def format_csv_output(result: ScoreResult, 

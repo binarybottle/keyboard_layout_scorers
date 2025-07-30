@@ -48,13 +48,12 @@ from pathlib import Path
 import numpy as np
 
 # Import our framework components
-from base_scorer import BaseLayoutScorer, ScoreResult
-from config_loader import load_scorer_config
-from layout_utils import filter_to_letters_only, is_same_hand_pair, get_layout_statistics
-from data_utils import load_csv_with_validation, normalize_frequency_data, detect_distribution_type, validate_data_consistency
-from output_utils import print_results
-from cli_utils import create_standard_parser, handle_common_errors, get_layout_from_args
-
+from framework.base_scorer import BaseLayoutScorer, ScoreResult
+from framework.config_loader import load_scorer_config
+from framework.layout_utils import filter_to_letters_only, is_same_hand_pair, get_layout_statistics
+from framework.data_utils import load_csv_with_validation, normalize_frequency_data, detect_distribution_type, validate_data_consistency
+from framework.output_utils import print_results
+from framework.cli_utils import create_standard_parser, handle_common_errors, get_layout_from_args
 
 # Default combination strategy for scores
 DEFAULT_COMBINATION_STRATEGY = "multiplicative"  # item_score * item_pair_score
