@@ -18,129 +18,128 @@ For reference:
   - Colemak: "qwfpgjluy;arstdhneiozxcvbkm,./"
 
 ## Installation
-```bash
-# Install dependencies
-pip install pyyaml pandas numpy
+  ```bash
+  # Install dependencies
+  pip install pyyaml pandas numpy
 
-# Or with poetry
-poetry install
-```
+  # Or with poetry
+  poetry install
+  ```
 
 ## Usage
 
 ### Single-scorer mode
-```bash
-# Uniform command: 
-python layout_scorer.py --scorer distance --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --text "hello world"
-python layout_scorer.py --scorer dvorak9  --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ"
-python layout_scorer.py --scorer engram   --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ"
+  ```bash
+  # Uniform command: 
+  python layout_scorer.py --scorer distance --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --text "hello world"
+  python layout_scorer.py --scorer dvorak9  --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ"
+  python layout_scorer.py --scorer engram   --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ"
 
-# Individual scorers:
-python distance_scorer.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --text "hello world"
-python dvorak9_scorer.py  --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ"  
-python engram_scorer.py   --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ"
+  # Individual scorers:
+  python distance_scorer.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --text "hello world"
+  python dvorak9_scorer.py  --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ"  
+  python engram_scorer.py   --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ"
 
-# Dvorak-9: weighted scoring
-python layout_scorer.py --scorer dvorak9 --letters "abc" --qwerty_keys "QWE" \
-  --weights "input/dvorak9/speed_weights.csv"
-python layout_scorer.py --scorer dvorak9 --letters "abc" --qwerty_keys "QWE" \
-  --weights "input/dvorak9/comfort_weights.csv"
-python dvorak9_scorer.py --letters "abc" --qwerty_keys "QWE" \
-  --weights "input/dvorak9/speed_weights.csv"
+  # Dvorak-9: weighted scoring
+  python layout_scorer.py --scorer dvorak9 --letters "abc" --positions "QWE" \
+    --weights "input/dvorak9/speed_weights.csv"
+  python layout_scorer.py --scorer dvorak9 --letters "abc" --positions "QWE" \
+    --weights "input/dvorak9/comfort_weights.csv"
+  python dvorak9_scorer.py --letters "abc" --qwerty_keys "QWE" \
+    --weights "input/dvorak9/speed_weights.csv"
 
-# Engram: ignore cross-hand bigrams
-python layout_scorer.py --scorer engram --letters "abc" --positions "QWE" --ignore-cross-hand
-python engram_scorer.py --letters "abc" --positions "QWE" --ignore-cross-hand
-
-```
+  # Engram: ignore cross-hand bigrams
+  python layout_scorer.py --scorer engram --letters "abc" --positions "QWE" --ignore-cross-hand
+  python engram_scorer.py --letters "abc" --positions "QWE" --ignore-cross-hand
+  ```
 
 ### Multiple-scorer mode
-```bash
-# Run all scorers
-python layout_scorer.py --scorers all --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --text "hello world"
+  ```bash
+  # Run all scorers
+  python layout_scorer.py --scorers all --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --text "hello world"
 
-# Run specific subset
-python layout_scorer.py --scorers engram,dvorak9 --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --text "hello"
-```
+  # Run specific subset
+  python layout_scorer.py --scorers engram,dvorak9 --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --text "hello"
+  ```
 
 ### Layout comparison mode
-```bash
-# Compare layouts (layout string maps to QWERTY positions sequentially)
-# `dvorak:"',.pyfgcrl"` → '→Q, ,→W, .→E, p→R, y→T, f→Y, g→U, c→I, r→O, l→P
-python layout_scorer.py --compare qwerty:"qwertyuiop" dvorak:"',.pyfgcrl" colemak:"qwfpgjluy;" --text "hello world"
-
-# CSV comparison table
-python layout_scorer.py --compare qwerty:"qwertyuiopasdfghjkl;zxcvbnm,./" dvorak:"',.pyfgcrlaoeuidhtns;qjkxbmwvz" colemak:"qwfpgjluy;arstdhneiozxcvbkm,./" --csv-compare --text "hello world"
-```
+  ```bash
+  # Compare layouts (layout string maps to QWERTY positions sequentially)
+  # `dvorak:"',.pyfgcrl"` → '→Q, ,→W, .→E, p→R, y→T, f→Y, g→U, c→I, r→O, l→P
+  python layout_scorer.py --compare qwerty:"qwertyuiop" dvorak:"',.pyfgcrl" colemak:"qwfpgjluy;" --text "hello world"
+  ```
 
 ### Output formats
-```bash
-# Detailed output (default)
-python layout_scorer.py --scorer engram --letters "abc" --positions "ABC" --detailed
+  ```bash
+  # Detailed output (default)
+  python layout_scorer.py --scorer engram --letters "abc" --positions "ABC" --detailed
 
-# CSV output
-python layout_scorer.py --scorer engram --letters "abc" --positions "ABC" --csv
+  # CSV output
+  python layout_scorer.py --scorer engram --letters "abc" --positions "ABC" --csv single_result.csv
 
-# CSV comparison table (layout vs scorer matrix)
-python layout_scorer.py --compare qwerty:"qwertyuiopasdfghjkl;zxcvbnm,./" dvorak:"',.pyfgcrlaoeuidhtns;qjkxbmwvz" --csv-compare --text "hello"
+  # Save detailed comparison to CSV file
+  python layout_scorer.py --compare qwerty:"qwertyuiopasdfghjkl;zxcvbnm,./" dvorak:"',.pyfgcrlaoeuidhtns;qjkxbmwvz" colemak:"qwfpgjluy;arstdhneiozxcvbkm,./" --csv compare3layouts.csv --text "hello"
 
-# Score only
-python layout_scorer.py --scorer distance --letters "abc" --positions "ABC" --text "hello" --score-only
-```
+  # Score only
+  python layout_scorer.py --scorer distance --letters "abc" --positions "ABC" --text "hello" --score-only
+  ```
 
 ## Configuration
 The framework uses `config.yaml` for centralized configuration:
-```yaml
-common:
-  default_output_format: "detailed"
-  letter_filtering: true
-  data_directories:
-    base: "input/"
-    engram: "input/engram/"
-    dvorak9: "input/dvorak9/"
-distance_scorer:
-  description: "Physical finger travel distance analysis"
-  method: "Euclidean distance between key positions for finger transitions"
-  data_files:
-    position_map: null  # Built-in data
-  scoring_options:
-    distance_metric: "euclidean"
-  output:
-    primary_score_name: "normalized_score"
-    components: ["total_distance", "average_distance", "coverage"]
-...
-```
+
+  ```yaml
+  common:
+    default_output_format: "detailed"
+    letter_filtering: true
+    data_directories:
+      base: "input/"
+      engram: "input/engram/"
+      dvorak9: "input/dvorak9/"
+  distance_scorer:
+    description: "Physical finger travel distance analysis"
+    method: "Euclidean distance between key positions for finger transitions"
+    data_files:
+      position_map: null  # Built-in data
+    scoring_options:
+      distance_metric: "euclidean"
+    output:
+      primary_score_name: "normalized_score"
+      components: ["total_distance", "average_distance", "coverage"]
+  ...
+  ```
 
 ## Architecture
-```
-keyboard_layout_scorers/
-├── config.yaml                    # Central configuration
-├── README.md                      # This file
-├── layout_scorer.py               # Unified manager (main tool)
-├── 
-├── # Individual scorers
-├── distance_scorer.py             # Physical distance scoring
-├── dvorak9_scorer.py              # Dvorak-9 theoretical scoring
-├── engram_scorer.py               # Frequency-comfort scoring
-├──
-├── # Framework utilities  
-├── framework/
-│   ├── __init__.py                # Package initialization
-│   ├── config_loader.py           # Configuration management
-│   ├── base_scorer.py             # Abstract base classes  
-│   ├── layout_utils.py            # Layout utilities
-│   ├── data_utils.py              # Data loading utilities
-│   ├── text_utils.py              # Text processing utilities
-│   ├── output_utils.py            # Output formatting utilities
-│   └── cli_utils.py               # CLI utilities
-├──
-├── # Data directories
-├── input/
-│   ├── engram/                    # Engram scorer data files
-│   ├── dvorak9/                   # Dvorak-9 scorer data files  
-│   └── distance/                  # Distance scorer data files (if any)
-└──
-```
+  ```
+  keyboard_layout_scorers/
+  ├── config.yaml                    # Central configuration
+  ├── README.md                      # This file
+  ├── layout_scorer.py               # Unified manager (main tool)
+  ├── 
+  ├── # Individual scorers
+  ├── distance_scorer.py             # Physical distance scoring
+  ├── dvorak9_scorer.py              # Dvorak-9 theoretical scoring
+  ├── engram_scorer.py               # Frequency-comfort scoring
+  ├──
+  ├── # Framework utilities  
+  ├── framework/
+  │   ├── __init__.py                # Package initialization
+  │   ├── config_loader.py           # Configuration management
+  │   ├── base_scorer.py             # Abstract base classes  
+  │   ├── layout_utils.py            # Layout utilities
+  │   ├── data_utils.py              # Data loading utilities
+  │   ├── text_utils.py              # Text processing utilities
+  │   ├── output_utils.py            # Output formatting utilities
+  │   ├── cli_utils.py               # CLI utilities
+  │   ├── scorer_factory.py          # Scorer factory class
+  │   └── unified_scorer.py          # Unified scorer manager
+  ├──
+  ├── # Data directories
+  ├── input/
+  │   ├── engram/                    # Engram scorer data files
+  │   ├── dvorak9/                   # Dvorak-9 scorer data files  
+  │   └── distance/                  # Distance scorer data files (if any)
+  └──
+  ```
 
 ### Data file formats
 Required files by scorer:
@@ -159,7 +158,7 @@ Required files by scorer:
   - `input/engram/normalized_key_comfort_scores_24keys.csv` - Key comfort scores
   - `input/engram/normalized_key_pair_comfort_scores_32keys_LvsRpairs.csv` - Key-pair comfort
 
-All data files use CSV format with headers:
+  All data files use CSV format with headers:
 
   **Frequency files**:
   ```csv
@@ -182,7 +181,7 @@ All data files use CSV format with headers:
   F,8.1
   ```
 
-### Class hierarchy
+### Class Hierarchy 
   ```python
   BaseLayoutScorer (ABC)
   ├── DistanceScorer
@@ -194,81 +193,21 @@ All data files use CSV format with headers:
   ├── components: Dict[str, float]
   ├── metadata: Dict[str, Any]
   ├── validation_info: Dict[str, Any]
-  └── detailed_breakdown: Dict[str, Any]
+  ├── detailed_breakdown: Dict[str, Any]
+  └── extract_all_metrics() -> Dict[str, float]  # NEW
+
+  ScorerFactory
+  ├── create_scorer()
+  └── get_available_scorers()
 
   UnifiedLayoutScorer
-  ├── ScorerFactory
-  └── manages all individual scorers
+  ├── score_layout()
+  └── compare_layouts()
   ```
 
-## Adding New Scorers
-The framework makes it easy to add new scoring methods:
+## Testing and Validation
+The framework includes a comprehensive validation script:
 
-1. Create scorer class
-```python
-from framework.base_scorer import BaseLayoutScorer, ScoreResult
-class MyNewScorer(BaseLayoutScorer):
-    def load_data_files(self) -> None:
-        # Load any required CSV files
-        pass
-    def calculate_scores(self) -> ScoreResult:
-        # Implement your scoring logic
-        return ScoreResult(
-            primary_score=score,
-            components={"component1": value1, "component2": value2},
-            metadata={"method": "my_method"}
-        )
-```
-
-2. Add configuration
-Add to `config.yaml`:
-```yaml
-my_new_scorer:
-  description: "Description of scoring method"
-  method: "How it works"
-  data_files:
-    required_file: "path/to/data.csv"
-  scoring_options:
-    option1: "value1"
-  output:
-    primary_score_name: "my_score"
-    components: ["component1", "component2"]
-```
-
-3. Add to unified manager
-Update `layout_scorer.py`:
-```python
-# Import scorer
-from my_new_scorer import MyNewScorer
-
-# Add to ScorerFactory
-class ScorerFactory:
-    SCORERS = {
-        'distance': DistanceScorer,
-        'dvorak9': Dvorak9Scorer,
-        'engram': EngramScorer,
-        'my_new': MyNewScorer,  # Add here
-    }
-```
-
-4. Create individual CLI script
-```python
-from framework.cli_utils import create_standard_parser, handle_common_errors
-@handle_common_errors  
-def main():
-    cli_parser = create_standard_parser('my_new_scorer')
-    args = cli_parser.parse_args()
-    
-    # Standard framework workflow
-    config = load_scorer_config('my_new_scorer', args.config)
-    letters, positions, layout_mapping = get_layout_from_args(args)
-    
-    scorer = MyNewScorer(layout_mapping, config)
-    result = scorer.score_layout()
-    
-    print_results(result, args.output_format)
-
-if __name__ == "__main__":
-    sys.exit(main())
-```
-
+  ```bash
+  python validate_layout_scorer.py
+  ```

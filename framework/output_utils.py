@@ -444,3 +444,93 @@ def format_empirical_coverage(empirical_coverage: Dict[str, float]) -> str:
         f"({empirical_coverage['no_matches_percentage']:.1f}% of evaluated bigrams)",
     ]
     return "\n".join(lines)
+
+
+def save_detailed_comparison_csv(results: Dict[str, Dict[str, ScoreResult]], 
+                               output_file: str) -> None:
+    """
+    Save detailed CSV comparison with all metrics to file.
+    
+    Args:
+        results: Nested dict {layout_name: {scorer_name: ScoreResult}}
+        output_file: File path to save CSV
+    """
+    import csv
+    
+    # Collect all unique metrics across all layouts and scorers
+    all_metrics = set()
+    detailed_data = {}
+    
+    for layout_name, layout_results in results.items():
+        detailed_data[layout_name] = {}
+        for scorer_name, result in layout_results.items():
+            if not result.metadata.get('scorer_failed', False):
+                metrics = result.extract_all_metrics()
+                detailed_data[layout_name].update(metrics)
+                all_metrics.update(metrics.keys())
+    
+    # Sort metrics logically
+    sorted_metrics = sorted(all_metrics)
+    
+    # Write CSV file
+    with open(output_file, 'w', newline='') as f:
+        writer = csv.writer(f)
+        
+        # Write header
+        header = ['layout'] + sorted_metrics
+        writer.writerow(header)
+        
+        # Write data rows
+        for layout_name in sorted(detailed_data.keys()):
+            row = [layout_name]
+            layout_metrics = detailed_data[layout_name]
+            
+            for metric in sorted_metrics:
+                if metric in layout_metrics:
+                    row.append(f"{layout_metrics[metric]:.6f}")
+                else:
+                    row.append("N/A")
+            
+            writer.writerow(row)
+
+
+def print_comparison_summary(results: Dict[str, Dict[str, ScoreResult]], 
+                           output_format: str = 'detailed',
+                           quiet: bool = False) -> None:
+    """
+    Print comparison results in the specified format.
+    
+    Args:
+        results: Nested dict {layout_name: {scorer_name: ScoreResult}}
+        output_format: Format type ('detailed', 'csv', 'score_only')
+        quiet: If True, suppress verbose output
+    """
+    if output_format == 'csv':
+        # Simple CSV output (primary scores only)
+        print("layout,scorer,primary_score")
+        for layout_name, layout_results in results.items():
+            for scorer_name, result in layout_results.items():
+                if not result.metadata.get('scorer_failed', False):
+                    print(f"{layout_name},{scorer_name},{result.primary_score:.6f}")
+    
+    elif output_format == 'score_only':
+        # Score-only output
+        for layout_name, layout_results in results.items():
+            scores = []
+            for scorer_name in ['distance', 'dvorak9', 'engram']:
+                if scorer_name in layout_results and not layout_results[scorer_name].metadata.get('scorer_failed', False):
+                    scores.append(f"{layout_results[scorer_name].primary_score:.6f}")
+                else:
+                    scores.append("N/A")
+            print(f"{layout_name}: {' '.join(scores)}")
+    
+    else:  # detailed
+        for layout_name, layout_results in results.items():
+            if not quiet:
+                print(f"\n=== {layout_name.upper()} ===")
+            
+            for scorer_name, result in layout_results.items():
+                if not result.metadata.get('scorer_failed', False):
+                    if not quiet:
+                        print(f"\n{scorer_name} scorer:")
+                    print_results(result, 'detailed')

@@ -128,6 +128,61 @@ class ScoreResult:
         return "\n".join(summary_lines)
 
 
+    def extract_all_metrics(self) -> Dict[str, float]:
+        """
+        Extract all numeric metrics from this result for detailed analysis.
+        
+        Returns:
+            Dictionary of all available numeric metrics with prefixed names
+        """
+        metrics = {}
+        
+        # Always include the primary score
+        metrics[f"{self.scorer_name}_primary"] = self.primary_score
+        
+        # Add component scores
+        for component, score in self.components.items():
+            metrics[f"{self.scorer_name}_{component}"] = score
+        
+        # Extract scorer-specific metrics from metadata
+        if 'distance' in self.scorer_name:
+            # Distance scorer metrics
+            for key, value in self.metadata.items():
+                if isinstance(value, (int, float)) and not key.startswith('_'):
+                    metrics[f"distance_{key}"] = float(value)
+        
+        elif 'dvorak9' in self.scorer_name:
+            # Dvorak9 scorer - look for the 9 individual principle scores
+            principle_names = [
+                'same_hand_finger', 'same_finger', 'hand_alternation', 
+                'finger_strength', 'row_jumping', 'home_row_usage',
+                'outward_rolls', 'inward_rolls', 'lateral_movement'
+            ]
+            
+            for principle in principle_names:
+                if principle in self.metadata:
+                    metrics[f"dvorak9_{principle}"] = float(self.metadata[principle])
+            
+            # Also check for any other numeric metadata
+            for key, value in self.metadata.items():
+                if isinstance(value, (int, float)) and key not in principle_names and not key.startswith('_'):
+                    metrics[f"dvorak9_{key}"] = float(value)
+        
+        elif 'engram' in self.scorer_name:
+            # Engram scorer metrics
+            engram_metrics = ['item_score', 'item_pair_score', 'total_score', 'comfort_score', 'frequency_score']
+            
+            for metric in engram_metrics:
+                if metric in self.metadata:
+                    metrics[f"engram_{metric}"] = float(self.metadata[metric])
+            
+            # Also check for any other numeric metadata
+            for key, value in self.metadata.items():
+                if isinstance(value, (int, float)) and key not in engram_metrics and not key.startswith('_'):
+                    metrics[f"engram_{key}"] = float(value)
+        
+        return metrics
+
 class BaseLayoutScorer(ABC):
     """
     Abstract base class for keyboard layout scoring methods.

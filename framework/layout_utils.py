@@ -326,3 +326,41 @@ def compare_layouts(mapping1: Dict[str, str],
         'identical_positions': len(common_chars) - len(position_diffs),
         'total_differences': len(position_diffs) + len(only_in_1) + len(only_in_2),
     }
+
+def parse_layout_compare(compare_args: List[str]) -> Dict[str, Dict[str, str]]:
+    """
+    Parse layout comparison arguments.
+    
+    Args:
+        compare_args: List of "name:layout" strings where layout is the actual layout
+        
+    Returns:
+        Dict mapping layout names to character mappings
+    """
+    layouts = {}
+    
+    # Standard QWERTY positions for mapping
+    standard_positions = "QWERTYUIOP[ASDFGHJKL;'ZXCVBNM,./"
+    
+    for arg in compare_args:
+        if ':' not in arg:
+            raise ValueError(f"Invalid compare format: '{arg}'. Expected 'name:layout'")
+        
+        name, layout_str = arg.split(':', 1)
+        
+        # The layout string IS the layout - map each character to corresponding QWERTY position
+        if len(layout_str) > len(standard_positions):
+            layout_str = layout_str[:len(standard_positions)]
+        
+        # Create mapping: layout_char → QWERTY_position
+        layout_mapping = {}
+        for i, char in enumerate(layout_str):
+            if i < len(standard_positions):
+                layout_mapping[char.lower()] = standard_positions[i]
+        
+        # Filter to letters only
+        layout_mapping = filter_to_letters_only(layout_mapping)
+        
+        layouts[name] = layout_mapping
+    
+    return layouts
