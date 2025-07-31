@@ -2,7 +2,9 @@
 """
 Comprehensive validation script for layout_scorer.py
 
-Tests all argument combinations, output formats, and error conditions.
+Tests all argument combinations, output formats, and error conditions
+including new features: cross-hand filtering, multi-approach scoring,
+dual-mode scoring, and common-keys comparison.
 
 # Run all validation tests
 python validate_layout_scorer.py
@@ -28,7 +30,7 @@ import shutil
 
 
 class LayoutScorerValidator:
-    """Comprehensive validator for layout_scorer.py functionality."""
+    """Comprehensive validator for layout_scorer.py functionality with updated tests."""
     
     def __init__(self, script_path: str = "layout_scorer.py", verbose: bool = True):
         """
@@ -52,11 +54,11 @@ class LayoutScorerValidator:
         
         self.test_text = "the quick brown fox jumps over the lazy dog"
         
-        # Comparison layouts
+        # Comparison layouts (updated to ensure some common keys)  
         self.comparison_layouts = [
             'qwerty:"qwertyuiopasdfghjklzxcvbnm"',
             'dvorak:"\',.pyfgcrlaoeuidhtnsqjkxbmwvz"',
-            'colemak:"qwfpgjluy;arstdhneiozxcvbkm"'
+            'colemak:"qwfpgjluyarstdhneiozxcvbkm"'
         ]
         
     def setup(self):
@@ -96,7 +98,7 @@ class LayoutScorerValidator:
                 cmd, 
                 capture_output=True, 
                 text=True, 
-                timeout=30
+                timeout=60  # Increased timeout for complex operations
             )
             
             success = (result.returncode == 0) == expect_success
@@ -108,11 +110,12 @@ class LayoutScorerValidator:
             return False, "", f"Command failed: {e}"
     
     def test_single_scorer_modes(self):
-        """Test all single scorer modes."""
+        """Test all single scorer modes with new features."""
         tests = []
         
         for scorer in ['distance', 'dvorak9', 'engram']:
             for layout_name, layout in self.test_layouts.items():
+                # Basic test
                 args = [
                     '--scorer', scorer,
                     '--letters', layout['letters'],
@@ -125,6 +128,11 @@ class LayoutScorerValidator:
                 
                 test_name = f"single_{scorer}_{layout_name}"
                 tests.append((test_name, args, True))
+                
+                # Test with cross-hand filtering (new feature)
+                cross_hand_args = args + ['--ignore-cross-hand']
+                test_name = f"single_{scorer}_{layout_name}_cross_hand"
+                tests.append((test_name, cross_hand_args, True))
         
         return self._run_test_batch("Single Scorer Modes", tests)
     
@@ -144,14 +152,20 @@ class LayoutScorerValidator:
         ]
         
         for combo in scorer_combos:
+            # Basic test
             args = ['--scorers', combo] + base_args + ['--text', self.test_text]
             test_name = f"multi_{combo.replace(',', '_')}"
             tests.append((test_name, args, True))
+            
+            # Test with cross-hand filtering
+            cross_hand_args = args + ['--ignore-cross-hand']
+            test_name = f"multi_{combo.replace(',', '_')}_cross_hand"
+            tests.append((test_name, cross_hand_args, True))
         
         return self._run_test_batch("Multiple Scorer Modes", tests)
     
     def test_comparison_modes(self):
-        """Test layout comparison modes."""
+        """Test layout comparison modes including common-keys feature."""
         tests = []
         
         # Basic comparison
@@ -166,46 +180,67 @@ class LayoutScorerValidator:
         args = ['--compare'] + self.comparison_layouts[:2]
         tests.append(("compare_no_text", args, True))
         
+        # Comparison with cross-hand filtering
+        args = ['--compare'] + self.comparison_layouts[:2] + ['--text', self.test_text, '--ignore-cross-hand']
+        tests.append(("compare_cross_hand", args, True))
+        
         return self._run_test_batch("Comparison Modes", tests)
     
     def test_output_formats(self):
-        """Test all output formats."""
+        """Test all output formats with new scorer capabilities."""
         tests = []
         
         layout = self.test_layouts['medium']
+        
+        # Test each scorer with each format to validate new output structures
+        for scorer in ['distance', 'dvorak9', 'engram']:
+            base_args = [
+                '--scorer', scorer,
+                '--letters', layout['letters'],
+                '--positions', layout['positions']
+            ]
+            
+            if scorer == 'distance':
+                base_args.extend(['--text', self.test_text])
+            
+            # Test each format
+            for format_type in ['detailed', 'csv', 'score_only']:
+                args = base_args + ['--format', format_type]
+                tests.append((f"format_{scorer}_{format_type}", args, True))
+        
+        # Test format shortcuts
         base_args = [
             '--scorer', 'dvorak9',
             '--letters', layout['letters'],
             '--positions', layout['positions']
         ]
         
-        # Test each format
-        for format_type in ['detailed', 'csv', 'score_only']:
-            args = base_args + ['--format', format_type]
-            tests.append((f"format_{format_type}", args, True))
-        
-        # Test format shortcuts
         args = base_args + ['--score-only']
         tests.append(("format_shortcut_score_only", args, True))
         
         return self._run_test_batch("Output Formats", tests)
     
     def test_csv_file_output(self):
-        """Test CSV file output functionality."""
+        """Test CSV file output functionality with new data structures."""
         tests = []
         
-        # Single layout CSV output
-        csv_file = Path(self.temp_dir) / "single_output.csv"
-        layout = self.test_layouts['medium']
-        args = [
-            '--scorer', 'dvorak9',
-            '--letters', layout['letters'],
-            '--positions', layout['positions'],
-            '--csv', str(csv_file)
-        ]
-        tests.append(("csv_single", args, True))
+        # Single layout CSV output - test each scorer to validate new components
+        for scorer in ['distance', 'dvorak9', 'engram']:
+            csv_file = Path(self.temp_dir) / f"single_{scorer}_output.csv"
+            layout = self.test_layouts['medium']
+            args = [
+                '--scorer', scorer,
+                '--letters', layout['letters'],
+                '--positions', layout['positions'],
+                '--csv', str(csv_file)
+            ]
+            
+            if scorer == 'distance':
+                args.extend(['--text', self.test_text])
+            
+            tests.append((f"csv_single_{scorer}", args, True))
         
-        # Comparison CSV output
+        # Comparison CSV output (should include both full and _common results)
         csv_file2 = Path(self.temp_dir) / "comparison_output.csv"
         args = [
             '--compare'
@@ -219,10 +254,13 @@ class LayoutScorerValidator:
         
         # Validate CSV files were created and have correct structure
         for test_name, _, _ in tests:
-            if test_name == "csv_single":
-                self._validate_csv_file(csv_file, expected_rows=1)
+            if test_name.startswith("csv_single"):
+                scorer = test_name.split('_')[2]
+                csv_file = Path(self.temp_dir) / f"single_{scorer}_output.csv"
+                self._validate_csv_file(csv_file, expected_rows=1, test_name=test_name)
             elif test_name == "csv_comparison":
-                self._validate_csv_file(csv_file2, expected_rows=2)
+                # Should have both full layouts and _common variants (4 total)
+                self._validate_csv_file(csv_file2, expected_rows=4, test_name=test_name)
         
         return results
     
@@ -245,29 +283,37 @@ class LayoutScorerValidator:
         args = base_args + ['--text-file', self.test_text_file]
         tests.append(("text_file", args, True))
         
+        # Text with cross-hand filtering
+        args = base_args + ['--text', self.test_text, '--ignore-cross-hand']
+        tests.append(("text_cross_hand", args, True))
+        
         return self._run_test_batch("Text Input Methods", tests)
     
-    def test_scorer_specific_options(self):
-        """Test scorer-specific options."""
+    def test_cross_hand_filtering(self):
+        """Test cross-hand filtering across all scorers."""
         tests = []
         
         layout = self.test_layouts['medium']
         base_args = ['--letters', layout['letters'], '--positions', layout['positions']]
         
-        # Engram with ignore-cross-hand
-        args = ['--scorer', 'engram'] + base_args + ['--ignore-cross-hand']
-        tests.append(("engram_ignore_cross_hand", args, True))
+        # Test cross-hand filtering for each scorer
+        for scorer in ['distance', 'dvorak9', 'engram']:
+            args = ['--scorer', scorer] + base_args + ['--ignore-cross-hand']
+            
+            if scorer == 'distance':
+                args.extend(['--text', self.test_text])
+            
+            test_name = f"cross_hand_{scorer}"
+            tests.append((test_name, args, True))
         
-        # Dvorak9 with weights (if weights file exists)
-        weights_file = "input/dvorak9/speed_weights.csv"
-        if Path(weights_file).exists():
-            args = ['--scorer', 'dvorak9'] + base_args + ['--weights', weights_file]
-            tests.append(("dvorak9_weights", args, True))
+        # Test with multiple scorers
+        args = ['--scorers', 'dvorak9,engram'] + base_args + ['--ignore-cross-hand']
+        tests.append(("cross_hand_multi", args, True))
         
-        return self._run_test_batch("Scorer-Specific Options", tests)
+        return self._run_test_batch("Cross-hand Filtering", tests)
     
     def test_error_conditions(self):
-        """Test various error conditions."""
+        """Test various error conditions (updated to remove weights-related errors)."""
         tests = []
         
         # Missing required arguments
@@ -282,12 +328,12 @@ class LayoutScorerValidator:
             '--positions', 'ABC'
         ], False))
         
-        # Distance scorer without text (should succeed but report error)
+        # Distance scorer without text (should succeed but report error in output)
         tests.append(("error_distance_no_text", [
             '--scorer', 'distance',
             '--letters', 'abc',
             '--positions', 'ABC'
-        ], True))  # Should succeed (True)
+        ], True))  # Changed to True - should succeed but report error in output
         
         # Invalid text file
         tests.append(("error_invalid_text_file", [
@@ -309,21 +355,50 @@ class LayoutScorerValidator:
             '--compare', 'invalid_format'  # Missing colon
         ], False))
         
+        # Note: Removed --weights related error tests since argument no longer exists
+        
         return self._run_test_batch("Error Conditions", tests)
+    
+    def test_new_scoring_features(self):
+        """Test new scoring features: dvorak9 multi-approach, engram dual-mode."""
+        tests = []
+        
+        layout = self.test_layouts['medium']
+        base_args = ['--letters', layout['letters'], '--positions', layout['positions']]
+        
+        # Test dvorak9 shows multiple approaches in output (detailed is default format)
+        args = ['--scorer', 'dvorak9'] + base_args
+        tests.append(("dvorak9_multi_approach", args, True))
+        
+        # Test engram shows both 32-key and 24-key modes in output (detailed is default format)
+        args = ['--scorer', 'engram'] + base_args
+        tests.append(("engram_dual_mode", args, True))
+        
+        # Test CSV output includes new components
+        csv_file = Path(self.temp_dir) / "new_features.csv"
+        args = ['--scorers', 'dvorak9,engram'] + base_args + ['--csv', str(csv_file)]
+        tests.append(("new_features_csv", args, True))
+        
+        return self._run_test_batch("New Scoring Features", tests)
     
     def test_quiet_mode(self):
         """Test quiet mode functionality."""
         tests = []
         
         layout = self.test_layouts['medium']
+        
+        # Test quiet mode with single scorer
         base_args = [
             '--scorer', 'dvorak9',
             '--letters', layout['letters'],
             '--positions', layout['positions'],
             '--quiet'
         ]
+        tests.append(("quiet_single", base_args, True))
         
-        tests.append(("quiet_mode", base_args, True))
+        # Test quiet mode with comparison
+        args = ['--compare'] + self.comparison_layouts[:2] + ['--quiet']
+        tests.append(("quiet_comparison", args, True))
         
         return self._run_test_batch("Quiet Mode", tests)
     
@@ -352,7 +427,7 @@ class LayoutScorerValidator:
             
             if self.verbose:
                 status = "✓ PASS" if success else "✗ FAIL"
-                print(f"  {test_name:<25} {status}")
+                print(f"  {test_name:<30} {status}")
                 
                 if not success and expect_success:
                     print(f"    Command: {' '.join([self.script_path] + args)}")
@@ -361,10 +436,10 @@ class LayoutScorerValidator:
         
         return batch_results
     
-    def _validate_csv_file(self, csv_file: Path, expected_rows: int = None):
+    def _validate_csv_file(self, csv_file: Path, expected_rows: int = None, test_name: str = ""):
         """Validate that a CSV file exists and has the expected structure."""
         if not csv_file.exists():
-            print(f"  ✗ CSV file not created: {csv_file}")
+            print(f"  ✗ CSV file not created: {csv_file} (test: {test_name})")
             return False
         
         try:
@@ -373,26 +448,41 @@ class LayoutScorerValidator:
                 rows = list(reader)
                 
                 if len(rows) < 2:  # Header + at least one data row
-                    print(f"  ✗ CSV file has insufficient rows: {len(rows)}")
+                    print(f"  ✗ CSV file has insufficient rows: {len(rows)} (test: {test_name})")
                     return False
                 
                 if expected_rows and len(rows) - 1 != expected_rows:  # -1 for header
-                    print(f"  ✗ CSV file has {len(rows)-1} data rows, expected {expected_rows}")
+                    print(f"  ✗ CSV file has {len(rows)-1} data rows, expected {expected_rows} (test: {test_name})")
                     return False
                 
                 # Check header
                 header = rows[0]
                 if 'layout' not in header:
-                    print(f"  ✗ CSV header missing 'layout' column")
+                    print(f"  ✗ CSV header missing 'layout' column (test: {test_name})")
                     return False
                 
+                # Validate that new component columns are present for relevant tests
+                if 'dvorak9' in test_name:
+                    expected_components = ['pure_dvorak_score', 'frequency_weighted_score']
+                    for component in expected_components:
+                        if not any(component in col for col in header):
+                            print(f"  ✗ Missing expected dvorak9 component: {component} (test: {test_name})")
+                            return False
+                
+                if 'engram' in test_name:
+                    expected_components = ['total_score_32key', 'total_score_24key']
+                    for component in expected_components:
+                        if not any(component in col for col in header):
+                            print(f"  ✗ Missing expected engram component: {component} (test: {test_name})")
+                            return False
+                
                 if self.verbose:
-                    print(f"  ✓ CSV file valid: {len(rows)-1} rows, {len(header)} columns")
+                    print(f"  ✓ CSV file valid: {len(rows)-1} rows, {len(header)} columns (test: {test_name})")
                 
                 return True
                 
         except Exception as e:
-            print(f"  ✗ Error reading CSV file: {e}")
+            print(f"  ✗ Error reading CSV file: {e} (test: {test_name})")
             return False
     
     def run_all_tests(self) -> Dict[str, Any]:
@@ -416,7 +506,8 @@ class LayoutScorerValidator:
                 self.test_output_formats,
                 self.test_csv_file_output,
                 self.test_text_input_methods,
-                self.test_scorer_specific_options,
+                self.test_cross_hand_filtering,
+                self.test_new_scoring_features,
                 self.test_error_conditions,
                 self.test_quiet_mode,
             ]
@@ -435,13 +526,23 @@ class LayoutScorerValidator:
             print(f"Failed: {failed_tests}")
             print(f"Success rate: {passed_tests/total_tests*100:.1f}%")
             
+            # Group failures by category
             if failed_tests > 0:
-                print(f"\nFailed tests:")
+                print(f"\nFailed tests by category:")
+                failure_categories = {}
                 for result in self.test_results:
                     if not result['success']:
-                        print(f"  - {result['batch']}: {result['test_name']}")
-                        if result['stderr']:
-                            print(f"    Error: {result['stderr'].strip()}")
+                        category = result['batch']
+                        if category not in failure_categories:
+                            failure_categories[category] = []
+                        failure_categories[category].append(result['test_name'])
+                
+                for category, failed_names in failure_categories.items():
+                    print(f"  {category}: {len(failed_names)} failures")
+                    for name in failed_names[:3]:  # Show first 3
+                        print(f"    - {name}")
+                    if len(failed_names) > 3:
+                        print(f"    ... and {len(failed_names) - 3} more")
             
             return {
                 'success': failed_tests == 0,

@@ -20,6 +20,9 @@ Usage:
   # Basic usage
   python distance_scorer.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --text "the quick brown fox jumps over the lazy dog"
 
+  # With cross-hand filtering
+  python distance_scorer.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --text "hello world" --ignore-cross-hand
+
   # With text file
   python distance_scorer.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --text-file sample.txt
 
@@ -38,7 +41,7 @@ from pathlib import Path
 # Import framework components
 from framework.base_scorer import BaseLayoutScorer, ScoreResult
 from framework.config_loader import load_scorer_config
-from framework.layout_utils import filter_to_letters_only
+from framework.layout_utils import filter_to_letters_only, is_same_hand_pair
 from framework.text_utils import extract_bigrams, clean_text_for_analysis, validate_text_input
 from framework.output_utils import print_results
 from framework.cli_utils import create_standard_parser, handle_common_errors, get_layout_from_args
@@ -139,6 +142,10 @@ class DistanceScorer(BaseLayoutScorer):
         self.finger_positions = {}
         self._initialize_finger_positions()
         
+        # Cross-hand filtering option
+        scoring_options = self.config.get('scoring_options', {})
+        self.ignore_cross_hand = scoring_options.get('ignore_cross_hand', False)
+        
         # Validate that all mapped positions exist in our position map
         self._validate_positions()
     
@@ -225,7 +232,15 @@ class DistanceScorer(BaseLayoutScorer):
         return distance
     
     def analyze_text_finger_travel(self, text: str) -> Dict[str, Any]:
+        """
+        Analyze finger travel distance for the given text.
         
+        Args:
+            text: Text to analyze
+            
+        Returns:
+            Dictionary with travel analysis results
+        """
         if not text.strip():
             return self._empty_results()
         
@@ -237,6 +252,30 @@ class DistanceScorer(BaseLayoutScorer):
         
         if len(chars) == 0:
             return self._empty_results()
+        
+        # Filter cross-hand bigrams if requested
+        if self.ignore_cross_hand:
+            filtered_chars = []
+            for i, char in enumerate(chars):
+                if i == 0:
+                    filtered_chars.append(char)
+                    continue
+                
+                # Check if this forms a cross-hand bigram with previous character
+                prev_char = chars[i - 1]
+                prev_pos = self.get_qwerty_key_for_char(prev_char)
+                curr_pos = self.get_qwerty_key_for_char(char)
+                
+                if prev_pos and curr_pos and not is_same_hand_pair(prev_pos, curr_pos):
+                    # Skip this character (cross-hand bigram)
+                    continue
+                else:
+                    filtered_chars.append(char)
+            
+            chars = filtered_chars
+            
+            if len(chars) == 0:
+                return self._empty_results()
         
         # Calculate travel distance for each character
         travel_distances = []
@@ -356,11 +395,13 @@ class DistanceScorer(BaseLayoutScorer):
             metadata={
                 'text_length': len(text),
                 'scoring_method': 'cumulative_finger_travel',
-                'description': 'Tracks each finger position and calculates cumulative travel distance',
+                'ignore_cross_hand': self.ignore_cross_hand,
+                'description': 'Tracks each finger position and calculates cumulative travel distance with optional cross-hand filtering',
             },
             validation_info={
                 'keystroke_count': analysis['keystroke_count'],
-                'text_characters': len([c for c in text if c.isalpha() or c in ',.;\'/-=[]\\'])
+                'text_characters': len([c for c in text if c.isalpha() or c in ',.;\'/-=[]\\'])],
+                'cross_hand_filtering': self.ignore_cross_hand,
             },
             detailed_breakdown={
                 'finger_statistics': analysis['finger_statistics'],
@@ -389,6 +430,12 @@ def main() -> int:
         
         # Override with command-line arguments
         config['quiet_mode'] = args.quiet
+        
+        # Handle cross-hand filtering
+        if hasattr(args, 'ignore_cross_hand') and args.ignore_cross_hand:
+            if 'scoring_options' not in config:
+                config['scoring_options'] = {}
+            config['scoring_options']['ignore_cross_hand'] = True
         
         # Get text input
         if args.text_file:

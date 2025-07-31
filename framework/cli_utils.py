@@ -74,7 +74,7 @@ class StandardCLIParser:
         """Add standard layout definition arguments."""
         layout_group = parser.add_argument_group('Layout Definition')
         
-        # Use standard argument names directly (not from config for now)
+        # Standard argument names
         layout_group.add_argument(
             '--letters', '--layout-letters',
             dest='letters',
@@ -165,22 +165,28 @@ class StandardCLIParser:
         
         scorer_group = parser.add_argument_group(f'{self.scorer_name.title()} Options')
         
-        # Weights argument (for dvorak9)
-        if 'dvorak9' in self.scorer_name:
-            scorer_group.add_argument(
-                '--weights',
-                dest='weights',
-                help="Path to empirical weights CSV file (optional)"
-            )
+        # Cross-hand filtering (available for all scorers)
+        scorer_group.add_argument(
+            '--ignore-cross-hand',
+            dest='ignore_cross_hand',
+            action='store_true',
+            help="Ignore bigrams that cross hands (available for all scorers)"
+        )
         
-        # Cross-hand filtering (for engram)
-        if 'engram' in self.scorer_name:
-            scorer_group.add_argument(
-                '--ignore-cross-hand',
-                dest='ignore_cross_hand',
-                action='store_true',
-                help="Ignore bigrams that cross hands"
-            )
+        # Distance scorer specific arguments
+        if 'distance' in self.scorer_name:
+            # Text input is already handled in input arguments above
+            pass
+        
+        # Engram scorer specific arguments
+        elif 'engram' in self.scorer_name:
+            # Cross-hand filtering already added above
+            pass
+        
+        # Dvorak9 scorer specific arguments
+        elif 'dvorak9' in self.scorer_name:
+            # Note: --weights argument removed since scorer automatically loads all available weights
+            pass
         
         # Add data file overrides
         data_files = self.scorer_config.get('data_files', {})
@@ -204,6 +210,12 @@ class StandardCLIParser:
         lines.append(f"  {basic_cmd}")
         lines.append("")
         
+        # Cross-hand filtering example (available for all scorers)
+        cross_hand_cmd = f"{basic_cmd} --ignore-cross-hand"
+        lines.append(f"  # With cross-hand filtering")
+        lines.append(f"  {cross_hand_cmd}")
+        lines.append("")
+        
         # CSV output example
         csv_cmd = f"{basic_cmd} --csv"
         lines.append(f"  # CSV output")
@@ -211,22 +223,29 @@ class StandardCLIParser:
         lines.append("")
         
         # Scorer-specific examples
-        if 'dvorak9' in self.scorer_name:
-            weights_cmd = f"{basic_cmd} --weights input/dvorak9/speed_weights.csv"
-            lines.append(f"  # With empirical weights")
-            lines.append(f"  {weights_cmd}")
-            lines.append("")
-        
         if 'distance' in self.scorer_name:
             text_cmd = f"{basic_cmd} --text 'the quick brown fox'"
             lines.append(f"  # With text input")
             lines.append(f"  {text_cmd}")
             lines.append("")
+            
+            text_filter_cmd = f"{basic_cmd} --text 'hello world' --ignore-cross-hand"
+            lines.append(f"  # Distance analysis with cross-hand filtering")
+            lines.append(f"  {text_filter_cmd}")
+            lines.append("")
         
-        if 'engram' in self.scorer_name:
-            cross_hand_cmd = f"{basic_cmd} --ignore-cross-hand"
-            lines.append(f"  # Ignore cross-hand bigrams")
-            lines.append(f"  {cross_hand_cmd}")
+        elif 'dvorak9' in self.scorer_name:
+            lines.append(f"  # Shows all four scoring approaches:")
+            lines.append(f"  #   - Pure Dvorak (unweighted average)")
+            lines.append(f"  #   - Frequency-weighted (English bigrams)")
+            lines.append(f"  #   - Speed-weighted (if speed_weights.csv available)")
+            lines.append(f"  #   - Comfort-weighted (if comfort_weights.csv available)")
+            lines.append("")
+        
+        elif 'engram' in self.scorer_name:
+            lines.append(f"  # Shows both scoring modes:")
+            lines.append(f"  #   - 32-key (full layout)")
+            lines.append(f"  #   - 24-key (home block only: qwerasdfzxcvuiopjkl;m,./)")
             lines.append("")
         
         # Data files info
@@ -235,7 +254,8 @@ class StandardCLIParser:
             lines.append("Required data files:")
             for file_key, filepath in data_files.items():
                 if filepath:
-                    lines.append(f"  {file_key}: {filepath}")
+                    status = " (optional)" if file_key in ['speed_weights', 'comfort_weights'] else ""
+                    lines.append(f"  {file_key}: {filepath}{status}")
             lines.append("")
         
         return "\n".join(lines)
@@ -389,7 +409,8 @@ def print_configuration_summary(config: Dict[str, Any],
         for file_key, filepath in data_files.items():
             if filepath:
                 status = "✓" if Path(filepath).exists() else "✗"
-                print(f"  {status} {file_key}: {filepath}")
+                optional = " (optional)" if file_key in ['speed_weights', 'comfort_weights'] else ""
+                print(f"  {status} {file_key}: {filepath}{optional}")
     
     # Scoring options
     scoring_options = config.get('scoring_options', {})

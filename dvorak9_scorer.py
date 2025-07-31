@@ -5,7 +5,7 @@ Dvorak-9 Layout Scorer for scoring keyboard layouts.
 (c) Arno Klein (arnoklein.info), MIT License (see LICENSE)
 
 This script implements the 9 evaluation criteria derived from Dvorak's "Typing Behavior" 
-book and patent (1936) with empirical weights based on analysis of real typing performance data.
+book and patent (1936) with multiple scoring approaches including empirical weights.
 
 The 9 scoring criteria for typing bigrams are (0-1, higher = better performance):
     1. Hands - favor alternating hands over same hand
@@ -18,84 +18,41 @@ The 9 scoring criteria for typing bigrams are (0-1, higher = better performance)
     8. Strum - favor inward rolls over outward rolls (same hand)
     9. Strong fingers - favor stronger fingers over weaker ones
 
-Three scoring approaches are provided:
+Four scoring approaches are provided:
   - Pure Dvorak score: unweighted average of all 9 individual criteria
-  - Frequency-weighted score (English bigram frequency-weighted average of 9 criteria)
-  - Speed- or comfort-weighted score (frequency-weighted with speed or comfort combination weights)
+  - Frequency-weighted score: English bigram frequency-weighted average of 9 criteria
+  - Speed-weighted score: frequency-weighted with empirical speed combination weights
+  - Comfort-weighted score: frequency-weighted with empirical comfort combination weights
 
 Usage:
-    qwerty_layout = "qwertyuiopasdfghjkl;zxcvbnm,./"
-    dvorak_layout = "',.pyfgcrlaoeuidhtns;qjkxbmwvz"
+    # Basic scoring (shows all four approaches)
+    python dvorak9_scorer.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ"
 
-    # Basic scoring (shows all three approaches)
-    python dvorak9_scorer.py --letters "etaoinshrlcu" --qwerty_keys "FDESGJWXRTYZ"
+    # With cross-hand filtering
+    python dvorak9_scorer.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --ignore-cross-hand
 
-    # Speed-weighted scoring
-    python dvorak9_scorer.py --letters qwerty_layout --qwerty_keys qwerty_layout \
-    --weights "input/dvorak9/speed_weights.csv"
+    # CSV output
+    python dvorak9_scorer.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --csv
 
-    # Comfort-weighted scoring
-    python dvorak9_scorer.py --letters qwerty_layout --qwerty_keys qwerty_layout \
-    --weights "input/dvorak9/comfort_weights.csv"
-
-    # Custom frequency file
-    python dvorak9_scorer.py --letters qwerty_layout --qwerty_keys qwerty_layout \
-    --frequency_csv "input/engram/normalized_letter_pair_frequencies_en.csv"
-
-    # CSV output (clean CSV data only)
-    python dvorak9_scorer.py --letters qwerty_layout --qwerty_keys qwerty_layout --csv
-
-    # Just ten scores output (average score + 9 individual scores)
-    python dvorak9_scorer.py --letters qwerty_layout --qwerty_keys qwerty_layout --ten_scores
+    # Score only
+    python dvorak9_scorer.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --score-only
 
 Required input files:
   - normalized_letter_pair_frequencies_en.csv - English bigram frequencies
   - key_pair_scores.csv - Precomputed Dvorak-9 scores  
   - speed_weights.csv - Speed-based empirical weights (optional)
   - comfort_weights.csv - Comfort-based empirical weights (optional)
-
-Input file generation:
-  - Precompute Dvorak-9 scores for all possible key-pair combinations (generate_key_pair_scores.py)
-  - Generate empirical weights from typing speed data (generate_combinations_weights_from_speed.py)
-    - Analyzes 136M+ keystroke dataset for speed correlations
-    - Includes linguistic frequency adjustment
-    - Negative correlations indicate speed benefits (faster typing)
-    - FDR-corrected statistical significance testing
-  - Generate empirical weights from comfort preference data (generate_combinations_weights_from_comfort.py)
-    - Analyzes subjective comfort ratings from typing studies
-    - Positive correlations indicate comfort benefits
-    - Extended from 24 to 32 keys using a static assignment for keys outside the home blocks
-    - FDR-corrected statistical significance testing
-
-Weighting example:
-If the empirical weights file has a combination ("hands", "fingers") with weight -0.25, then:
-  - Bigram "TH" with scores {hands: 1.0, fingers: 1.0, others: 0.0} → strength = 1.0 → final = -0.25
-  - Bigram "ER" with scores {hands: 1.0, fingers: 0.5, others: 0.0} → strength = 0.75 → final = -0.1875
-
-Data sources:
-  - Typing performance data (136M Keystrokes dataset):
-    - Correctly typed bigrams from correctly typed words only
-    - 32 standard keyboard keys (includes numbers, letters, punctuation)
-    - See [process_3.5M_keystrokes](https://github.com/binarybottle/process_3.5M_keystrokes)
-    - Dhakal et al. Observations on Typing from 136 Million Keystrokes. CHI 2018.
-  - Comfort rating data (subjective comfort preferences from typing preference studies):
-    - [typing_preferences_to_comfort_scores](https://github.com/binarybottle/typing_preferences_to_comfort_scores)
-    - Extended to 32 keys from the original 24 keys:
-      if a bigram contains a key outside the home blocks, 
-      assign it a score just above the highest score for a hurdle (QWERTY RV)
-
 """
 
 import sys
 from typing import Dict, Any, List, Tuple, Optional
 from collections import defaultdict, Counter
 from pathlib import Path
-from unittest import result
 
 # Import our framework components
 from framework.base_scorer import BaseLayoutScorer, ScoreResult
 from framework.config_loader import load_scorer_config
-from framework.layout_utils import filter_to_letters_only
+from framework.layout_utils import filter_to_letters_only, is_same_hand_pair
 from framework.data_utils import load_bigram_frequencies, load_key_value_csv, validate_data_consistency
 from framework.output_utils import print_results
 from framework.cli_utils import create_standard_parser, handle_common_errors, get_layout_from_args
@@ -160,17 +117,7 @@ def is_finger_in_column(key: str, finger: int, hand: str) -> bool:
 
 
 def score_bigram_dvorak9(bigram: str) -> Dict[str, float]:
-    """
-    Calculate all 9 Dvorak criteria scores for a bigram.
-    
-    Args:
-        bigram: Two-character string (e.g., "th", "er")
-        
-    Returns:
-        Dict with keys: hands, fingers, skip_fingers, dont_cross_home, 
-                        same_row, home_row, columns, strum, strong_fingers
-        Values are 0-1 where higher = better for typing speed according to Dvorak principles
-    """
+    """Calculate all 9 Dvorak criteria scores for a bigram."""
     if len(bigram) != 2:
         raise ValueError("Bigram must be exactly 2 characters long")    
     
@@ -270,18 +217,11 @@ def score_bigram_dvorak9(bigram: str) -> Dict[str, float]:
 
 
 def load_combination_weights(csv_path: str, quiet: bool = False) -> Dict[Tuple[str, ...], float]:
-    """
-    Load empirical correlation weights for different feature combinations from CSV file.
-    
-    Args:
-        csv_path: Path to CSV file containing combination correlations
-        quiet: If True, suppress informational output
-        
-    Returns:
-        Dict mapping combination tuples to correlation values
-    """
+    """Load empirical correlation weights for different feature combinations from CSV file."""
     if not Path(csv_path).exists():
-        raise FileNotFoundError(f"Combination weights file not found: {csv_path}")
+        if not quiet:
+            print(f"Warning: Combination weights file not found: {csv_path}")
+        return {}
     
     combination_weights: Dict[Tuple[str, ...], float] = {}
     
@@ -315,7 +255,9 @@ def load_combination_weights(csv_path: str, quiet: bool = False) -> Dict[Tuple[s
                 combination_weights[combination] = correlation
                 
     except Exception as e:
-        raise ValueError(f"Error parsing combination weights CSV: {e}")
+        if not quiet:
+            print(f"Warning: Error parsing combination weights CSV: {e}")
+        return {}
     
     # Ensure we have at least an empty combination
     if () not in combination_weights:
@@ -328,16 +270,7 @@ def load_combination_weights(csv_path: str, quiet: bool = False) -> Dict[Tuple[s
 
 
 def identify_bigram_combination(bigram_scores: Dict[str, float], threshold: float = 0.0) -> Tuple[str, ...]:
-    """
-    Identify which feature combination a bigram exhibits.
-    
-    Args:
-        bigram_scores: Dict of feature scores for a single bigram
-        threshold: Minimum score to consider a feature "active"
-    
-    Returns:
-        Tuple of active feature names, sorted for consistent lookup
-    """
+    """Identify which feature combination a bigram exhibits."""
     active_features = []
     
     for feature, score in bigram_scores.items():
@@ -349,16 +282,7 @@ def identify_bigram_combination(bigram_scores: Dict[str, float], threshold: floa
 
 def score_bigram_weighted(bigram_scores: Dict[str, float], 
                          combination_weights: Dict[Tuple[str, ...], float]) -> Optional[float]:
-    """
-    Score a single bigram using exact empirical combination matching only.
-    
-    Args:
-        bigram_scores: Dict of 9 feature scores for the bigram
-        combination_weights: Dict mapping combinations to empirical weights
-    
-    Returns:
-        Weighted score for this bigram, or None if no exact match found
-    """
+    """Score a single bigram using exact empirical combination matching only."""
     # Identify which combination this bigram exhibits
     combination = identify_bigram_combination(bigram_scores)
     
@@ -374,45 +298,26 @@ def score_bigram_weighted(bigram_scores: Dict[str, float],
 
 class Dvorak9Scorer(BaseLayoutScorer):
     """
-    Dvorak-9 scorer using frequency-weighted scoring with optional empirical combination weights.
+    Dvorak-9 scorer with four scoring approaches.
     
     Implements the 9 evaluation criteria derived from Dvorak's work with
-    frequency-weighted averaging based on English bigram frequencies and
-    optional empirical weights derived from analysis of real typing performance data.
+    four different scoring approaches: pure, frequency-weighted, speed-weighted, and comfort-weighted.
     """
     
     def __init__(self, layout_mapping: Dict[str, str], config: Optional[Dict[str, Any]] = None):
-        """
-        Initialize the Dvorak-9 scorer.
-        
-        Args:
-            layout_mapping: Dict mapping characters to QWERTY positions
-            config: Optional configuration dictionary
-        """
+        """Initialize the Dvorak-9 scorer."""
         super().__init__(layout_mapping, config)
         
         # Data containers
         self.bigrams: List[str] = []
         self.frequencies: List[float] = []
         self.key_pair_scores: Dict[str, float] = {}
-        self.combination_weights: Optional[Dict[Tuple[str, ...], float]] = None
+        self.speed_weights: Optional[Dict[Tuple[str, ...], float]] = None
+        self.comfort_weights: Optional[Dict[Tuple[str, ...], float]] = None
         
-        # Determine weights type
-        weights_file = self.config.get('weights_file')
-        if weights_file:
-            self.weights_type = self._determine_weights_type(weights_file)
-        else:
-            self.weights_type = None
-    
-    def _determine_weights_type(self, weights_file: str) -> str:
-        """Determine if weights are speed-based or comfort-based from filename."""
-        filename = weights_file.lower()
-        if 'speed' in filename:
-            return 'speed'
-        elif 'comfort' in filename:
-            return 'comfort'
-        else:
-            return 'speed'  # Default fallback
+        # Cross-hand filtering option
+        scoring_options = self.config.get('scoring_options', {})
+        self.ignore_cross_hand = scoring_options.get('ignore_cross_hand', False)
     
     def load_data_files(self) -> None:
         """Load required data files for Dvorak-9 scoring."""
@@ -444,12 +349,15 @@ class Dvorak9Scorer(BaseLayoutScorer):
                 print("Warning: Key-pair scores file not found, will compute on-demand")
             self.key_pair_scores = {}
         
-        # Load combination weights if specified
-        weights_file = self.config.get('weights_file')
-        if weights_file and Path(weights_file).exists():
-            self.combination_weights = load_combination_weights(weights_file, quiet=quiet_mode)
-        else:
-            self.combination_weights = None
+        # Load speed weights (optional)
+        speed_weights_file = data_files.get('speed_weights')
+        if speed_weights_file:
+            self.speed_weights = load_combination_weights(speed_weights_file, quiet=quiet_mode)
+        
+        # Load comfort weights (optional)
+        comfort_weights_file = data_files.get('comfort_weights')
+        if comfort_weights_file:
+            self.comfort_weights = load_combination_weights(comfort_weights_file, quiet=quiet_mode)
 
         # Validate loaded data
         validation_issues = []
@@ -464,16 +372,11 @@ class Dvorak9Scorer(BaseLayoutScorer):
                 print(f"  {issue}")
     
     def calculate_scores(self) -> ScoreResult:
-        """
-        Calculate layout score using frequency-weighted scoring with optional empirical combination weights.
-        
-        Returns:
-            ScoreResult containing all scoring approaches and breakdowns
-        """
+        """Calculate layout scores using all four scoring approaches."""
         if not self.bigrams:
             return self._empty_result()
         
-        # Initialize accumulators
+        # Initialize accumulators for all scoring approaches
         pure_dvorak_sum = 0.0
         frequency_weighted_score = 0.0
         individual_criterion_sums = defaultdict(float)
@@ -481,13 +384,14 @@ class Dvorak9Scorer(BaseLayoutScorer):
         total_frequency = 0.0
         covered_bigrams = 0
         total_bigrams_for_pure = 0
-        empirically_weighted_score = 0.0
         
-        # NEW: Track empirical weight coverage
-        exact_matches_count = 0
-        exact_matches_frequency = 0.0
-        no_matches_count = 0
-        no_matches_frequency = 0.0
+        # Empirical scoring accumulators
+        speed_weighted_score = 0.0
+        comfort_weighted_score = 0.0
+        speed_exact_matches_count = 0
+        speed_exact_matches_frequency = 0.0
+        comfort_exact_matches_count = 0
+        comfort_exact_matches_frequency = 0.0
 
         # Process each bigram in the frequency list
         for bigram, frequency in zip(self.bigrams, self.frequencies):
@@ -500,6 +404,11 @@ class Dvorak9Scorer(BaseLayoutScorer):
             # Map characters to QWERTY positions
             pos1 = self.layout_mapping[char1]
             pos2 = self.layout_mapping[char2]
+            
+            # Apply cross-hand filtering if requested
+            if self.ignore_cross_hand and not is_same_hand_pair(pos1, pos2):
+                continue
+            
             key_pair = pos1 + pos2
             
             # Get individual criterion scores for this bigram
@@ -517,26 +426,26 @@ class Dvorak9Scorer(BaseLayoutScorer):
             # 2. Frequency-weighted Dvorak score
             frequency_weighted_score += frequency * pure_bigram_score
             
-            # 3. Empirically-weighted score (if weights provided)
-            if self.combination_weights is not None:
-                weighted_score = score_bigram_weighted(bigram_scores, self.combination_weights)
+            # 3. Speed-weighted score (if weights provided)
+            if self.speed_weights:
+                weighted_score = score_bigram_weighted(bigram_scores, self.speed_weights)
                 
                 if weighted_score is not None:
-                    # Exact match found
-                    exact_matches_count += 1
-                    exact_matches_frequency += frequency
-                    
-                    # Apply correct sign based on weights type
-                    if self.weights_type == 'speed':
-                        final_empirical_score = -weighted_score
-                    else:  # comfort weights
-                        final_empirical_score = weighted_score
-                    
-                    empirically_weighted_score += frequency * final_empirical_score
-                else:
-                    # No exact match found
-                    no_matches_count += 1
-                    no_matches_frequency += frequency
+                    speed_exact_matches_count += 1
+                    speed_exact_matches_frequency += frequency
+                    # Apply correct sign (speed weights are negative correlations)
+                    final_speed_score = -weighted_score
+                    speed_weighted_score += frequency * final_speed_score
+            
+            # 4. Comfort-weighted score (if weights provided)
+            if self.comfort_weights:
+                weighted_score = score_bigram_weighted(bigram_scores, self.comfort_weights)
+                
+                if weighted_score is not None:
+                    comfort_exact_matches_count += 1
+                    comfort_exact_matches_frequency += frequency
+                    # Comfort weights are positive correlations
+                    comfort_weighted_score += frequency * weighted_score
 
             # Accumulate frequency-weighted individual criterion scores
             for criterion, score in bigram_scores.items():
@@ -549,12 +458,22 @@ class Dvorak9Scorer(BaseLayoutScorer):
         pure_dvorak_score = pure_dvorak_sum / total_bigrams_for_pure if total_bigrams_for_pure > 0 else 0.0
         freq_weighted_dvorak_score = frequency_weighted_score / total_frequency if total_frequency > 0 else 0.0
         
-        # Calculate empirically-weighted score if available
-        if self.combination_weights is not None and exact_matches_frequency > 0:
-            empirical_score = empirically_weighted_score / exact_matches_frequency
-            primary_score = empirical_score
+        # Calculate empirically-weighted scores
+        final_speed_score = None
+        final_comfort_score = None
+        
+        if self.speed_weights and speed_exact_matches_frequency > 0:
+            final_speed_score = speed_weighted_score / speed_exact_matches_frequency
+            
+        if self.comfort_weights and comfort_exact_matches_frequency > 0:
+            final_comfort_score = comfort_weighted_score / comfort_exact_matches_frequency
+
+        # Determine primary score (prefer empirical, fallback to frequency-weighted)
+        if final_speed_score is not None:
+            primary_score = final_speed_score
+        elif final_comfort_score is not None:
+            primary_score = final_comfort_score
         else:
-            empirical_score = None
             primary_score = freq_weighted_dvorak_score
 
         # Calculate individual criterion averages
@@ -580,44 +499,60 @@ class Dvorak9Scorer(BaseLayoutScorer):
         # Calculate coverage
         bigram_coverage = covered_bigrams / len(self.bigrams) if self.bigrams else 0.0
         
-        # NEW: Calculate empirical weight coverage
-        empirical_coverage = {
-            'exact_matches_count': exact_matches_count,
-            'exact_matches_percentage': (exact_matches_count / covered_bigrams * 100) if covered_bigrams > 0 else 0.0,
-            'exact_matches_frequency_weight': (exact_matches_frequency / total_frequency * 100) if total_frequency > 0 else 0.0,
-            'no_matches_count': no_matches_count,
-            'no_matches_percentage': (no_matches_count / covered_bigrams * 100) if covered_bigrams > 0 else 0.0,
-            'no_matches_frequency_weight': (no_matches_frequency / total_frequency * 100) if total_frequency > 0 else 0.0,
+        # Create result with all four scoring approaches
+        components = {
+            'pure_dvorak_score': pure_dvorak_score,
+            'frequency_weighted_score': freq_weighted_dvorak_score,
+            'hands': individual_scores['hands'],
+            'fingers': individual_scores['fingers'],
+            'skip_fingers': individual_scores['skip_fingers'],
+            'dont_cross_home': individual_scores['dont_cross_home'],
+            'same_row': individual_scores['same_row'],
+            'home_row': individual_scores['home_row'],
+            'columns': individual_scores['columns'],
+            'strum': individual_scores['strum'],
+            'strong_fingers': individual_scores['strong_fingers'],
         }
         
-        # Create result
+        # Add empirical scores if available
+        if final_speed_score is not None:
+            components['speed_weighted_score'] = final_speed_score
+        if final_comfort_score is not None:
+            components['comfort_weighted_score'] = final_comfort_score
+        
+        # Create empirical coverage information
+        empirical_coverage = {}
+        if self.speed_weights:
+            empirical_coverage['speed_exact_matches_count'] = speed_exact_matches_count
+            empirical_coverage['speed_exact_matches_percentage'] = (speed_exact_matches_count / covered_bigrams * 100) if covered_bigrams > 0 else 0.0
+            empirical_coverage['speed_exact_matches_frequency_weight'] = (speed_exact_matches_frequency / total_frequency * 100) if total_frequency > 0 else 0.0
+        
+        if self.comfort_weights:
+            empirical_coverage['comfort_exact_matches_count'] = comfort_exact_matches_count
+            empirical_coverage['comfort_exact_matches_percentage'] = (comfort_exact_matches_count / covered_bigrams * 100) if covered_bigrams > 0 else 0.0
+            empirical_coverage['comfort_exact_matches_frequency_weight'] = (comfort_exact_matches_frequency / total_frequency * 100) if total_frequency > 0 else 0.0
+        
         result = ScoreResult(
             primary_score=primary_score,
-            components={
-                'pure_dvorak_score': pure_dvorak_score,
-                'frequency_weighted_score': freq_weighted_dvorak_score,
-                'hands': individual_scores['hands'],
-                'fingers': individual_scores['fingers'],
-                'skip_fingers': individual_scores['skip_fingers'],
-                'dont_cross_home': individual_scores['dont_cross_home'],
-                'same_row': individual_scores['same_row'],
-                'home_row': individual_scores['home_row'],
-                'columns': individual_scores['columns'],
-                'strum': individual_scores['strum'],
-                'strong_fingers': individual_scores['strong_fingers'],
-            },
+            components=components,
             metadata={
-                'scoring_mode': 'exact_matching' if self.combination_weights else 'frequency_weighted',
-                'weights_type': self.weights_type,
+                'scoring_approaches': {
+                    'pure_available': True,
+                    'frequency_weighted_available': True,
+                    'speed_weighted_available': final_speed_score is not None,
+                    'comfort_weighted_available': final_comfort_score is not None,
+                },
+                'ignore_cross_hand': self.ignore_cross_hand,
                 'theoretical_maximum': 1.0,
-                'available_combinations': len(self.combination_weights) if self.combination_weights else 0,
+                'available_speed_combinations': len(self.speed_weights) if self.speed_weights else 0,
+                'available_comfort_combinations': len(self.comfort_weights) if self.comfort_weights else 0,
             },
             validation_info={
                 'bigram_count': covered_bigrams,
                 'total_bigrams': len(self.bigrams),
                 'bigram_coverage': bigram_coverage,
                 'coverage_percentage': bigram_coverage * 100,
-                'empirical_coverage': empirical_coverage,  # NEW
+                'cross_hand_filtering': self.ignore_cross_hand,
             },
             detailed_breakdown={
                 'pure_individual_scores': pure_individual_scores,
@@ -625,14 +560,12 @@ class Dvorak9Scorer(BaseLayoutScorer):
                 'scoring_approaches': {
                     'pure_dvorak': pure_dvorak_score,
                     'frequency_weighted': freq_weighted_dvorak_score,
+                    'speed_weighted': final_speed_score,
+                    'comfort_weighted': final_comfort_score,
                 },
-                'empirical_weight_coverage': empirical_coverage,  # NEW
+                'empirical_weight_coverage': empirical_coverage,
             }
         )
-        
-        # Add empirical score if available
-        if empirical_score is not None:
-            result.components['empirically_weighted_score'] = empirical_score        
 
         return result
     
@@ -661,9 +594,11 @@ def main() -> int:
         # Override with command-line arguments
         config['quiet_mode'] = args.quiet
         
-        # Add weights file if specified
-        if hasattr(args, 'weights') and args.weights:
-            config['weights_file'] = args.weights
+        # Handle cross-hand filtering
+        if hasattr(args, 'ignore_cross_hand') and args.ignore_cross_hand:
+            if 'scoring_options' not in config:
+                config['scoring_options'] = {}
+            config['scoring_options']['ignore_cross_hand'] = True
         
         # Get layout mapping from arguments
         letters, positions, layout_mapping = get_layout_from_args(args)

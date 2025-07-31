@@ -16,8 +16,8 @@ common:
 
 # Physical distance-based scoring
 distance_scorer:
-  description: "Physical finger travel distance analysis"
-  method: "Euclidean distance between key positions on staggered keyboard"
+  description: "Physical finger travel distance analysis with cross-hand filtering support"
+  method: "Euclidean distance between key positions tracking cumulative finger movement"
   
   data_files:
     # Built-in position mapping (no external file needed)
@@ -27,6 +27,7 @@ distance_scorer:
     distance_metric: "euclidean"  # euclidean, manhattan
     normalize_by_bigrams: true
     exclude_same_key: true
+    ignore_cross_hand: false  # Filter bigrams that cross hands
     
   output:
     primary_score_name: "normalized_score"
@@ -37,25 +38,27 @@ distance_scorer:
       - "min_distance"
       - "coverage"
 
-# Dvorak's 9 evaluation criteria
+# Dvorak's 9 evaluation criteria with multiple scoring approaches
 dvorak9_scorer:
-  description: "Dvorak's 9 theoretical typing principles with empirical validation"
-  method: "Frequency-weighted evaluation of hand alternation, finger usage, etc."
+  description: "Dvorak's 9 theoretical typing principles with four scoring approaches"
+  method: "Pure, frequency-weighted, speed-weighted, and comfort-weighted evaluation of typing principles"
   
   data_files:
     frequencies:     "normalized_letter_pair_frequencies_en.csv"
     key_pair_scores: "key_pair_scores.csv"
-    speed_weights:   "speed_weights.csv"    # optional
-    comfort_weights: "comfort_weights.csv"  # optional
+    speed_weights:   "speed_weights.csv"    # automatically loaded if available
+    comfort_weights: "comfort_weights.csv"  # automatically loaded if available
     
   scoring_options:
-    # Available scoring approaches
+    # Available scoring approaches (all computed automatically)
     approaches: 
       - "pure_dvorak"           # Unweighted average of 9 criteria
       - "frequency_weighted"    # English bigram frequency-weighted
-      - "empirically_weighted"  # Real performance data weighted
+      - "speed_weighted"        # Empirical speed correlation weights (if available)
+      - "comfort_weighted"      # Empirical comfort correlation weights (if available)
 
     default_approach: "frequency_weighted"
+    ignore_cross_hand: false  # Filter bigrams that cross hands
     
     # Individual criteria (all 0-1 scale, higher = better)
     criteria:
@@ -74,6 +77,8 @@ dvorak9_scorer:
     components:
       - "pure_dvorak_score"
       - "frequency_weighted_score"
+      - "speed_weighted_score"      # if available
+      - "comfort_weighted_score"    # if available
       - "hands"
       - "fingers" 
       - "skip_fingers"
@@ -84,10 +89,10 @@ dvorak9_scorer:
       - "strum"
       - "strong_fingers"
 
-# Engram frequency and comfort-based scoring  
+# Engram frequency and comfort-based scoring with dual modes
 engram_scorer:
-  description: "Letter frequency and key comfort combination scoring"
-  method: "Multiplicative combination of item frequencies and position comfort"
+  description: "Letter frequency and key comfort combination scoring with 32-key and 24-key modes"
+  method: "Multiplicative combination of item frequencies and position comfort for full layout and home block"
   
   data_files:
     item_scores: "normalized_letter_frequencies_en.csv"
@@ -103,17 +108,24 @@ engram_scorer:
     item_weight:      0.25
     item_pair_weight: 0.75
     
-    # Normalization method for input data (TURNED OFF)
+    # Normalization method for input data
     normalization_method: "auto"  # auto, robust, linear, sqrt
     
     # Cross-hand filtering options
-    ignore_cross_hand: false
+    ignore_cross_hand: false  # Filter bigrams that cross hands
+    
+    # Home block keys (24): qwerasdfzxcvuiopjkl;m,./
+    home_block_keys: "qwerasdfzxcvuiopjkl;m,./"
     
   output:
-    primary_score_name: "total_score"
+    primary_score_name: "total_score_32key"
     components:
-      - "item_component"
-      - "item_pair_component"
+      - "total_score_32key"      # Full layout score
+      - "total_score_24key"      # Home block only score
+      - "item_component_32key"
+      - "item_pair_component_32key"
+      - "item_component_24key"
+      - "item_pair_component_24key"
     
 # Output formatting options
 output_formats:
@@ -151,22 +163,9 @@ cli:
     quiet:      ["--quiet", "-q"]
     
   scorer_specific:
-    weights:           ["--weights", "--weights-file"]  # for dvorak9
-    ignore_cross_hand: ["--ignore-cross-hand"]  # for engram
-
-# Future scorer template
-template_scorer:
-  description: "Template for adding new scoring methods"
-  method: "Description of the scoring approach"
-  
-  data_files:
-    # Required data files
-    required_file: "filename.csv"
+    # Cross-hand filtering (available for all scorers)
+    ignore_cross_hand: ["--ignore-cross-hand"]
     
-  scoring_options:
-    # Scorer-specific options
-    example_option: "default_value"
-    
-  output:
-    primary_score_name: "score"
-    components: []
+    # Distance scorer specific
+    text:              ["--text"]
+    text_file:         ["--text-file"]

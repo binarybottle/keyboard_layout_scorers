@@ -5,12 +5,13 @@ Engram Layout Scorer for scoring keyboard layouts.
 (c) Arno Klein (arnoklein.info), MIT License (see LICENSE)
 
 Script for scoring keyboard layouts based on letter- and letter-pair frequencies,
-and key- and key-pair comfort scores:
-  - GitHub: https://github.com/binarybottle/optimize_layouts
-  - OSF: https://osf.io/6dt75/  (DOI: 10.17605/OSF.IO/6DT75)
+and key- and key-pair comfort scores. Provides both 32-key (full layout) and 
+24-key (home block only) scoring modes.
+
+Home block keys (24): qwerasdfzxcvuiopjkl;m,./
 
 Usage:
-    # Basic scoring
+    # Basic scoring (both 32-key and 24-key results)
     python engram_scorer.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ"
 
     # With cross-hand filtering
@@ -42,7 +43,7 @@ For reference:
     Colemak: "qwfpgjluy;arstdhneiozxcvbkm,./"
 """
 import sys
-from typing import Dict, Any, List, Tuple, Optional
+from typing import Dict, Any, List, Tuple, Optional, Set
 from pathlib import Path
 import numpy as np
 
@@ -56,6 +57,9 @@ from framework.layout_utils import filter_to_letters_only, is_same_hand_pair, ge
 from framework.data_utils import load_csv_with_validation, validate_data_consistency
 from framework.output_utils import print_results
 from framework.cli_utils import create_standard_parser, handle_common_errors, get_layout_from_args
+
+# Define the 24 home block keys (on, above, and below home rows)
+HOME_BLOCK_KEYS = set('qwerasdfzxcvuiopjkl;m,./'.upper())
 
 # Default combination strategy for scores
 DEFAULT_COMBINATION_STRATEGY = "multiplicative"  # item_score * item_pair_score
@@ -127,12 +131,22 @@ def apply_combination_strategy(item_score: float, item_pair_score: float, strate
         raise ValueError(f"Unknown combination strategy: {strategy}")
 
 
+def filter_to_home_block(layout_mapping: Dict[str, str]) -> Dict[str, str]:
+    """Filter layout mapping to only include home block keys."""
+    filtered = {}
+    for char, pos in layout_mapping.items():
+        if pos.upper() in HOME_BLOCK_KEYS:
+            filtered[char] = pos
+    return filtered
+
+
 class EngramScorer(BaseLayoutScorer):
     """
     Engram Layout Scorer using the unified framework.
     
     Scores keyboard layouts based on letter frequencies and key comfort scores
     using multiplicative combination of item frequencies and position comfort.
+    Provides both 32-key (full layout) and 24-key (home block only) scoring.
     """
     
     def __init__(self, layout_mapping: Dict[str, str], config: Optional[Dict[str, Any]] = None):
@@ -160,6 +174,9 @@ class EngramScorer(BaseLayoutScorer):
         # Get combination weights for weighted additive
         self.item_weight = scoring_options.get('item_weight', 0.6)
         self.item_pair_weight = scoring_options.get('item_pair_weight', 0.4)
+        
+        # Create filtered layout for 24-key scoring
+        self.layout_mapping_24key = filter_to_home_block(self.layout_mapping)
     
     def load_data_files(self) -> None:
         """Load and normalize all score files."""
@@ -258,6 +275,9 @@ class EngramScorer(BaseLayoutScorer):
             print(f"  Loaded {len(self.item_pair_scores)} item pair scores")
             print(f"  Loaded {len(self.position_scores)} position scores")
             print(f"  Loaded {len(self.position_pair_scores)} position-pair scores")
+            
+            # Show 24-key coverage
+            print(f"  24-key home block coverage: {len(self.layout_mapping_24key)}/{len(self.layout_mapping)} keys")
         
         # Validate position coverage
         self._validate_position_coverage(quiet_mode)
@@ -286,15 +306,19 @@ class EngramScorer(BaseLayoutScorer):
         else:
             print(f"  ✓ All positions found in position-pair file")
     
-    def calculate_layout_score(self) -> Tuple[float, float, float, Dict[str, Any]]:
+    def calculate_layout_score(self, layout_mapping: Dict[str, str], score_name: str = "32key") -> Tuple[float, float, float, Dict[str, Any]]:
         """
-        Calculate complete layout score.
+        Calculate complete layout score for given layout mapping.
+        
+        Args:
+            layout_mapping: Character to position mapping to score
+            score_name: Name for this scoring mode (for logging)
         
         Returns:
             Tuple of (total_score, item_component, item_pair_component, filtering_info)
         """
-        items = list(self.layout_mapping.keys())
-        positions = list(self.layout_mapping.values())
+        items = list(layout_mapping.keys())
+        positions = list(layout_mapping.values())
         n_items = len(items)
         
         # Calculate item component
@@ -343,45 +367,74 @@ class EngramScorer(BaseLayoutScorer):
         filtering_info = {
             'cross_hand_pairs_filtered': cross_hand_pairs_filtered,
             'pairs_used': pair_count,
-            'total_possible_pairs': n_items * (n_items - 1)
+            'total_possible_pairs': n_items * (n_items - 1),
+            'scoring_mode': score_name
         }
         
         return total_score, item_component, pair_component, filtering_info
     
     def calculate_scores(self) -> ScoreResult:
         """
-        Calculate layout scores using Engram methodology.
+        Calculate layout scores using both 32-key and 24-key Engram methodology.
         
         Returns:
-            ScoreResult containing primary score, components, and metadata
+            ScoreResult containing both scoring modes, components, and metadata
         """
-        # Calculate scores
-        total_score, item_component, pair_component, filtering_info = self.calculate_layout_score()
+        # Calculate 32-key scores (full layout)
+        total_score_32, item_component_32, pair_component_32, filtering_info_32 = self.calculate_layout_score(
+            self.layout_mapping, "32key"
+        )
+        
+        # Calculate 24-key scores (home block only)
+        total_score_24, item_component_24, pair_component_24, filtering_info_24 = self.calculate_layout_score(
+            self.layout_mapping_24key, "24key"
+        )
         
         # Get layout statistics
         layout_stats = get_layout_statistics(self.layout_mapping)
+        layout_stats_24 = get_layout_statistics(self.layout_mapping_24key)
         
-        # Create result
+        # Use 32-key score as primary
+        primary_score = total_score_32
+        
+        # Create result with both scoring modes
         result = ScoreResult(
-            primary_score=total_score,
+            primary_score=primary_score,
             components={
-                'item_component': item_component,
-                'item_pair_component': pair_component,
+                # 32-key components
+                'total_score_32key': total_score_32,
+                'item_component_32key': item_component_32,
+                'item_pair_component_32key': pair_component_32,
+                # 24-key components
+                'total_score_24key': total_score_24,
+                'item_component_24key': item_component_24,
+                'item_pair_component_24key': pair_component_24,
+                # Legacy components for compatibility
+                'item_component': item_component_32,
+                'item_pair_component': pair_component_32,
             },
             metadata={
                 'combination_strategy': self.combination_strategy,
                 'normalization_method': self.normalization_method,
                 'ignore_cross_hand': self.ignore_cross_hand,
-                'layout_size': len(self.layout_mapping),
-                'alphabet_coverage': layout_stats.get('alphabet_coverage', 0.0),
+                'layout_size_32key': len(self.layout_mapping),
+                'layout_size_24key': len(self.layout_mapping_24key),
+                'alphabet_coverage_32key': layout_stats.get('alphabet_coverage', 0.0),
+                'alphabet_coverage_24key': layout_stats_24.get('alphabet_coverage', 0.0),
+                'home_block_coverage': len(self.layout_mapping_24key) / len(self.layout_mapping) if self.layout_mapping else 0.0,
             },
             validation_info={
-                'total_chars': layout_stats['total_chars'],
-                'letters': layout_stats['letters'],
-                'alphabet_coverage_percentage': layout_stats.get('alphabet_coverage', 0.0) * 100,
+                'total_chars_32key': layout_stats['total_chars'],
+                'total_chars_24key': layout_stats_24['total_chars'],
+                'letters_32key': layout_stats['letters'],
+                'letters_24key': layout_stats_24['letters'],
+                'alphabet_coverage_percentage_32key': layout_stats.get('alphabet_coverage', 0.0) * 100,
+                'alphabet_coverage_percentage_24key': layout_stats_24.get('alphabet_coverage', 0.0) * 100,
+                'cross_hand_filtering': self.ignore_cross_hand,
             },
             detailed_breakdown={
-                'filtering_info': filtering_info,
+                'filtering_info_32key': filtering_info_32,
+                'filtering_info_24key': filtering_info_24,
                 'data_coverage': {
                     'item_scores_loaded': len(self.item_scores),
                     'item_pair_scores_loaded': len(self.item_pair_scores),
@@ -393,6 +446,8 @@ class EngramScorer(BaseLayoutScorer):
                     'item_weight': self.item_weight,
                     'item_pair_weight': self.item_pair_weight,
                 },
+                'home_block_keys': sorted(list(HOME_BLOCK_KEYS)),
+                'layout_24key_mapping': dict(self.layout_mapping_24key),
             }
         )
         

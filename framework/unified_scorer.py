@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """
 Unified manager for running and comparing keyboard layout scorers.
-"""
+Supports all three scoring methods with consistent cross-hand filtering
+and automatic weight file loading for dvorak9_scorer."""
 
 from typing import Dict, Any, List
 from framework.base_scorer import ScoreResult
@@ -12,6 +13,9 @@ from framework.scorer_factory import ScorerFactory
 class UnifiedLayoutScorer:
     """
     Unified manager for running and comparing keyboard layout scorers.
+    
+    Supports all three scoring methods with consistent cross-hand filtering
+    and automatic weight file loading for dvorak9_scorer.
     """
     
     def __init__(self, config_path: str = "config.yaml"):
@@ -33,7 +37,7 @@ class UnifiedLayoutScorer:
         Args:
             layout_mapping: Character to position mapping
             scorers: List of scorer names to run
-            **kwargs: Additional arguments (text, weights, etc.)
+            **kwargs: Additional arguments (text, ignore_cross_hand, etc.)
             
         Returns:
             Dict mapping scorer names to their results
@@ -48,9 +52,9 @@ class UnifiedLayoutScorer:
                 # Add scorer-specific arguments
                 if scorer_name == 'distance' and 'text' in kwargs:
                     config['text'] = kwargs['text']
-                elif scorer_name == 'dvorak9' and 'weights' in kwargs:
-                    config['weights_file'] = kwargs['weights']
-                elif scorer_name == 'engram' and 'ignore_cross_hand' in kwargs:
+                
+                # Add cross-hand filtering (available for all scorers)
+                if 'ignore_cross_hand' in kwargs and kwargs['ignore_cross_hand']:
                     if 'scoring_options' not in config:
                         config['scoring_options'] = {}
                     config['scoring_options']['ignore_cross_hand'] = kwargs['ignore_cross_hand']
@@ -83,7 +87,7 @@ class UnifiedLayoutScorer:
         Args:
             layouts: Dict mapping layout names to their character mappings
             scorers: List of scorer names to run
-            **kwargs: Additional arguments
+            **kwargs: Additional arguments (text, ignore_cross_hand, etc.)
             
         Returns:
             Nested dict: {layout_name: {scorer_name: ScoreResult}}
