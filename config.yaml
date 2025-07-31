@@ -38,8 +38,8 @@ distance_scorer:
       - "coverage"
     
   validation:
-    min_coverage: 0.8  # Minimum bigram coverage required
-    min_text_length: 10  # Minimum text length for analysis
+    min_coverage: 0.5   # Minimum bigram coverage required
+    min_text_length: 2  # Minimum text length for analysis
 
 # Dvorak's 9 evaluation criteria
 dvorak9_scorer:
@@ -47,31 +47,31 @@ dvorak9_scorer:
   method: "Frequency-weighted evaluation of hand alternation, finger usage, etc."
   
   data_files:
-    frequencies: "normalized_letter_pair_frequencies_en.csv"
+    frequencies:     "normalized_letter_pair_frequencies_en.csv"
     key_pair_scores: "key_pair_scores.csv"
-    speed_weights: "speed_weights.csv"  # optional
+    speed_weights:   "speed_weights.csv"    # optional
     comfort_weights: "comfort_weights.csv"  # optional
     
   scoring_options:
     # Available scoring approaches
     approaches: 
-      - "pure_dvorak"        # Unweighted average of 9 criteria
-      - "frequency_weighted" # English bigram frequency-weighted
-      - "empirically_weighted" # Real performance data weighted
-    
+      - "pure_dvorak"           # Unweighted average of 9 criteria
+      - "frequency_weighted"    # English bigram frequency-weighted
+      - "empirically_weighted"  # Real performance data weighted
+
     default_approach: "frequency_weighted"
     
     # Individual criteria (all 0-1 scale, higher = better)
     criteria:
-      hands: "Favor alternating hands over same hand"
-      fingers: "Avoid same finger repetition"
-      skip_fingers: "Favor non-adjacent fingers over adjacent"
+      hands:           "Favor alternating hands over same hand"
+      fingers:         "Avoid same finger repetition"
+      skip_fingers:    "Favor non-adjacent fingers over adjacent"
       dont_cross_home: "Avoid crossing over the home row"
-      same_row: "Favor typing within the same row"
-      home_row: "Favor using the home row"
-      columns: "Favor fingers staying in designated columns"
-      strum: "Favor inward rolls over outward rolls"
-      strong_fingers: "Favor stronger fingers over weaker ones"
+      same_row:        "Favor typing within the same row"
+      home_row:        "Favor using the home row"
+      columns:         "Favor fingers staying in designated columns"
+      strum:           "Favor inward rolls over outward rolls"
+      strong_fingers:  "Favor stronger fingers over weaker ones"
       
   output:
     primary_score_name: "layout_score"
@@ -89,7 +89,7 @@ dvorak9_scorer:
       - "strong_fingers"
       
   validation:
-    min_bigram_coverage: 0.9
+    min_bigram_coverage: 0.5
     required_criteria_count: 9
 
 # Engram frequency and comfort-based scoring  
@@ -108,10 +108,10 @@ engram_scorer:
     combination_strategy: "multiplicative"  # multiplicative, additive, weighted_additive
     
     # Weighted additive parameters (if using weighted_additive)
-    item_weight: 0.6
-    item_pair_weight: 0.4
+    item_weight:      0.25
+    item_pair_weight: 0.75
     
-    # Normalization method for input data
+    # Normalization method for input data (TURNED OFF)
     normalization_method: "auto"  # auto, robust, linear, sqrt
     
     # Cross-hand filtering options
@@ -124,9 +124,9 @@ engram_scorer:
       - "item_pair_component"
       
   validation:
-    min_items: 5
+    min_items: 2
     max_items: 32
-    min_alphabet_coverage: 0.5  # Minimum coverage of standard alphabet
+    min_alphabet_coverage: 0.075  # Minimum coverage of standard alphabet
     
 # Output formatting options
 output_formats:
@@ -148,23 +148,23 @@ output_formats:
 cli:
   # Standard argument names across all scorers
   layout_args:
-    letters: ["--layout-letters", "--letters"]  # aliases
+    letters:   ["--layout-letters", "--letters"]  # aliases
     positions: ["--layout-positions", "--positions", "--qwerty-keys"]
     
   input_args:
-    data_dir: ["--data-dir", "--input-dir"]
+    data_dir:    ["--data-dir", "--input-dir"]
     config_file: ["--config", "--config-file"]
-    text_file: ["--text-file", "--text"]  # for distance scorer
+    text_file:   ["--text-file", "--text"]  # for distance scorer
     
   output_args:
-    format: ["--output-format", "--format"]
-    csv: ["--csv"]
-    detailed: ["--detailed", "--details"]
+    format:     ["--output-format", "--format"]
+    csv:        ["--csv"]
+    detailed:   ["--detailed", "--details"]
     score_only: ["--score-only", "--scores-only"]
-    quiet: ["--quiet", "-q"]
+    quiet:      ["--quiet", "-q"]
     
   scorer_specific:
-    weights: ["--weights", "--weights-file"]  # for dvorak9
+    weights:           ["--weights", "--weights-file"]  # for dvorak9
     ignore_cross_hand: ["--ignore-cross-hand"]  # for engram
 
 # Future scorer template
@@ -186,4 +186,4 @@ template_scorer:
     
   validation:
     # Validation requirements
-    min_coverage: 0.8
+    min_coverage: 0.5

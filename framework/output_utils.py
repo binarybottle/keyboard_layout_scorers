@@ -171,6 +171,17 @@ def format_detailed_output(result: ScoreResult,
     if show_validation and result.validation_info:
         lines.append(f"\nValidation information:")
         for key, value in sorted(result.validation_info.items()):
+            # SPECIAL HANDLING for empirical_coverage
+            if key == 'empirical_coverage' and isinstance(value, dict):
+                lines.append(f"\nEmpirical Weight Coverage:")
+                lines.append(f"  Exact matches: {value.get('exact_matches_count', 0):,} bigrams "
+                           f"({value.get('exact_matches_percentage', 0):.1f}% of evaluated bigrams)")
+                lines.append(f"  Frequency-weighted coverage: {value.get('exact_matches_frequency_weight', 0):.1f}%")
+                lines.append(f"  No exact matches: {value.get('no_matches_count', 0):,} bigrams "
+                           f"({value.get('no_matches_percentage', 0):.1f}% of evaluated bigrams)")
+                continue
+            
+            # Regular validation info formatting
             key_name = key.replace('_', ' ').title()
             if isinstance(value, float):
                 lines.append(f"  {key_name:<25}: {value:10.6f}")
@@ -417,3 +428,19 @@ def create_summary_table(results: Dict[str, ScoreResult],
         lines.append(f"{rank:<6} {name:<20} {result.primary_score:<15.6f} {scorer:<15}")
     
     return '\n'.join(lines)
+
+
+def format_empirical_coverage(empirical_coverage: Dict[str, float]) -> str:
+    """Format empirical weight coverage information for display."""
+    if not empirical_coverage:
+        return ""
+    
+    lines = [
+        "\n=== Empirical Weight Coverage ===",
+        f"Exact matches: {empirical_coverage['exact_matches_count']:,} bigrams "
+        f"({empirical_coverage['exact_matches_percentage']:.1f}% of evaluated bigrams)",
+        f"Frequency-weighted coverage: {empirical_coverage['exact_matches_frequency_weight']:.1f}%",
+        f"No exact matches: {empirical_coverage['no_matches_count']:,} bigrams "
+        f"({empirical_coverage['no_matches_percentage']:.1f}% of evaluated bigrams)",
+    ]
+    return "\n".join(lines)

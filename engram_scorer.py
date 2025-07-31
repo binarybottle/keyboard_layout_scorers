@@ -46,11 +46,14 @@ from typing import Dict, Any, List, Tuple, Optional
 from pathlib import Path
 import numpy as np
 
+# Set to True to enable automatic distribution detection and normalization
+do_detect_and_normalize_distribution = False  
+
 # Import our framework components
 from framework.base_scorer import BaseLayoutScorer, ScoreResult
 from framework.config_loader import load_scorer_config
 from framework.layout_utils import filter_to_letters_only, is_same_hand_pair, get_layout_statistics
-from framework.data_utils import load_csv_with_validation, normalize_frequency_data, detect_distribution_type, validate_data_consistency
+from framework.data_utils import load_csv_with_validation, validate_data_consistency
 from framework.output_utils import print_results
 from framework.cli_utils import create_standard_parser, handle_common_errors, get_layout_from_args
 
@@ -119,7 +122,7 @@ def apply_combination_strategy(item_score: float, item_pair_score: float, strate
     elif strategy == "additive":
         return item_score + item_pair_score
     elif strategy == "weighted_additive":
-        return 0.6 * item_score + 0.4 * item_pair_score
+        return 0.25 * item_score + 0.75 * item_pair_score
     else:
         raise ValueError(f"Unknown combination strategy: {strategy}")
 
@@ -176,8 +179,11 @@ class EngramScorer(BaseLayoutScorer):
         
         item_df = load_csv_with_validation(item_file, ['letter', 'frequency'])
         scores = item_df['frequency'].astype(float).values
-        norm_scores = detect_and_normalize_distribution(scores, 'Item scores', not quiet_mode)
-        
+        if do_detect_and_normalize_distribution:
+            norm_scores = detect_and_normalize_distribution(scores, 'Item scores', not quiet_mode)
+        else:
+            norm_scores = scores
+
         self.item_scores = {}
         for i, (_, row) in enumerate(item_df.iterrows()):
             letter = str(row['letter']).lower()
@@ -193,8 +199,11 @@ class EngramScorer(BaseLayoutScorer):
         
         item_pair_df = load_csv_with_validation(item_pair_file, ['letter_pair', 'frequency'])
         scores = item_pair_df['frequency'].astype(float).values
-        norm_scores = detect_and_normalize_distribution(scores, 'Item pair scores', not quiet_mode)
-        
+        if do_detect_and_normalize_distribution:
+            norm_scores = detect_and_normalize_distribution(scores, 'Item pair scores', not quiet_mode)
+        else:
+            norm_scores = scores
+
         self.item_pair_scores = {}
         for i, (_, row) in enumerate(item_pair_df.iterrows()):
             pair_str = str(row['letter_pair'])
@@ -212,8 +221,11 @@ class EngramScorer(BaseLayoutScorer):
         
         position_df = load_csv_with_validation(position_file, ['key', 'comfort_score'])
         scores = position_df['comfort_score'].astype(float).values
-        norm_scores = detect_and_normalize_distribution(scores, 'Position scores', not quiet_mode)
-        
+        if do_detect_and_normalize_distribution:
+            norm_scores = detect_and_normalize_distribution(scores, 'Position scores', not quiet_mode)
+        else:
+            norm_scores = scores
+
         self.position_scores = {}
         for i, (_, row) in enumerate(position_df.iterrows()):
             key = str(row['key']).lower()
@@ -229,8 +241,11 @@ class EngramScorer(BaseLayoutScorer):
         
         position_pair_df = load_csv_with_validation(position_pair_file, ['key_pair', 'comfort_score'])
         scores = position_pair_df['comfort_score'].astype(float).values
-        norm_scores = detect_and_normalize_distribution(scores, 'Position-pair scores', not quiet_mode)
-        
+        if do_detect_and_normalize_distribution:
+            norm_scores = detect_and_normalize_distribution(scores, 'Position-pair scores', not quiet_mode)
+        else:
+            norm_scores = scores
+
         self.position_pair_scores = {}
         for i, (_, row) in enumerate(position_pair_df.iterrows()):
             pair_str = str(row['key_pair'])
@@ -285,8 +300,8 @@ class EngramScorer(BaseLayoutScorer):
         # Calculate item component
         item_raw_score = 0.0
         for item, pos in zip(items, positions):
-            item_score = self.item_scores.get(item.lower(), 0.0)
-            pos_score = self.position_scores.get(pos.lower(), 0.0)
+            item_score = self.item_scores.get(item.lower(), 0.0)    # DEFAULT to 0.0 if not found
+            pos_score = self.position_scores.get(pos.lower(), 0.0)  # DEFAULT to 0.0 if not found
             item_raw_score += item_score * pos_score
         
         item_component = item_raw_score / n_items if n_items > 0 else 0.0
@@ -309,11 +324,11 @@ class EngramScorer(BaseLayoutScorer):
                     
                     # Get scores with defaults
                     item_pair_key = (item1, item2)
-                    item_pair_score = self.item_pair_scores.get(item_pair_key, 1.0)
-                    
+                    item_pair_score = self.item_pair_scores.get(item_pair_key, 1.0)    # DEFAULT to 1.0 if not found
+
                     pos_pair_key = (pos1, pos2)
-                    pos_pair_score = self.position_pair_scores.get(pos_pair_key, 1.0)
-                    
+                    pos_pair_score = self.position_pair_scores.get(pos_pair_key, 1.0)  # DEFAULT to 1.0 if not found
+
                     pair_raw_score += item_pair_score * pos_pair_score
                     pair_count += 1
         
