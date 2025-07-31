@@ -8,7 +8,11 @@ Script for scoring keyboard layouts based on letter- and letter-pair frequencies
 and key- and key-pair comfort scores. Provides both 32-key (full layout) and 
 24-key (home block only) scoring modes.
 
-Home block keys (24): qwerasdfzxcvuiopjkl;m,./
+24-key scoring focuses on the home block keys: qwerasdfzxcvuiopjkl;m,./
+This is what this scorer was originally designed for:
+https://github.com/binarybottle/optimize_layouts
+32-key scoring uses an extended set of keys based on a single comfort score estimate 
+for all non-home-block keys (value greater than that of any hurdle, such as RV).
 
 Usage:
     # Basic scoring (both 32-key and 24-key results)
