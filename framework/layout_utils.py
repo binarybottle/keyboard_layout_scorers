@@ -201,7 +201,7 @@ def extract_letter_pairs_only(mapping: Dict[str, str],
 
 def get_hand_mapping() -> Dict[str, str]:
     """
-    Get standard hand assignments for QWERTY positions.
+    Get standard hand assignments for 32 QWERTY positions.
     
     Returns:
         Dict mapping position keys to 'L' (left) or 'R' (right)
@@ -218,7 +218,7 @@ def get_hand_mapping() -> Dict[str, str]:
         'Y': 'R', 'U': 'R', 'I': 'R', 'O': 'R', 'P': 'R',
         'H': 'R', 'J': 'R', 'K': 'R', 'L': 'R', ';': 'R',
         'N': 'R', 'M': 'R', ',': 'R', '.': 'R', '/': 'R',
-        "'": 'R', '[': 'R', ']': 'R',
+        "'": 'R', '[': 'R',
     }
 
 

@@ -408,7 +408,7 @@ def create_summary_table(results: Dict[str, ScoreResult],
                           reverse=True)
     
     # Create table
-    lines.append(f"{'Rank':<6} {'Layout':<20} {'Primary Score':<15} {'Scorer':<15}")
+    lines.append(f"{'Rank':<6} {'Layout':<20} {'Primary score':<15} {'Scorer':<15}")
     lines.append("-" * 60)
     
     for i, (name, result) in enumerate(sorted_results):

@@ -122,50 +122,6 @@ def extract_bigrams(text: str,
     return bigrams
 
 
-def extract_trigrams(text: str, 
-                    respect_word_boundaries: bool = True,
-                    normalize_case: bool = True) -> List[Tuple[str, str, str]]:
-    """
-    Extract consecutive character triplets (trigrams) from text.
-    
-    Args:
-        text: Input text to analyze
-        respect_word_boundaries: If True, don't create trigrams across word boundaries
-        normalize_case: If True, convert to lowercase
-        
-    Returns:
-        List of character triplet tuples
-    """
-    if not text:
-        return []
-    
-    # Clean the text
-    cleaned_text = clean_text_for_analysis(text, preserve_case=not normalize_case)
-    
-    trigrams = []
-    
-    if respect_word_boundaries:
-        # Split into words and extract trigrams within each word
-        words = cleaned_text.split()
-        
-        for word in words:
-            if len(word) < 3:
-                continue
-                
-            for i in range(len(word) - 2):
-                char1, char2, char3 = word[i], word[i + 1], word[i + 2]
-                trigrams.append((char1, char2, char3))
-    else:
-        # Extract trigrams across the entire text (ignoring word boundaries)
-        text_no_spaces = cleaned_text.replace(' ', '')
-        
-        for i in range(len(text_no_spaces) - 2):
-            char1, char2, char3 = text_no_spaces[i], text_no_spaces[i + 1], text_no_spaces[i + 2]
-            trigrams.append((char1, char2, char3))
-    
-    return trigrams
-
-
 def get_character_frequencies(text: str, 
                             normalize: bool = True,
                             case_sensitive: bool = False) -> Dict[str, float]:

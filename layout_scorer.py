@@ -315,7 +315,7 @@ def parse_layout_compare(compare_args: List[str]) -> Dict[str, Dict[str, str]]:
     layouts = {}
     
     # Standard QWERTY positions for mapping
-    standard_positions = "QWERTYUIOPASDFGHJKLZXCVBNM"
+    standard_positions = "QWERTYUIOP[ASDFGHJKL;'ZXCVBNM,./"
     
     for arg in compare_args:
         if ':' not in arg:
