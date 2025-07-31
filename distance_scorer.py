@@ -4,22 +4,30 @@ Distance Layout Scorer for scoring keyboard layouts.
 
 (c) Arno Klein (arnoklein.info), MIT License (see LICENSE)
 
-Calculate the total physical distance traveled by fingers when typing text with a specified keyboard layout. 
-This approach assumes users have their fingers positioned above the home row.
+Calculate the total physical distance traveled by fingers when typing text with a specified keyboard layout.
+This approach correctly tracks cumulative finger travel by maintaining each finger's position:
+
+  - **Initial state**: All fingers start at their home row positions
+  - **When a finger types a key**: Calculate distance from that finger's current position to the new key position
+  - **Update finger position**: Track where each finger is now located
+  - **Next use of same finger**: Calculate distance from finger's last position to the new key
+
+This provides an accurate measure of actual typing effort, unlike approaches that incorrectly
+sum distances between all consecutive key positions regardless of which fingers type them.
 
 Usage:
 
   # Basic usage
-  python distance_scorer_new.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --text "the quick brown fox jumps over the lazy dog"
+  python distance_scorer.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --text "the quick brown fox jumps over the lazy dog"
 
   # With text file
-  python distance_scorer_new.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --text-file sample.txt
+  python distance_scorer.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --text-file sample.txt
 
   # CSV output
-  python distance_scorer_new.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --text "hello world" --csv
+  python distance_scorer.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --text "hello world" --csv
 
   # Score only
-  python distance_scorer_new.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --text "hello world" --score-only
+  python distance_scorer.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --text "hello world" --score-only
 """
 
 import sys
@@ -27,7 +35,7 @@ from typing import Dict, Any, List, Tuple, Optional
 from math import sqrt
 from pathlib import Path
 
-# Import our new framework components
+# Import framework components
 from framework.base_scorer import BaseLayoutScorer, ScoreResult
 from framework.config_loader import load_scorer_config
 from framework.layout_utils import filter_to_letters_only
@@ -36,7 +44,7 @@ from framework.output_utils import print_results
 from framework.cli_utils import create_standard_parser, handle_common_errors, get_layout_from_args
 
 
-# Physical keyboard layout definitions (same as original)
+# Physical keyboard layout definitions
 STAGGERED_POSITION_MAP = {
     # Top row (no stagger reference point)
     'q': (0, 0),    'w': (19, 0),   'e': (38, 0),   'r': (57, 0),   't': (76, 0),
@@ -72,6 +80,18 @@ COLUMN_MAP = {
     '[': 11, "'": 11
 }
 
+# Home row positions for each finger (where fingers start)
+HOME_ROW_POSITIONS = {
+    'L4': 'a',  # Left pinky
+    'L3': 's',  # Left ring
+    'L2': 'd',  # Left middle
+    'L1': 'f',  # Left index
+    'R1': 'j',  # Right index
+    'R2': 'k',  # Right middle
+    'R3': 'l',  # Right ring
+    'R4': ';'   # Right pinky
+}
+
 
 def calculate_euclidean_distance(pos1: Tuple[float, float], pos2: Tuple[float, float]) -> float:
     """Calculate Euclidean distance between two positions in mm."""
@@ -80,23 +100,26 @@ def calculate_euclidean_distance(pos1: Tuple[float, float], pos2: Tuple[float, f
     return sqrt(dx * dx + dy * dy)
 
 
-def same_hand(char1: str, char2: str) -> bool:
-    """Check if two characters are typed by the same hand."""
-    return (COLUMN_MAP[char1] < 6 and COLUMN_MAP[char2] < 6) or \
-           (COLUMN_MAP[char1] > 5 and COLUMN_MAP[char2] > 5)
-
-
-def same_finger(char1: str, char2: str) -> bool:
-    """Check if two characters are typed by the same finger."""
-    return same_hand(char1, char2) and FINGER_MAP[char1] == FINGER_MAP[char2]
+def get_finger_id(char: str) -> Optional[str]:
+    """Get unique finger identifier for a character (combines hand and finger number)."""
+    if char not in FINGER_MAP or char not in COLUMN_MAP:
+        return None
+    
+    hand = 'L' if COLUMN_MAP[char] < 6 else 'R'
+    finger_num = FINGER_MAP[char]
+    return f"{hand}{finger_num}"
 
 
 class DistanceScorer(BaseLayoutScorer):
     """
-    Distance-based keyboard layout scorer using the unified framework.
+    Distance-based keyboard layout scorer that tracks cumulative finger travel.
     
-    Calculates the total physical distance traveled by fingers when typing text
-    on a given keyboard layout.
+    Tracks each finger's position and calculates cumulative distance traveled.
+    All fingers start at home row positions. When a finger types a key,
+    we calculate distance from its current position to the new key and update position.
+    
+    This provides a more accurate measure of actual typing effort compared to
+    approaches which incorrectly sum all key-pair distances.
     """
     
     def __init__(self, layout_mapping: Dict[str, str], config: Optional[Dict[str, Any]] = None):
@@ -112,8 +135,18 @@ class DistanceScorer(BaseLayoutScorer):
         # Distance scorer doesn't need external data files
         self._data_loaded = True
         
+        # Initialize finger positions at home row
+        self.finger_positions = {}
+        self._initialize_finger_positions()
+        
         # Validate that all mapped positions exist in our position map
         self._validate_positions()
+    
+    def _initialize_finger_positions(self) -> None:
+        """Initialize all fingers to their home row positions."""
+        self.finger_positions = {}
+        for finger_id, home_key in HOME_ROW_POSITIONS.items():
+            self.finger_positions[finger_id] = home_key
     
     def _validate_positions(self) -> None:
         """Validate that all layout positions exist in the physical position map."""
@@ -131,150 +164,159 @@ class DistanceScorer(BaseLayoutScorer):
             print()
     
     def load_data_files(self) -> None:
-        """
-        Load required data files for scoring.
-        
-        Distance scorer uses built-in position data, so no external files needed.
-        """
-        # No external data files needed for distance scoring
+        """Load required data files for scoring (none needed for distance scorer)."""
         pass
     
-    def get_physical_position(self, char: str) -> Optional[Tuple[float, float]]:
-        """Get the physical position of a character based on the layout mapping."""
-        char_upper = char.upper()
-        if char_upper in self.layout_mapping:
-            qwerty_pos = self.layout_mapping[char_upper].lower()
-            return STAGGERED_POSITION_MAP.get(qwerty_pos)
+    def get_physical_position(self, qwerty_key: str) -> Optional[Tuple[float, float]]:
+        """Get the physical position of a QWERTY key."""
+        return STAGGERED_POSITION_MAP.get(qwerty_key.lower())
+    
+    def get_finger_for_char(self, char: str) -> Optional[str]:
+        char_lower = char.lower()
+        if char_lower in self.layout_mapping:
+            qwerty_pos = self.layout_mapping[char_lower].lower()
+            return get_finger_id(qwerty_pos)
+        return None
+
+    def get_qwerty_key_for_char(self, char: str) -> Optional[str]:
+        char_lower = char.lower()
+        if char_lower in self.layout_mapping:
+            return self.layout_mapping[char_lower].lower()
         return None
     
-    def calculate_bigram_distance(self, char1: str, char2: str) -> float:
-        """Calculate the distance traveled for a single bigram."""
-        pos1 = self.get_physical_position(char1)
-        pos2 = self.get_physical_position(char2)
-        
-        if pos1 is None or pos2 is None:
-            return 0.0  # Can't calculate distance for unmapped characters
-        
-        # Same character = no movement
-        if char1 == char2:
-            return 0.0
-        
-        return calculate_euclidean_distance(pos1, pos2)
-    
-    def analyze_text(self, text: str) -> Dict[str, Any]:
+    def calculate_finger_travel_distance(self, char: str) -> float:
         """
-        Analyze text and calculate comprehensive distance statistics.
+        Calculate the distance a finger travels to type this character.
         
         Args:
-            text: Input text to analyze
+            char: The character being typed
             
         Returns:
-            Dict containing various distance metrics and statistics
+            Distance the responsible finger travels from its current position
         """
+        # Get the finger responsible for this character
+        finger_id = self.get_finger_for_char(char)
+        if finger_id is None:
+            return 0.0
+        
+        # Get the QWERTY key this character maps to
+        target_key = self.get_qwerty_key_for_char(char)
+        if target_key is None:
+            return 0.0
+        
+        # Get finger's current position
+        current_key = self.finger_positions.get(finger_id)
+        if current_key is None:
+            return 0.0
+        
+        # Get physical positions
+        current_pos = self.get_physical_position(current_key)
+        target_pos = self.get_physical_position(target_key)
+        
+        if current_pos is None or target_pos is None:
+            return 0.0
+        
+        # Calculate distance
+        distance = calculate_euclidean_distance(current_pos, target_pos)
+        
+        # Update finger position
+        self.finger_positions[finger_id] = target_key
+        
+        return distance
+    
+    def analyze_text_finger_travel(self, text: str) -> Dict[str, Any]:
+        
         if not text.strip():
             return self._empty_results()
         
-        # Use framework text utilities
-        bigrams = extract_bigrams(text, respect_word_boundaries=True, normalize_case=True)
+        # Reset finger positions to home row
+        self._initialize_finger_positions()
         
-        if len(bigrams) == 0:
+        # Get all alphabetic characters in order
+        chars = [c.lower() for c in text if c.isalpha() or c in ',.;\'/-=[]\\']
+        
+        if len(chars) == 0:
             return self._empty_results()
         
-        # Calculate distances
-        bigram_distances = []
-        same_finger_distances = []
-        same_hand_distances = []
-        different_hand_distances = []
+        # Calculate travel distance for each character
+        travel_distances = []
+        total_travel = 0.0
         
-        total_distance = 0.0
-        valid_bigrams = 0
+        # Track travel by finger
+        finger_travels = {}
+        finger_keystrokes = {}
         
-        for char1, char2 in bigrams:
-            distance = self.calculate_bigram_distance(char1, char2)
+        for char in chars:
+            distance = self.calculate_finger_travel_distance(char)
             
-            if distance > 0:  # Only count valid distances
-                bigram_distances.append(distance)
-                total_distance += distance
-                valid_bigrams += 1
+            if distance >= 0:  # Include zero distances (staying on same key)
+                travel_distances.append(distance)
+                total_travel += distance
                 
-                # Categorize by finger/hand usage
-                if char1 in self.layout_mapping and char2 in self.layout_mapping:
-                    qwerty_pos1 = self.layout_mapping[char1.upper()].lower()
-                    qwerty_pos2 = self.layout_mapping[char2.upper()].lower()
-                    
-                    if qwerty_pos1 in FINGER_MAP and qwerty_pos2 in FINGER_MAP:
-                        if same_finger(qwerty_pos1, qwerty_pos2):
-                            same_finger_distances.append(distance)
-                        elif same_hand(qwerty_pos1, qwerty_pos2):
-                            same_hand_distances.append(distance)
-                        else:
-                            different_hand_distances.append(distance)
+                # Track by finger
+                finger = self.get_finger_for_char(char)
+                if finger:
+                    if finger not in finger_travels:
+                        finger_travels[finger] = 0.0
+                        finger_keystrokes[finger] = 0
+                    finger_travels[finger] += distance
+                    finger_keystrokes[finger] += 1
         
         # Calculate statistics
-        if valid_bigrams > 0:
-            avg_distance = total_distance / valid_bigrams
-            max_distance = max(bigram_distances) if bigram_distances else 0.0
-            min_distance = min(bigram_distances) if bigram_distances else 0.0
+        keystroke_count = len(travel_distances)
+        if keystroke_count > 0:
+            avg_travel = total_travel / keystroke_count
+            max_travel = max(travel_distances) if travel_distances else 0.0
+            min_travel = min(travel_distances) if travel_distances else 0.0
         else:
-            avg_distance = max_distance = min_distance = 0.0
+            avg_travel = max_travel = min_travel = 0.0
         
-        # Calculate category averages
-        avg_same_finger = sum(same_finger_distances) / len(same_finger_distances) if same_finger_distances else 0.0
-        avg_same_hand = sum(same_hand_distances) / len(same_hand_distances) if same_hand_distances else 0.0
-        avg_different_hand = sum(different_hand_distances) / len(different_hand_distances) if different_hand_distances else 0.0
+        # Calculate per-finger statistics
+        finger_stats = {}
+        for finger in finger_travels:
+            finger_stats[finger] = {
+                'total_travel': finger_travels[finger],
+                'keystroke_count': finger_keystrokes[finger],
+                'avg_travel': finger_travels[finger] / finger_keystrokes[finger] if finger_keystrokes[finger] > 0 else 0.0
+            }
         
         return {
-            'total_distance': total_distance,
-            'average_distance': avg_distance,
-            'max_distance': max_distance,
-            'min_distance': min_distance,
-            'total_bigrams': len(bigrams),
-            'valid_bigrams': valid_bigrams,
-            'coverage': valid_bigrams / len(bigrams) if bigrams else 0.0,
-            'avg_same_finger_distance': avg_same_finger,
-            'avg_same_hand_distance': avg_same_hand,
-            'avg_different_hand_distance': avg_different_hand,
-            'same_finger_count': len(same_finger_distances),
-            'same_hand_count': len(same_hand_distances),
-            'different_hand_count': len(different_hand_distances),
+            'total_travel': total_travel,
+            'average_travel': avg_travel,
+            'max_travel': max_travel,
+            'min_travel': min_travel,
+            'keystroke_count': keystroke_count,
+            'finger_statistics': finger_stats,
         }
     
     def _empty_results(self) -> Dict[str, Any]:
         """Return empty results structure."""
         return {
-            'total_distance': 0.0,
-            'average_distance': 0.0,
-            'max_distance': 0.0,
-            'min_distance': 0.0,
-            'total_bigrams': 0,
-            'valid_bigrams': 0,
-            'coverage': 0.0,
-            'avg_same_finger_distance': 0.0,
-            'avg_same_hand_distance': 0.0,
-            'avg_different_hand_distance': 0.0,
-            'same_finger_count': 0,
-            'same_hand_count': 0,
-            'different_hand_count': 0,
+            'total_travel': 0.0,
+            'average_travel': 0.0,
+            'max_travel': 0.0,
+            'min_travel': 0.0,
+            'keystroke_count': 0,
+            'finger_statistics': {},
         }
     
     def calculate_scores(self) -> ScoreResult:
         """
-        Calculate layout scores using distance analysis.
+        Calculate layout scores using cumulative finger travel analysis.
         
         Returns:
             ScoreResult containing primary score, components, and metadata
         """
-        # Get text from config or raise error
+        # Get text from config
         text = self.config.get('text', '')
         
         if not text:
-            # Create empty result for missing text
             result = ScoreResult(
                 primary_score=0.0,
                 components={
-                    'total_distance': 0.0,
-                    'average_distance': 0.0,
-                    'coverage': 0.0,
+                    'total_travel': 0.0,
+                    'average_travel': 0.0,
+                    'keystroke_count': 0,
                 },
                 metadata={'error': 'No text provided for analysis'}
             )
@@ -290,45 +332,43 @@ class DistanceScorer(BaseLayoutScorer):
                     print(f"  {issue}")
                 print()
         
-        # Analyze the text
-        analysis = self.analyze_text(text)
+        # Analyze finger travel
+        analysis = self.analyze_text_finger_travel(text)
         
-        # Calculate normalized score (same as original)
-        avg_distance = analysis['average_distance']
-        if avg_distance == 0:
-            normalized_score = 0.0
+        # Calculate normalized score (lower travel = higher score)
+        avg_travel = analysis['average_travel']
+        if avg_travel == 0:
+            normalized_score = 1.0  # Perfect score for no travel
         else:
-            # Convert distance to score where lower distance = higher score
-            normalized_score = 1000.0 / (avg_distance + 1000.0)
+            # Normalize score where lower average travel = higher score
+            normalized_score = 1000.0 / (avg_travel + 1000.0)
         
         # Create result using framework structure
         result = ScoreResult(
             primary_score=normalized_score,
             components={
-                'total_distance': analysis['total_distance'],
-                'average_distance': analysis['average_distance'],
-                'max_distance': analysis['max_distance'],
-                'min_distance': analysis['min_distance'],
-                'coverage': analysis['coverage'],
+                'total_travel': analysis['total_travel'],
+                'average_travel': analysis['average_travel'],
+                'max_travel': analysis['max_travel'],
+                'min_travel': analysis['min_travel'],
+                'keystroke_count': analysis['keystroke_count'],
             },
             metadata={
                 'text_length': len(text),
-                'distance_metric': self.config.get('scoring_options', {}).get('distance_metric', 'euclidean'),
+                'scoring_method': 'cumulative_finger_travel',
+                'description': 'Tracks each finger position and calculates cumulative travel distance',
             },
             validation_info={
-                'total_bigrams': analysis['total_bigrams'],
-                'valid_bigrams': analysis['valid_bigrams'],
-                'coverage_percentage': analysis['coverage'] * 100,
+                'keystroke_count': analysis['keystroke_count'],
+                'text_characters': len([c for c in text if c.isalpha() or c in ',.;\'/-=[]\\'])
             },
             detailed_breakdown={
-                'finger_categories': {
-                    'same_finger_avg': analysis['avg_same_finger_distance'],
-                    'same_hand_avg': analysis['avg_same_hand_distance'],
-                    'different_hand_avg': analysis['avg_different_hand_distance'],
-                    'same_finger_count': analysis['same_finger_count'],
-                    'same_hand_count': analysis['same_hand_count'],
-                    'different_hand_count': analysis['different_hand_count'],
-                },
+                'finger_statistics': analysis['finger_statistics'],
+                'travel_summary': {
+                    'total_distance_mm': analysis['total_travel'],
+                    'average_per_keystroke_mm': analysis['average_travel'],
+                    'keystrokes_analyzed': analysis['keystroke_count']
+                }
             }
         )
         

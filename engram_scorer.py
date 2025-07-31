@@ -29,7 +29,7 @@ Required input files:
     - normalized_letter_pair_frequencies_en.csv:
       letter_pair,frequency
       th,3.56
-    - normalized_key_comfort_scores_32keys.csv:
+    - normalized_key_comfort_scores_24keys.csv:
       key,comfort_score
       D,7.2
     - normalized_key_pair_comfort_scores_32keys_LvsRpairs.csv:

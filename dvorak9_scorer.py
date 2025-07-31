@@ -67,6 +67,11 @@ Input file generation:
     - Extended from 24 to 32 keys using a static assignment for keys outside the home blocks
     - FDR-corrected statistical significance testing
 
+Weighting example:
+If the empirical weights file has a combination ("hands", "fingers") with weight -0.25, then:
+  - Bigram "TH" with scores {hands: 1.0, fingers: 1.0, others: 0.0} → strength = 1.0 → final = -0.25
+  - Bigram "ER" with scores {hands: 1.0, fingers: 0.5, others: 0.0} → strength = 0.75 → final = -0.1875
+
 Data sources:
   - Typing performance data (136M Keystrokes dataset):
     - Correctly typed bigrams from correctly typed words only
@@ -85,6 +90,7 @@ import sys
 from typing import Dict, Any, List, Tuple, Optional
 from collections import defaultdict, Counter
 from pathlib import Path
+from unittest import result
 
 # Import our framework components
 from framework.base_scorer import BaseLayoutScorer, ScoreResult
@@ -117,12 +123,12 @@ QWERTY_LAYOUT = {
     "'": (2, 4, 'R'), '[': (1, 4, 'R'),
 }
 
-# Define finger strength and home row (same as original)
+# Define finger strength and home row
 STRONG_FINGERS = {1, 2}
-WEAK_FINGERS = {3, 4}
+WEAK_FINGERS   = {3, 4}
 HOME_ROW = 2
 
-# Define finger column assignments (same as original)
+# Define finger column assignments
 FINGER_COLUMNS = {
     'L': {
         4: ['Q', 'A', 'Z'],
@@ -263,6 +269,109 @@ def score_bigram_dvorak9(bigram: str) -> Dict[str, float]:
     return scores
 
 
+def load_combination_weights(csv_path: str, quiet: bool = False) -> Dict[Tuple[str, ...], float]:
+    """
+    Load empirical correlation weights for different feature combinations from CSV file.
+    
+    Args:
+        csv_path: Path to CSV file containing combination correlations
+        quiet: If True, suppress informational output
+        
+    Returns:
+        Dict mapping combination tuples to correlation values
+    """
+    if not Path(csv_path).exists():
+        raise FileNotFoundError(f"Combination weights file not found: {csv_path}")
+    
+    combination_weights: Dict[Tuple[str, ...], float] = {}
+    
+    try:
+        import csv
+        with open(csv_path, 'r', encoding='utf-8') as f:
+            reader = csv.DictReader(f)
+            
+            for row in reader:
+                combination_str = row.get('combination', '').strip()
+                correlation_str = row.get('correlation', '').strip()
+                
+                if not correlation_str:
+                    continue
+                
+                try:
+                    correlation = float(correlation_str)
+                except ValueError:
+                    continue
+                
+                # Convert combination string to tuple
+                if combination_str.lower() in ['none', 'empty', '']:
+                    combination = ()
+                else:
+                    if '+' in combination_str:
+                        features = [f.strip() for f in combination_str.split('+')]
+                        combination = tuple(sorted(features))
+                    else:
+                        combination = (combination_str,)
+                
+                combination_weights[combination] = correlation
+                
+    except Exception as e:
+        raise ValueError(f"Error parsing combination weights CSV: {e}")
+    
+    # Ensure we have at least an empty combination
+    if () not in combination_weights:
+        combination_weights[()] = 0.0
+    
+    if not quiet:
+        print(f"Loaded {len(combination_weights)} combination weights from {csv_path}")
+    
+    return combination_weights
+
+
+def identify_bigram_combination(bigram_scores: Dict[str, float], threshold: float = 0.0) -> Tuple[str, ...]:
+    """
+    Identify which feature combination a bigram exhibits.
+    
+    Args:
+        bigram_scores: Dict of feature scores for a single bigram
+        threshold: Minimum score to consider a feature "active"
+    
+    Returns:
+        Tuple of active feature names, sorted for consistent lookup
+    """
+    active_features = []
+    
+    for feature, score in bigram_scores.items():
+        if score >= threshold:
+            active_features.append(feature)
+    
+    return tuple(sorted(active_features))
+
+
+def score_bigram_weighted(bigram_scores: Dict[str, float], 
+                         combination_weights: Dict[Tuple[str, ...], float]) -> Optional[float]:
+    """
+    Score a single bigram using exact empirical combination matching only.
+    
+    Args:
+        bigram_scores: Dict of 9 feature scores for the bigram
+        combination_weights: Dict mapping combinations to empirical weights
+    
+    Returns:
+        Weighted score for this bigram, or None if no exact match found
+    """
+    # Identify which combination this bigram exhibits
+    combination = identify_bigram_combination(bigram_scores)
+    
+    # Only use exact matches
+    if combination in combination_weights:
+        weight = combination_weights[combination]
+        combination_strength = sum(bigram_scores[feature] for feature in combination) / len(combination) if combination else 0
+        return weight * combination_strength
+    
+    # No exact match found
+    return None
+
+
 class Dvorak9Scorer(BaseLayoutScorer):
     """
     Dvorak-9 scorer using frequency-weighted scoring with optional empirical combination weights.
@@ -338,11 +447,10 @@ class Dvorak9Scorer(BaseLayoutScorer):
         # Load combination weights if specified
         weights_file = self.config.get('weights_file')
         if weights_file and Path(weights_file).exists():
-            # For now, use a simple approach - in full implementation this would load the weights CSV
-            if not quiet_mode:
-                print(f"Note: Empirical weights loading not fully implemented yet")
-            self.combination_weights = {}
-        
+            self.combination_weights = load_combination_weights(weights_file, quiet=quiet_mode)
+        else:
+            self.combination_weights = None
+
         # Validate loaded data
         validation_issues = []
         validation_issues.extend(validate_data_consistency(
@@ -373,7 +481,14 @@ class Dvorak9Scorer(BaseLayoutScorer):
         total_frequency = 0.0
         covered_bigrams = 0
         total_bigrams_for_pure = 0
+        empirically_weighted_score = 0.0
         
+        # NEW: Track empirical weight coverage
+        exact_matches_count = 0
+        exact_matches_frequency = 0.0
+        no_matches_count = 0
+        no_matches_frequency = 0.0
+
         # Process each bigram in the frequency list
         for bigram, frequency in zip(self.bigrams, self.frequencies):
             char1, char2 = bigram[0].lower(), bigram[1].lower()
@@ -402,6 +517,27 @@ class Dvorak9Scorer(BaseLayoutScorer):
             # 2. Frequency-weighted Dvorak score
             frequency_weighted_score += frequency * pure_bigram_score
             
+            # 3. Empirically-weighted score (if weights provided)
+            if self.combination_weights is not None:
+                weighted_score = score_bigram_weighted(bigram_scores, self.combination_weights)
+                
+                if weighted_score is not None:
+                    # Exact match found
+                    exact_matches_count += 1
+                    exact_matches_frequency += frequency
+                    
+                    # Apply correct sign based on weights type
+                    if self.weights_type == 'speed':
+                        final_empirical_score = -weighted_score
+                    else:  # comfort weights
+                        final_empirical_score = weighted_score
+                    
+                    empirically_weighted_score += frequency * final_empirical_score
+                else:
+                    # No exact match found
+                    no_matches_count += 1
+                    no_matches_frequency += frequency
+
             # Accumulate frequency-weighted individual criterion scores
             for criterion, score in bigram_scores.items():
                 individual_criterion_sums[criterion] += frequency * score
@@ -413,12 +549,17 @@ class Dvorak9Scorer(BaseLayoutScorer):
         pure_dvorak_score = pure_dvorak_sum / total_bigrams_for_pure if total_bigrams_for_pure > 0 else 0.0
         freq_weighted_dvorak_score = frequency_weighted_score / total_frequency if total_frequency > 0 else 0.0
         
-        # Primary score is frequency-weighted (or empirical if weights available)
-        primary_score = freq_weighted_dvorak_score
-        
+        # Calculate empirically-weighted score if available
+        if self.combination_weights is not None and exact_matches_frequency > 0:
+            empirical_score = empirically_weighted_score / exact_matches_frequency
+            primary_score = empirical_score
+        else:
+            empirical_score = None
+            primary_score = freq_weighted_dvorak_score
+
         # Calculate individual criterion averages
         criterion_names = ['hands', 'fingers', 'skip_fingers', 'dont_cross_home', 
-                          'same_row', 'home_row', 'columns', 'strum', 'strong_fingers']
+                        'same_row', 'home_row', 'columns', 'strum', 'strong_fingers']
         
         # Pure individual scores
         pure_individual_scores = {}
@@ -439,6 +580,16 @@ class Dvorak9Scorer(BaseLayoutScorer):
         # Calculate coverage
         bigram_coverage = covered_bigrams / len(self.bigrams) if self.bigrams else 0.0
         
+        # NEW: Calculate empirical weight coverage
+        empirical_coverage = {
+            'exact_matches_count': exact_matches_count,
+            'exact_matches_percentage': (exact_matches_count / covered_bigrams * 100) if covered_bigrams > 0 else 0.0,
+            'exact_matches_frequency_weight': (exact_matches_frequency / total_frequency * 100) if total_frequency > 0 else 0.0,
+            'no_matches_count': no_matches_count,
+            'no_matches_percentage': (no_matches_count / covered_bigrams * 100) if covered_bigrams > 0 else 0.0,
+            'no_matches_frequency_weight': (no_matches_frequency / total_frequency * 100) if total_frequency > 0 else 0.0,
+        }
+        
         # Create result
         result = ScoreResult(
             primary_score=primary_score,
@@ -456,15 +607,17 @@ class Dvorak9Scorer(BaseLayoutScorer):
                 'strong_fingers': individual_scores['strong_fingers'],
             },
             metadata={
-                'scoring_mode': 'frequency_weighted',
+                'scoring_mode': 'exact_matching' if self.combination_weights else 'frequency_weighted',
                 'weights_type': self.weights_type,
                 'theoretical_maximum': 1.0,
+                'available_combinations': len(self.combination_weights) if self.combination_weights else 0,
             },
             validation_info={
                 'bigram_count': covered_bigrams,
                 'total_bigrams': len(self.bigrams),
                 'bigram_coverage': bigram_coverage,
                 'coverage_percentage': bigram_coverage * 100,
+                'empirical_coverage': empirical_coverage,  # NEW
             },
             detailed_breakdown={
                 'pure_individual_scores': pure_individual_scores,
@@ -472,10 +625,15 @@ class Dvorak9Scorer(BaseLayoutScorer):
                 'scoring_approaches': {
                     'pure_dvorak': pure_dvorak_score,
                     'frequency_weighted': freq_weighted_dvorak_score,
-                }
+                },
+                'empirical_weight_coverage': empirical_coverage,  # NEW
             }
         )
         
+        # Add empirical score if available
+        if empirical_score is not None:
+            result.components['empirically_weighted_score'] = empirical_score        
+
         return result
     
     def _empty_result(self) -> ScoreResult:

@@ -36,10 +36,6 @@ distance_scorer:
       - "max_distance"
       - "min_distance"
       - "coverage"
-    
-  validation:
-    min_coverage: 0.5   # Minimum bigram coverage required
-    min_text_length: 2  # Minimum text length for analysis
 
 # Dvorak's 9 evaluation criteria
 dvorak9_scorer:
@@ -87,10 +83,6 @@ dvorak9_scorer:
       - "columns"
       - "strum"
       - "strong_fingers"
-      
-  validation:
-    min_bigram_coverage: 0.5
-    required_criteria_count: 9
 
 # Engram frequency and comfort-based scoring  
 engram_scorer:
@@ -100,7 +92,7 @@ engram_scorer:
   data_files:
     item_scores: "normalized_letter_frequencies_en.csv"
     item_pair_scores: "normalized_letter_pair_frequencies_en.csv"
-    position_scores: "normalized_key_comfort_scores_32keys.csv"
+    position_scores: "normalized_key_comfort_scores_24keys.csv"
     position_pair_scores: "normalized_key_pair_comfort_scores_32keys_LvsRpairs.csv"
     
   scoring_options:
@@ -122,11 +114,6 @@ engram_scorer:
     components:
       - "item_component"
       - "item_pair_component"
-      
-  validation:
-    min_items: 2
-    max_items: 32
-    min_alphabet_coverage: 0.075  # Minimum coverage of standard alphabet
     
 # Output formatting options
 output_formats:
@@ -138,7 +125,7 @@ output_formats:
   detailed:
     show_breakdown: true
     show_validation_info: true
-    show_file_sources: true
+    show_file_sources: false
     
   score_only:
     precision: 6
@@ -183,7 +170,3 @@ template_scorer:
   output:
     primary_score_name: "score"
     components: []
-    
-  validation:
-    # Validation requirements
-    min_coverage: 0.5

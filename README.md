@@ -39,6 +39,19 @@ python layout_scorer.py --scorer engram   --letters "etaoinshrlcu" --positions "
 python distance_scorer.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --text "hello world"
 python dvorak9_scorer.py  --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ"  
 python engram_scorer.py   --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ"
+
+# Dvorak-9: weighted scoring
+python layout_scorer.py --scorer dvorak9 --letters "abc" --qwerty_keys "QWE" \
+  --weights "input/dvorak9/speed_weights.csv"
+python layout_scorer.py --scorer dvorak9 --letters "abc" --qwerty_keys "QWE" \
+  --weights "input/dvorak9/comfort_weights.csv"
+python dvorak9_scorer.py --letters "abc" --qwerty_keys "QWE" \
+  --weights "input/dvorak9/speed_weights.csv"
+
+# Engram: ignore cross-hand bigrams
+python layout_scorer.py --scorer engram --letters "abc" --positions "QWE" --ignore-cross-hand
+python engram_scorer.py --letters "abc" --positions "QWE" --ignore-cross-hand
+
 ```
 
 ### Multiple-scorer mode
@@ -143,7 +156,7 @@ Required files by scorer:
   **Engram scorer**:
   - `input/engram/normalized_letter_frequencies_en.csv` - Letter frequencies
   - `input/engram/normalized_letter_pair_frequencies_en.csv` - Bigram frequencies
-  - `input/engram/normalized_key_comfort_scores_32keys.csv` - Key comfort scores
+  - `input/engram/normalized_key_comfort_scores_24keys.csv` - Key comfort scores
   - `input/engram/normalized_key_pair_comfort_scores_32keys_LvsRpairs.csv` - Key-pair comfort
 
 All data files use CSV format with headers:

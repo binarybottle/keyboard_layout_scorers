@@ -139,7 +139,7 @@ def format_detailed_output(result: ScoreResult,
     
     show_breakdown = config.get('show_breakdown', True)
     show_validation = config.get('show_validation_info', True)
-    show_file_sources = config.get('show_file_sources', True)
+    show_file_sources = config.get('show_file_sources', False)
     
     lines = []
     
@@ -153,7 +153,7 @@ def format_detailed_output(result: ScoreResult,
     # Component scores
     if result.components:
         lines.append(f"\nComponent scores:")
-        for component, score in sorted(result.components.items()):
+        for component, score in result.components.items():
             component_name = component.replace('_', ' ').title()
             lines.append(f"  {component_name:<25}: {score:10.6f}")
     

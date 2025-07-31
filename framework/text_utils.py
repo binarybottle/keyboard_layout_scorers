@@ -391,8 +391,8 @@ def generate_text_summary(text: str, max_length: int = 100) -> str:
 
 
 def validate_text_input(text: str, 
-                       min_length: int = 10,
-                       min_unique_chars: int = 5) -> List[str]:
+                       min_length: int = 2,
+                       min_unique_chars: int = 1) -> List[str]:
     """
     Validate text input for layout scoring.
     
