@@ -42,6 +42,13 @@ Required input files:
   - key_pair_scores.csv - Precomputed Dvorak-9 scores  
   - speed_weights.csv - Speed-based empirical weights (optional)
   - comfort_weights.csv - Comfort-based empirical weights (optional)
+
+Each weights file contains correlations between each bigram's (speed or comfort) score 
+and the combination of Dvorak criteria characterizing that bigram. 
+These correlations can serve as weights in a layout scoring or optimization 
+algorithm, where a correlation is used as a weight to emphasize the 
+contribution of a bigram on the layout's score.
+
 """
 
 import sys

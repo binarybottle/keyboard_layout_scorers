@@ -4,13 +4,18 @@ Comprehensive Empirical Analysis of Dvorak-9 Criteria vs Typing Speed
 
 This script performs a complete empirical validation of August Dvorak's 9 typing 
 evaluation criteria using real typing data from 136M+ keystrokes. The analysis
-includes frequency adjustment, middle column key effects, and rigorous statistical
+includes frequency adjustment, middle column key effects, and statistical
 testing with FDR correction.
 
-The combinations_weights_from_speed_significant.csv output file contains 
-the results of the statistical analysis, which provides empirical combination 
-weights for each possible combination of Dvorak criteria. The "combination" and 
-"correlation" columns are used by dvorak9_speed.py for scoring keyboard layouts.
+The script produces frequency-adjusted residuals that represent typing speed
+after controlling for linguistic frequency effects, enabling fair comparison
+of layout-dependent factors.
+
+The output file contains correlations between each bigram's typing speed and 
+the combination of Dvorak criteria characterizing that bigram. 
+These correlations can serve as weights in a speed-based layout optimization 
+algorithm, where a correlation is used as a weight to emphasize the 
+contribution of a bigram on the layout's score.
 
 Key Features:
 - Analyzes correlations between each Dvorak criterion and actual typing speed
@@ -31,10 +36,6 @@ Statistical Methods:
 - Linear regression for frequency adjustment: time ~ log10(frequency)
 - FDR correction using Benjamini-Hochberg procedure
 - Confidence intervals using Fisher z-transformation
-
-The script produces frequency-adjusted residuals that represent typing speed
-after controlling for linguistic frequency effects, enabling fair comparison
-of layout-dependent factors.
 
 The 9 scoring criteria for typing bigrams are:
 1. Hands - favor alternating hands over same hand

@@ -12,9 +12,6 @@ This approach correctly tracks cumulative finger travel by maintaining each fing
   - **Update finger position**: Track where each finger is now located
   - **Next use of same finger**: Calculate distance from finger's last position to the new key
 
-This provides an accurate measure of actual typing effort, unlike approaches that incorrectly
-sum distances between all consecutive key positions regardless of which fingers type them.
-
 Usage:
 
   # Basic usage

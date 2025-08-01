@@ -1,12 +1,18 @@
 #!/usr/bin/env python3
 """
-Generate Dvorak-9 empirical weights based on comfort scores for 30-key coverage.
+Generate Dvorak-9 empirical weights based on comfort scores for 32-key coverage.
 
-This script uses the extended comfort dataset (30 keys) to generate empirical weights
+This script uses the extended comfort dataset (32 keys) to generate empirical weights
 for Dvorak-9 layout scoring. Higher comfort scores = better layouts.
 
+The output file contains correlations between each bigram's comfort score and 
+the combination of Dvorak criteria characterizing that bigram. 
+These correlations can serve as weights in a comfort-based layout optimization 
+algorithm, where a correlation is used as a weight to emphasize the 
+contribution of a bigram on the layout's score.
+
 Key features:
-- Uses extended comfort scores covering all 30 standard typing keys
+- Uses extended comfort scores covering all 32 standard typing keys
 - Positive correlation = good (higher Dvorak score = more comfortable)
 - Tests all 511 possible combinations of 9 Dvorak criteria
 - Applies FDR correction for multiple testing
