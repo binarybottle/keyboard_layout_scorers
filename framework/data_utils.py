@@ -133,7 +133,7 @@ def load_bigram_frequencies(filepath: str,
     
     if verbose:
         print(f"Loading bigram frequencies from {filepath}")
-        print(f"  Using columns: bigram='{bigram_col}', frequency='{frequency_col}'")
+        #print(f"  Using columns: bigram='{bigram_col}', frequency='{frequency_col}'")
     
     # Extract data
     bigrams = []
@@ -215,7 +215,7 @@ def load_key_value_csv(filepath: str,
     
     if verbose:
         print(f"Loading key-value data from {filepath}")
-        print(f"  Using columns: key='{key_col}', value='{value_col}'")
+        #print(f"  Using columns: key='{key_col}', value='{value_col}'")
     
     # Extract data with optional transformations
     result = {}

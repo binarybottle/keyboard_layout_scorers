@@ -137,71 +137,103 @@ def format_detailed_output(result: ScoreResult,
     if config is None:
         config = {}
     
-    show_breakdown = config.get('show_breakdown', True)
-    show_validation = config.get('show_validation_info', True)
+    show_breakdown = config.get('show_breakdown', False)
+    show_validation = config.get('show_validation_info', False)
     show_file_sources = config.get('show_file_sources', False)
     
     lines = []
     
     # Header
-    lines.append(f"\n{result.scorer_name.replace('_', ' ').title()} Results")
+    lines.append(f"\n{result.scorer_name.replace('_', ' ').capitalize()} results")
     lines.append("=" * 70)
-    
-    # Primary score
-    lines.append(f"Primary score: {result.primary_score:12.6f}")
     
     # Component scores
     if result.components:
-        lines.append(f"\nComponent scores:")
+        lines.append(f"Scores:")
+        
+        filtered_components = {}
         for component, score in result.components.items():
-            component_name = component.replace('_', ' ').title()
-            lines.append(f"  {component_name:<25}: {score:10.6f}")
-    
-    # Execution info
-    if result.execution_time > 0:
-        lines.append(f"\nExecution time: {result.execution_time:.3f} seconds")
+            # Skip generic versions if specific versions exist
+            if component == 'Item Component' and 'Item Component 32Key' in result.components:
+                continue
+            if component == 'Item Pair Component' and 'Item Pair Component 32Key' in result.components:
+                continue
+            
+            filtered_components[component] = score
+        
+        for component, score in filtered_components.items():
+            component_name = component.replace('_', ' ').capitalize()
+            lines.append(f"  {component_name:<28}: {score:8.6f}")
     
     # Layout info
     if result.layout_mapping:
         chars = ''.join(sorted(result.layout_mapping.keys()))
         positions = ''.join(result.layout_mapping[c] for c in sorted(result.layout_mapping.keys()))
-        lines.append(f"Layout: {chars} → {positions}")
+        lines.append(f"\nLayout: {chars.lower()} → {positions.upper()}")
+        
+        # Show QWERTY-ordered version
+        qwerty_positions = "QWERTYUIOPASDFGHJKL;ZXCVBNM,./"
+        position_to_char = {pos.upper(): char.lower() for char, pos in result.layout_mapping.items()}
+        qwerty_ordered_chars = ""
+        qwerty_ordered_positions = ""
+        
+        for qwerty_pos in qwerty_positions:
+            if qwerty_pos in position_to_char:
+                qwerty_ordered_chars += position_to_char[qwerty_pos]
+                qwerty_ordered_positions += qwerty_pos
+        
+        lines.append(f"Layout: {qwerty_ordered_chars} → {qwerty_ordered_positions}")
     
     # Validation information
     if show_validation and result.validation_info:
-        lines.append(f"\nValidation information:")
-        for key, value in sorted(result.validation_info.items()):
-            # SPECIAL HANDLING for empirical_coverage
-            if key == 'empirical_coverage' and isinstance(value, dict):
-                lines.append(f"\nEmpirical Weight Coverage:")
-                lines.append(f"  Exact matches: {value.get('exact_matches_count', 0):,} bigrams "
-                           f"({value.get('exact_matches_percentage', 0):.1f}% of evaluated bigrams)")
-                lines.append(f"  Frequency-weighted coverage: {value.get('exact_matches_frequency_weight', 0):.1f}%")
-                lines.append(f"  No exact matches: {value.get('no_matches_count', 0):,} bigrams "
-                           f"({value.get('no_matches_percentage', 0):.1f}% of evaluated bigrams)")
-                continue
-            
-            # Regular validation info formatting
-            key_name = key.replace('_', ' ').title()
-            if isinstance(value, float):
-                lines.append(f"  {key_name:<25}: {value:10.6f}")
-            elif isinstance(value, (int, bool)):
-                lines.append(f"  {key_name:<25}: {value:10}")
-            else:
-                lines.append(f"  {key_name:<25}: {str(value)}")
+        important_validation = {}
+        for key, value in result.validation_info.items():
+            if key not in ['Cross Hand Filtering', 'Keystroke Count', 'Total Chars 24Key', 'Total Chars 32Key', 'Letters 24Key', 'Letters 32Key']:
+                important_validation[key] = value
+        
+        if important_validation:
+            lines.append(f"\nValidation information:")
+            for key, value in sorted(important_validation.items()):
+                # SPECIAL HANDLING for empirical_coverage
+                if key == 'empirical_coverage' and isinstance(value, dict):
+                    lines.append(f"\nEmpirical Weight Coverage:")
+                    lines.append(f"  Exact matches: {value.get('exact_matches_count', 0):,} bigrams "
+                               f"({value.get('exact_matches_percentage', 0):.1f}% of evaluated bigrams)")
+                    lines.append(f"  Frequency-weighted coverage: {value.get('exact_matches_frequency_weight', 0):.1f}%")
+                    lines.append(f"  No exact matches: {value.get('no_matches_count', 0):,} bigrams "
+                               f"({value.get('no_matches_percentage', 0):.1f}% of evaluated bigrams)")
+                    continue
+                
+                # Regular validation info formatting
+                key_name = key.replace('_', ' ').capitalize()
+                if isinstance(value, float):
+                    lines.append(f"  {key_name:<28}: {value:8.6f}")
+                elif isinstance(value, (int, bool)):
+                    lines.append(f"  {key_name:<28}: {value:8}")
+                else:
+                    lines.append(f"  {key_name:<28}: {str(value)}")
     
     # Metadata
     if result.metadata:
-        lines.append(f"\nAdditional information:")
-        for key, value in sorted(result.metadata.items()):
-            if isinstance(value, (str, int, float, bool)):
-                key_name = key.replace('_', ' ').title()
-                if isinstance(value, float):
-                    lines.append(f"  {key_name:<25}: {value:10.6f}")
-                else:
-                    lines.append(f"  {key_name:<25}: {str(value)}")
+        important_metadata = {}
+        for key, value in result.metadata.items():
+            # Filter out normalization method unless actual normalization is happening
+            if key == 'Normalization Method' and value in ['auto', 'none', 'off', False]:
+                continue
+            if key not in ['scorer_failed', 'error', '_internal', 'Layout Size 24Key', 'Layout Size 32Key']:
+                important_metadata[key] = value
+        
+        if important_metadata:
+            lines.append(f"\nAdditional information:")
+            for key, value in sorted(important_metadata.items()):
+                if isinstance(value, (str, int, float, bool)):
+                    key_name = key.replace('_', ' ').capitalize()
+                    if isinstance(value, float):
+                        lines.append(f"  {key_name:<28}: {value:8.6f}")
+                    else:
+                        lines.append(f"  {key_name:<28}: {str(value)}")
     
-    # Detailed breakdown (scorer-specific)
+    # Detailed breakdown
     if show_breakdown and result.detailed_breakdown:
         lines.append(f"\nDetailed breakdown:")
         _format_detailed_breakdown(result.detailed_breakdown, lines, indent="  ")
@@ -213,10 +245,9 @@ def format_detailed_output(result: ScoreResult,
             lines.append(f"\nData files used:")
             for file_key, filepath in sorted(data_files.items()):
                 if filepath:
-                    lines.append(f"  {file_key}: {filepath}")
+                    lines.append(f"  {file_key:<28}: {filepath}")
     
     return '\n'.join(lines)
-
 
 def _format_detailed_breakdown(breakdown: Dict[str, Any], 
                              lines: List[str], 
