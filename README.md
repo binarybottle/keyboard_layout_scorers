@@ -14,9 +14,19 @@ This framework unifies several keyboard layout scoring approaches under a common
   - OSF: https://osf.io/6dt75/  (DOI: 10.17605/OSF.IO/6DT75)
 
 For reference:
-- QWERTY:  "qwertyuiopasdfghjkl;zxcvbnm,./"  
-- Dvorak:  "',.pyfgcrlaoeuidhtns;qjkxbmwvz"
-- Colemak: "qwfpgjluy;arstdhneiozxcvbkm,./"
+- Halmak 2.2	     wlrbz;qudjshnt,.aeoifmvc/gpxky['
+- Hieamtsrn	       byou'kdclphiea,mtsrnx-".?wgfjzqv
+- Colemak-DH	     qwfpbjluy;arstgmneiozxcdvkh,./['
+- Norman	         qwdfkjurl;asetgyniohzxcvbpm,./['
+- Workman	         qdrwbjfup;ashtgyneoizxmcvkl,./['
+- MTGAP 2.0	       ,fhdkjcul.oantgmseriqxbpzyw'v;['
+- QGMLWB	         qgmlwbyuv;dstnriaeohzxcfjkp,./['
+- Colemak	         qwfpgjluy;arstdhneiozxcvbkm,./['
+- Asset	           qwfgjypul;asetdhniorzxcvbkm,./['
+- Capewell-Dvorak	 ',.pyqfgrkoaeiudhtnszxcvjlmwb;['
+- Klausler	       k,uypwlmfcoaeidrnthsq.';zxvgbj['
+- Dvorak	         ',.pyfgcrlaoeuidhtns;qjkxbmwvz['
+- QWERTY	         qwertyuiopasdfghjkl;zxcvbnm,./['
 
 ## Installation
   ```bash

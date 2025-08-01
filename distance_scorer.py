@@ -397,7 +397,7 @@ class DistanceScorer(BaseLayoutScorer):
             },
             validation_info={
                 'keystroke_count': analysis['keystroke_count'],
-                'text_characters': len([c for c in text if c.isalpha() or c in ',.;\'/-=[]\\'])],
+                'text_characters': len([c for c in text if c.isalpha() or c in ',.;\'/-=[]\\']),
                 'cross_hand_filtering': self.ignore_cross_hand,
             },
             detailed_breakdown={
