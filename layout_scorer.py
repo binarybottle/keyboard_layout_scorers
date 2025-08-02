@@ -11,7 +11,6 @@ Features:
 - Compare multiple scoring methods on the same layout
 - Compare multiple layouts across scoring methods
 - Automatic cross-hand filtering comparison (shows both filtered and unfiltered results)
-- Common-keys-only comparison for layout comparisons
 
 Scoring methods available:
 - Distance scorer: Physical finger travel distance analysis
@@ -27,7 +26,7 @@ python layout_scorer.py --scorer engram --letters "etaoinshrlcu" --positions "FD
 python layout_scorer.py --scorers engram,dvorak9 --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ"
 python layout_scorer.py --scorers all --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --text "hello"
 
-# Compare layouts (shows full, filtered, and common-keys-only results)
+# Compare layouts (shows full and filtered results)
 python layout_scorer.py --compare qwerty:"qwertyuiopasdfghjklzxcvbnm" dvorak:"',.pyfgcrlaoeuidhtnsqjkxbmwvz" --text "hello"
 
 """
@@ -44,51 +43,6 @@ from framework.output_utils import print_results, save_detailed_comparison_csv, 
 from framework.cli_utils import handle_common_errors, get_layout_from_args
 from framework.scorer_factory import ScorerFactory
 from framework.unified_scorer import UnifiedLayoutScorer
-
-def find_common_keys(layouts: Dict[str, Dict[str, str]]) -> Set[str]:
-    """
-    Find keys that are common across all layouts.
-    
-    Args:
-        layouts: Dict mapping layout names to character mappings
-        
-    Returns:
-        Set of characters present in all layouts
-    """
-    if not layouts:
-        return set()
-    
-    # Start with keys from first layout
-    common_keys = set(list(layouts.values())[0].keys())
-    
-    # Intersect with keys from all other layouts
-    for layout_mapping in layouts.values():
-        common_keys &= set(layout_mapping.keys())
-    
-    return common_keys
-
-
-def filter_layouts_to_common_keys(layouts: Dict[str, Dict[str, str]], 
-                                common_keys: Set[str]) -> Dict[str, Dict[str, str]]:
-    """
-    Filter all layouts to only include common keys.
-    
-    Args:
-        layouts: Dict mapping layout names to character mappings
-        common_keys: Set of keys to keep
-        
-    Returns:
-        Dict with filtered layout mappings
-    """
-    filtered_layouts = {}
-    
-    for name, layout_mapping in layouts.items():
-        filtered_mapping = {char: pos for char, pos in layout_mapping.items() 
-                          if char in common_keys}
-        filtered_layouts[name] = filtered_mapping
-    
-    return filtered_layouts
-
 
 def create_cli_parser() -> argparse.ArgumentParser:
     """Create command-line argument parser for the unified scorer."""
@@ -114,7 +68,7 @@ Examples:
   # Compare layouts (layout string maps to QWERTY positions)
   python layout_scorer.py --compare qwerty:"qwertyuiop" dvorak:"',.pyfgcrl" --text "hello"
   
-  # Save detailed comparison to CSV file (includes both full and common-keys-only results)
+  # Save detailed comparison to CSV file
   python layout_scorer.py --compare qwerty:"qwertyuiop" dvorak:"',.pyfgcrl" colemak:"qwfpgjluy;" --csv results.csv --text "hello"
 
 Scoring methods:
@@ -122,8 +76,7 @@ Scoring methods:
   - dvorak9: Four approaches (pure, frequency-weighted, speed-weighted, comfort-weighted)  
   - engram: Two modes (32-key full layout, 24-key home block only)
 
-Note: Layout comparison automatically shows both full layout results and common-keys-only results.
-        """
+          """
     )
     
     # Scorer selection (mutually exclusive)
@@ -275,46 +228,8 @@ def main() -> int:
             for layout_name, layout_results in filtered_results.items():
                 filtered_results_renamed[f"{layout_name}_filtered"] = layout_results
             
-            # Find common keys and run comparison on common keys only
-            common_keys = find_common_keys(layouts)
-            
-            if not args.quiet:
-                print(f"\n=== COMMON KEYS ONLY COMPARISON ===")
-                print(f"Common keys ({len(common_keys)}): {''.join(sorted(common_keys))}")
-            
-            common_results_renamed = {}
-            if len(common_keys) > 0:
-                filtered_layouts = filter_layouts_to_common_keys(layouts, common_keys)
-                
-                # Common keys WITHOUT cross-hand filtering
-                common_results_full = unified_scorer.compare_layouts(
-                    filtered_layouts, scorers,
-                    text=text,
-                    ignore_cross_hand=False,
-                    quiet=args.quiet
-                )
-                
-                # Common keys WITH cross-hand filtering  
-                common_results_filtered = unified_scorer.compare_layouts(
-                    filtered_layouts, scorers,
-                    text=text,
-                    ignore_cross_hand=True,
-                    quiet=args.quiet
-                )
-                
-                # Rename common results
-                for layout_name, layout_results in common_results_full.items():
-                    common_results_renamed[f"{layout_name}_common_full"] = layout_results
-                    
-                for layout_name, layout_results in common_results_filtered.items():
-                    common_results_renamed[f"{layout_name}_common_filtered"] = layout_results
-                    
-            else:
-                if not args.quiet:
-                    print("No common keys found across all layouts.")
-            
             # Combine all results for output
-            combined_results = {**full_results_renamed, **filtered_results_renamed, **common_results_renamed}
+            combined_results = {**full_results_renamed, **filtered_results_renamed}
             
             # Handle CSV output
             if args.csv:

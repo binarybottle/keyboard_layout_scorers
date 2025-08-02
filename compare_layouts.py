@@ -20,17 +20,13 @@ ARGUMENTS:
             - Useful for comparing different layout groups (e.g., standard vs experimental)
             - Legend shows table names and layout counts
     
-    --variant {common_filtered,common,full,filtered}
+    --variant {full,filtered}
         Optional filter to select specific layout variants from the data.
         
         full:          Include only layouts with '_full' in their name  
                       (all letter patterns, all letter-pair analyses included)
         filtered:       Include only layouts with '_filtered' in their name
                        (all letter patterns, cross-hand bigrams removed)
-        common:         Include only layouts with '_common_full' in their name
-                       (common letter patterns, all analyses included)  
-        common_filtered: Include only layouts with '_common_filtered' in their name
-                        (common letter patterns, cross-hand bigrams removed)
         
         If not specified, all layouts in the CSV files are included.
         
@@ -80,17 +76,11 @@ Usage Examples:
     # Compare standard vs experimental layouts (blue vs red)
     python compare_layouts.py --tables standard_layouts.csv experimental_layouts.csv
     
-    # Filter for only common filtered data and save result
-    python compare_layouts.py --tables *.csv --variant common_filtered --output comparison.png
-    
     # Compare multiple layout groups with detailed output
     python compare_layouts.py --tables group1.csv group2.csv group3.csv --verbose
     
     # Analyze only filtered (cross-hand bigrams removed) data
     python compare_layouts.py --tables layouts.csv --variant filtered --output filtered_analysis.pdf
-    
-    # Compare common letter patterns only
-    python compare_layouts.py --tables standard.csv experimental.csv --variant common
 """
 
 import argparse
@@ -154,11 +144,7 @@ def load_and_filter_data(file_path: str, variant: Optional[str] = None) -> pd.Da
         
         if variant:
             # Filter by variant 
-            if variant == 'common_filtered':
-                filtered_df = df[df['layout'].str.contains('_common_filtered', na=False)]
-            elif variant == 'common':
-                filtered_df = df[df['layout'].str.contains('_common_full', na=False)]
-            elif variant == 'filtered':
+            if variant == 'filtered':
                 filtered_df = df[df['layout'].str.contains('_filtered', na=False)]
             elif variant == 'full':
                 filtered_df = df[df['layout'].str.contains('_full', na=False)]
@@ -342,7 +328,6 @@ def main():
 Examples:
   python compare_layouts.py --tables layouts.csv
   python compare_layouts.py --tables standard.csv experimental.csv
-  python compare_layouts.py --tables *.csv --variant common_filtered
   python compare_layouts.py --tables data1.csv data2.csv --output comparison.png
   python compare_layouts.py --tables layouts.csv --variant filtered --verbose
         """
@@ -350,8 +335,8 @@ Examples:
     
     parser.add_argument('--tables', nargs='+', required=True,
                        help='One or more CSV files containing layout data')
-    parser.add_argument('--variant', choices=['common_filtered', 'common', 'filtered', 'full'], 
-                       help='Filter layouts by variant (common_filtered/common/filtered/full)')
+    parser.add_argument('--variant', choices=['filtered', 'full'], 
+                       help='Filter layouts by variant (filtered/full)')
     parser.add_argument('--output', '-o', 
                        help='Output file path (if not specified, plot is shown)')
     parser.add_argument('--verbose', '-v', action='store_true',

@@ -70,7 +70,7 @@ For reference:
 
 ### Multiple-scorer, multiple-layout comparison mode
   ```bash
-  # Compare layouts (shows both full layout and common-keys-only results)
+  # Compare layouts
   python layout_scorer.py --compare qwerty:"qwertyuiop" dvorak:"',.pyfgcrl" colemak:"qwfpgjluy;" --text "hello world"
 
   # Save detailed comparison to CSV
@@ -90,7 +90,7 @@ Shows comprehensive results with breakdowns, validation info, and scoring detail
   # Single layout to CSV
   python layout_scorer.py --scorer engram --letters "abc" --positions "ABC" --csv results.csv
 
-  # Comparison to CSV (includes both full and common-keys-only results)
+  # Comparison to CSV
   python layout_scorer.py --compare qwerty:"qwertyuiop" dvorak:"',.pyfgcrl" --csv compare.csv --text "hello"
   ```
 
@@ -107,16 +107,6 @@ Filters out bigrams that cross hands (left-to-right or right-to-left transitions
   ```bash
   # Apply to any scorer
   python layout_scorer.py --scorer [distance|dvorak9|engram] --letters "..." --positions "..." --ignore-cross-hand
-  ```
-
-### Common-keys-only Comparison
-When comparing multiple layouts, automatically shows both:
-  1. **Full layout results**: All keys in each layout
-  2. **Common-keys-only results**: Only keys present in all compared layouts
-
-  ```bash
-  python layout_scorer.py --compare qwerty:"qwertyuiop" dvorak:"',.pyfgcrl" colemak:"qwfpgjluy;" --text "hello"
-  # Outputs: qwerty, dvorak, colemak, qwerty_common, dvorak_common, colemak_common
   ```
 
 ## Configuration
@@ -296,18 +286,12 @@ All data files use CSV format with headers:
   === FULL LAYOUT COMPARISON ===
   Layout: qwerty vs dvorak vs colemak
 
-  === COMMON KEYS ONLY COMPARISON ===
-  Common keys (8): aeinorst
-
   Layout Scoring Summary
   ======================================================================
   Rank   Layout               Primary score    Scorer
   #1     dvorak               0.750000         Dvorak9
   #2     colemak              0.720000         Dvorak9  
   #3     qwerty               0.680000         Dvorak9
-  #1     dvorak_common        0.720000         Dvorak9
-  #2     colemak_common       0.700000         Dvorak9
-  #3     qwerty_common        0.650000         Dvorak9
   ```
 
 ## Testing and Validation
