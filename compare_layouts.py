@@ -1,93 +1,11 @@
 #!/usr/bin/env python3
 """
-compare_layouts.py - Parallel Coordinates Layout Comparison
+compare_layouts.py - Parallel Coordinates Layout Comparison (Fixed Version)
 
 Creates parallel coordinates plots comparing keyboard layouts across performance metrics.
-Each layout is represented as a line connecting its normalized scores across 18 metrics.
+Each layout is represented as a line connecting its normalized scores across available metrics.
 
-ARGUMENTS:
-    --tables <file1.csv> [file2.csv ...]
-        One or more CSV files containing keyboard layout performance data.
-        
-        Single table behavior:
-            - Each layout rendered as a grayscale line
-            - Line darkness varies by CSV row number (lighter = earlier rows)
-            - Useful for exploring variation within a single dataset
-            
-        Multiple tables behavior:
-            - Each table gets a distinct color (blue, red, green, orange, etc.)
-            - All layouts from the same table share the same color
-            - Useful for comparing different layout groups (e.g., standard vs experimental)
-            - Legend shows table names and layout counts
-    
-    --variant {common_filtered,common,full,filtered}
-        Optional filter to select specific layout variants from the data.
-        
-        common_filtered: Include only layouts with '_common_filtered' in their name
-                        (common letter patterns, cross-hand bigrams removed)
-        common:         Include only layouts with '_common_full' in their name
-                       (common letter patterns, all analyses included)  
-        filtered:       Include only layouts with '_filtered' in their name
-                       (all letter patterns, cross-hand bigrams removed)
-        full:          Include only layouts with '_full' in their name  
-                      (all letter patterns, all letter-pair analyses included)
-        
-        If not specified, all layouts in the CSV files are included.
-        
-    --output <filepath>
-        Save the plot to a file instead of displaying it interactively.
-        
-        Supported formats: PNG, PDF, SVG, JPG (determined by file extension)
-        Recommended: Use .png for high-quality raster images
-        Example: --output keyboard_comparison.png
-        
-        If not specified, plot is displayed in a window using matplotlib's default backend.
-        
-    --verbose
-        Print detailed information during processing including:
-        - Number of layouts loaded from each file
-        - Filtering results when using --variant
-        - Missing metrics warnings
-        - Data normalization details
-        
-        Useful for debugging data issues or understanding what's being plotted.
-
-DATA REQUIREMENTS:
-    CSV files must contain:
-    - A 'layout' column with layout identifiers
-    - 18 performance metric columns (distance_scorer_primary, engram_scorer_*, dvorak9_scorer_*)
-    - Numeric values for all metrics (missing values are handled gracefully)
-    
-METRICS PLOTTED (in order):
-    1. Distance Scorer:    distance_scorer_primary
-    2. Engram Scorer:      engram_scorer_item_component_24key/32key
-                          engram_scorer_item_pair_component_24key/32key  
-    3. Dvorak9 Main:       dvorak9_scorer_pure_dvorak_score
-                          dvorak9_scorer_frequency/speed/comfort_weighted_score
-    4. Dvorak9 Subscores:  dvorak9_scorer_columns/dont_cross_home/fingers/hands
-                          dvorak9_scorer_home_row/same_row/skip_fingers
-                          dvorak9_scorer_strong_fingers/strum
-
-NORMALIZATION:
-    All metrics are normalized to 0-1 scale using global min/max across ALL input tables.
-    This ensures fair comparison when plotting multiple datasets together.
-    0 = worst performance across all layouts, 1 = best performance across all layouts.
-
-Usage Examples:
-    # Explore single dataset with grayscale visualization
-    python compare_layouts.py --tables my_layouts.csv
-    
-    # Compare standard vs experimental layouts (blue vs red)
-    python compare_layouts.py --tables standard_layouts.csv experimental_layouts.csv
-    
-    # Compare multiple layout groups with detailed output
-    python compare_layouts.py --tables group1.csv group2.csv group3.csv --verbose
-    
-    # Analyze only filtered (cross-hand bigrams removed) data
-    python compare_layouts.py --tables layouts.csv --variant filtered --output filtered_analysis.pdf
-    
-    # Compare common letter patterns only
-    python compare_layouts.py --tables standard.csv experimental.csv --variant common
+This version is more robust and handles missing columns gracefully.
 """
 
 import argparse
@@ -99,67 +17,115 @@ from pathlib import Path
 import sys
 from typing import List, Dict, Tuple, Optional
 
-# Define the metrics in the specified order
-METRICS = [
-    'distance_scorer_primary',
-    #'engram_scorer_item_component_24key',
-    'engram_scorer_item_component_32key', 
-    #'engram_scorer_item_pair_component_24key',
-    'engram_scorer_item_pair_component_32key',
-    'dvorak9_scorer_pure_dvorak_score',
-    'dvorak9_scorer_frequency_weighted_score',
-    'dvorak9_scorer_speed_weighted_score',
-    'dvorak9_scorer_comfort_weighted_score',
-    'dvorak9_scorer_columns',
-    'dvorak9_scorer_dont_cross_home',
-    'dvorak9_scorer_fingers',
-    'dvorak9_scorer_hands',
-    'dvorak9_scorer_home_row',
-    'dvorak9_scorer_same_row',
-    'dvorak9_scorer_skip_fingers',
-    'dvorak9_scorer_strong_fingers',
-    'dvorak9_scorer_strum'
+# Define the metrics in the specified order (matching your actual CSV columns)
+IDEAL_METRICS = [
+    'distance_primary',
+    'engram_item_component_32key', 
+    'engram_item_pair_component_32key',
+    'dvorak9_pure_dvorak_score',
+    'dvorak9_frequency_weighted_score',
+    'dvorak9_speed_weighted_score',
+    'dvorak9_comfort_weighted_score',
+    'dvorak9_columns',
+    'dvorak9_dont_cross_home',
+    'dvorak9_fingers',
+    'dvorak9_hands',
+    'dvorak9_home_row',
+    'dvorak9_same_row',
+    'dvorak9_skip_fingers',
+    'dvorak9_strong_fingers',
+    'dvorak9_strum'
 ]
 
 # Short names for display
 METRIC_LABELS = {
-    'distance_scorer_primary': 'Distance\nPrimary',
-    #'engram_scorer_item_component_24key': 'Engram\nItem 24k',
-    'engram_scorer_item_component_32key': 'Engram\nItem 32k',
-    #'engram_scorer_item_pair_component_24key': 'Engram\nPair 24k',
-    'engram_scorer_item_pair_component_32key': 'Engram\nPair 32k',
-    'dvorak9_scorer_pure_dvorak_score': 'Pure\nDvorak',
-    'dvorak9_scorer_frequency_weighted_score': 'Frequency\nScore',
-    'dvorak9_scorer_speed_weighted_score': 'Speed\nScore',
-    'dvorak9_scorer_comfort_weighted_score': 'Comfort\nScore',
-    'dvorak9_scorer_columns': 'Columns',
-    'dvorak9_scorer_dont_cross_home': 'Dont Cross\nHome',
-    'dvorak9_scorer_fingers': 'Fingers',
-    'dvorak9_scorer_hands': 'Hands',
-    'dvorak9_scorer_home_row': 'Home\nRow',
-    'dvorak9_scorer_same_row': 'Same\nRow',
-    'dvorak9_scorer_skip_fingers': 'Skip\nFingers',
-    'dvorak9_scorer_strong_fingers': 'Strong\nFingers',
-    'dvorak9_scorer_strum': 'Strum'
+    'distance_primary': 'Distance\nPrimary',
+    'engram_item_component_32key': 'Engram\nItem 32k',
+    'engram_item_pair_component_32key': 'Engram\nPair 32k',
+    'dvorak9_pure_dvorak_score': 'Pure\nDvorak',
+    'dvorak9_frequency_weighted_score': 'Frequency\nScore',
+    'dvorak9_speed_weighted_score': 'Speed\nScore',
+    'dvorak9_comfort_weighted_score': 'Comfort\nScore',
+    'dvorak9_columns': 'Columns',
+    'dvorak9_dont_cross_home': 'Dont Cross\nHome',
+    'dvorak9_fingers': 'Fingers',
+    'dvorak9_hands': 'Hands',
+    'dvorak9_home_row': 'Home\nRow',
+    'dvorak9_same_row': 'Same\nRow',
+    'dvorak9_skip_fingers': 'Skip\nFingers',
+    'dvorak9_strong_fingers': 'Strong\nFingers',
+    'dvorak9_strum': 'Strum'
 }
 
-def load_and_filter_data(file_path: str, variant: Optional[str] = None) -> pd.DataFrame:
+def find_available_metrics(dfs: List[pd.DataFrame], verbose: bool = False) -> List[str]:
+    """Find which metrics are actually available in the data."""
+    # Get all columns that appear to be numeric metrics
+    all_columns = set()
+    for df in dfs:
+        all_columns.update(df.columns)
+    
+    # Find numeric columns that might be metrics
+    numeric_metrics = []
+    for df in dfs:
+        for col in df.columns:
+            if col != 'layout' and pd.api.types.is_numeric_dtype(df[col]):
+                if col not in numeric_metrics:
+                    numeric_metrics.append(col)
+    
+    # Prioritize ideal metrics that are available
+    available_metrics = []
+    for metric in IDEAL_METRICS:
+        if metric in numeric_metrics:
+            available_metrics.append(metric)
+    
+    # Add any other numeric columns that might be metrics
+    for col in numeric_metrics:
+        if col not in available_metrics and col != 'layout':
+            # Look for common patterns that suggest this is a metric
+            if any(keyword in col.lower() for keyword in ['score', 'metric', 'rating', 'value']):
+                available_metrics.append(col)
+    
+    # If we still don't have many metrics, just use all numeric columns
+    if len(available_metrics) < 3:
+        available_metrics = [col for col in numeric_metrics if col != 'layout']
+    
+    if verbose:
+        print(f"\nFound {len(available_metrics)} metrics to plot:")
+        for i, metric in enumerate(available_metrics):
+            print(f"  {i+1:2d}. {metric}")
+        
+        missing_ideal = [m for m in IDEAL_METRICS if m not in available_metrics]
+        if missing_ideal:
+            print(f"\nMissing ideal metrics ({len(missing_ideal)}):")
+            for metric in missing_ideal:
+                print(f"     {metric}")
+    
+    return available_metrics
+
+def load_and_filter_data(file_path: str, variant: Optional[str] = None, verbose: bool = False) -> pd.DataFrame:
     """Load CSV data and optionally filter by variant."""
     try:
         df = pd.read_csv(file_path)
-        print(f"Loaded {len(df)} rows from {file_path}")
+        if verbose:
+            print(f"\nLoaded {len(df)} rows from {file_path}")
+            print(f"Columns: {list(df.columns)}")
         
         if variant:
             # Filter by variant 
             if variant == 'filtered':
-                filtered_df = df[df['layout'].str.contains('filtered_', na=False)]
+                filtered_df = df[df['layout'].str.contains('no_crosshand_', na=False)]
             elif variant == 'full':
                 filtered_df = df[df['layout'].str.contains('full_', na=False)]
+            elif variant == 'common':
+                filtered_df = df[df['layout'].str.contains('_common_full', na=False)]
+            elif variant == 'common_filtered':
+                filtered_df = df[df['layout'].str.contains('_common_filtered', na=False)]
             else:
                 print(f"Warning: Unknown variant '{variant}', using all data")
                 filtered_df = df
                 
-            print(f"Filtered to {len(filtered_df)} rows for variant '{variant}'")
+            if verbose:
+                print(f"Filtered to {len(filtered_df)} rows for variant '{variant}'")
             return filtered_df
         
         return df
@@ -167,7 +133,7 @@ def load_and_filter_data(file_path: str, variant: Optional[str] = None) -> pd.Da
         print(f"Error loading {file_path}: {e}")
         sys.exit(1)
 
-def normalize_data(dfs: List[pd.DataFrame]) -> List[pd.DataFrame]:
+def normalize_data(dfs: List[pd.DataFrame], metrics: List[str]) -> List[pd.DataFrame]:
     """Normalize all data across tables for fair comparison."""
     # Combine all data to get global min/max for each metric
     all_data = pd.concat(dfs, ignore_index=True)
@@ -177,17 +143,16 @@ def normalize_data(dfs: List[pd.DataFrame]) -> List[pd.DataFrame]:
     for df in dfs:
         normalized_df = df.copy()
         
-        for metric in METRICS:
+        for metric in metrics:
             if metric in df.columns:
                 global_min = all_data[metric].min()
                 global_max = all_data[metric].max()
                 
-                if global_max != global_min:
+                if pd.notna(global_min) and pd.notna(global_max) and global_max != global_min:
                     normalized_df[metric] = (df[metric] - global_min) / (global_max - global_min)
                 else:
-                    normalized_df[metric] = 0.0  # If no variation, put at bottom
+                    normalized_df[metric] = 0.5  # Default to middle if no variation
             else:
-                print(f"Warning: Metric '{metric}' not found in data")
                 normalized_df[metric] = 0.0  # Default to 0 if metric is missing
         
         normalized_dfs.append(normalized_df)
@@ -210,20 +175,20 @@ def get_colors(num_tables: int) -> List[str]:
         return [cmap(i / num_tables) for i in range(num_tables)]
 
 def create_parallel_plot(dfs: List[pd.DataFrame], table_names: List[str], 
-                        variant: str, output_path: Optional[str] = None) -> None:
+                        metrics: List[str], variant: str, output_path: Optional[str] = None) -> None:
     """Create parallel coordinates plot."""
     
     # Normalize data across all tables
-    normalized_dfs = normalize_data(dfs)
+    normalized_dfs = normalize_data(dfs, metrics)
     
     # Set up the plot
-    fig, ax = plt.subplots(figsize=(20, 10))
+    fig, ax = plt.subplots(figsize=(max(12, len(metrics) * 1.2), 10))
     
     # Get colors
     colors = get_colors(len(dfs))
     
     # Plot parameters
-    x_positions = range(len(METRICS))
+    x_positions = range(len(metrics))
     
     # Plot each table's data
     for i, (df, table_name, color) in enumerate(zip(normalized_dfs, table_names, colors)):
@@ -234,37 +199,61 @@ def create_parallel_plot(dfs: List[pd.DataFrame], table_names: List[str],
             gray_values = np.linspace(0.2, 0.8, num_layouts)
             
             for j, (_, row) in enumerate(df.iterrows()):
-                y_values = [row[metric] for metric in METRICS]
+                y_values = [row.get(metric, 0) for metric in metrics]
                 
-                # Skip rows with missing data
-                if any(pd.isna(val) for val in y_values):
+                # Skip rows with too much missing data
+                valid_values = [val for val in y_values if pd.notna(val)]
+                if len(valid_values) < len(metrics) * 0.5:  # Need at least 50% valid data
                     continue
+                
+                # Replace NaN values with 0
+                y_values = [val if pd.notna(val) else 0 for val in y_values]
                 
                 gray_color = str(gray_values[j])
                 ax.plot(x_positions, y_values, color=gray_color, alpha=0.7, linewidth=1.5,
                        label=f"Layout {j+1}" if j < 10 else "")  # Only label first 10
         else:
             # Multiple tables: use color groups
+            valid_layout_count = 0
             for _, row in df.iterrows():
-                y_values = [row[metric] for metric in METRICS]
+                y_values = [row.get(metric, 0) for metric in metrics]
                 
-                # Skip rows with missing data
-                if any(pd.isna(val) for val in y_values):
+                # Skip rows with too much missing data
+                valid_values = [val for val in y_values if pd.notna(val)]
+                if len(valid_values) < len(metrics) * 0.5:  # Need at least 50% valid data
                     continue
                 
+                # Replace NaN values with 0
+                y_values = [val if pd.notna(val) else 0 for val in y_values]
+                
                 ax.plot(x_positions, y_values, color=color, alpha=0.6, linewidth=1.5)
+                valid_layout_count += 1
             
             # Add a single legend entry for this table
-            ax.plot([], [], color=color, linewidth=3, label=f"{table_name} ({len(df)} layouts)")
+            ax.plot([], [], color=color, linewidth=3, label=f"{table_name} ({valid_layout_count} layouts)")
     
     # Customize the plot
-    ax.set_xlim(-0.5, len(METRICS) - 0.5)
+    ax.set_xlim(-0.5, len(metrics) - 0.5)
     ax.set_ylim(-0.05, 1.05)
     
     # Set x-axis labels
+    metric_display_names = []
+    for metric in metrics:
+        if metric in METRIC_LABELS:
+            metric_display_names.append(METRIC_LABELS[metric])
+        else:
+            # Create a reasonable display name from the column name
+            display_name = metric.replace('_', ' ').title()
+            if len(display_name) > 15:
+                # Split long names
+                words = display_name.split()
+                if len(words) > 1:
+                    mid = len(words) // 2
+                    display_name = ' '.join(words[:mid]) + '\n' + ' '.join(words[mid:])
+            metric_display_names.append(display_name)
+    
     ax.set_xticks(x_positions)
-    ax.set_xticklabels([METRIC_LABELS.get(metric, metric) for metric in METRICS], 
-                       rotation=45, ha='right', fontsize=10)
+    ax.set_xticklabels(metric_display_names, rotation=45, ha='right', fontsize=10)
     
     # Add vertical grid lines for each metric
     for x in x_positions:
@@ -276,30 +265,17 @@ def create_parallel_plot(dfs: List[pd.DataFrame], table_names: List[str],
     ax.grid(True, alpha=0.3)
     
     # Title and legend
-    if variant:
+    if variant and variant != "all":
         ax.set_title(f'Keyboard Layout Comparison ({variant})\n'
-                    f'Parallel coordinates across {len(METRICS)} scores', 
+                    f'Parallel coordinates across {len(metrics)} metrics', 
                     fontsize=16, fontweight='bold', pad=20)
     else:
         ax.set_title(f'Keyboard Layout Comparison\n'
-                    f'Parallel coordinates across {len(METRICS)} scores', 
+                    f'Parallel coordinates across {len(metrics)} metrics', 
                     fontsize=16, fontweight='bold', pad=20)
 
     if len(dfs) > 1 or len(dfs[0]) <= 10:
         ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left', fontsize=10)
-    
-    # Add metric category annotations
-    category_positions = {
-        'Distance': 0,
-        'Engram': 2.5,
-        'Dvorak9': 7.5,
-        'Dvorak9 subscores': 12.5
-    }
-    
-    for category, pos in category_positions.items():
-        ax.text(pos, 1.08, category, transform=ax.get_xaxis_transform(), 
-               ha='center', va='bottom', fontweight='bold', fontsize=11,
-               bbox=dict(boxstyle="round,pad=0.3", facecolor='lightblue', alpha=0.7))
     
     plt.tight_layout()
     
@@ -311,7 +287,7 @@ def create_parallel_plot(dfs: List[pd.DataFrame], table_names: List[str],
     else:
         plt.show()
 
-def print_summary_stats(dfs: List[pd.DataFrame], table_names: List[str]) -> None:
+def print_summary_stats(dfs: List[pd.DataFrame], table_names: List[str], metrics: List[str]) -> None:
     """Print summary statistics for the loaded data."""
     print("\n" + "="*60)
     print("SUMMARY STATISTICS")
@@ -321,15 +297,19 @@ def print_summary_stats(dfs: List[pd.DataFrame], table_names: List[str]) -> None
         print(f"\n{name}:")
         print(f"  Layouts: {len(df)}")
         
-        # Count missing metrics
-        missing_counts = df[METRICS].isnull().sum()
-        if missing_counts.sum() > 0:
-            print(f"  Missing data points: {missing_counts.sum()}")
+        # Count missing metrics for available metrics only
+        available_metrics = [m for m in metrics if m in df.columns]
+        if available_metrics:
+            missing_counts = df[available_metrics].isnull().sum()
+            if missing_counts.sum() > 0:
+                print(f"  Missing data points: {missing_counts.sum()}")
         
         # Sample layout names
         if 'layout' in df.columns:
             sample_layouts = df['layout'].head(3).tolist()
             print(f"  Sample layouts: {', '.join(sample_layouts)}")
+        else:
+            print("  Warning: No 'layout' column found")
             
 def main():
     parser = argparse.ArgumentParser(
@@ -367,7 +347,7 @@ Examples:
     table_names = []
     
     for table_path in args.tables:
-        df = load_and_filter_data(table_path, args.variant)
+        df = load_and_filter_data(table_path, args.variant, args.verbose)
         
         if len(df) == 0:
             if args.verbose:
@@ -381,29 +361,25 @@ Examples:
         print("Error: No valid data found in any table")
         sys.exit(1)
     
+    # Find available metrics
+    metrics = find_available_metrics(dfs, args.verbose)
+    
+    if not metrics:
+        print("Error: No numeric metrics found in the data")
+        sys.exit(1)
+    
     # Print summary
     if args.verbose:
-        print_summary_stats(dfs, table_names)
-    
-    # Verify metrics exist
-    all_metrics_present = True
-    for df in dfs:
-        missing_metrics = [metric for metric in METRICS if metric not in df.columns]
-        if missing_metrics:
-            if args.verbose:
-                print(f"Warning: Missing metrics in {table_names[dfs.index(df)]}: {missing_metrics}")
-            all_metrics_present = False
-    
-    if not all_metrics_present and args.verbose:
-        print("\nContinuing with available metrics...")
+        print_summary_stats(dfs, table_names, metrics)
     
     # Create plot
     if args.verbose:
         print(f"\nCreating parallel coordinates plot...")
         print(f"Tables: {len(dfs)}")
         print(f"Total layouts: {sum(len(df) for df in dfs)}")
+        print(f"Metrics to plot: {len(metrics)}")
     
-    create_parallel_plot(dfs, table_names, args.variant or "all", args.output)
+    create_parallel_plot(dfs, table_names, metrics, args.variant or "all", args.output)
 
 if __name__ == "__main__":
     main()

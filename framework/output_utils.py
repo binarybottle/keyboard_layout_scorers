@@ -10,6 +10,31 @@ import sys
 from framework.base_scorer import ScoreResult
 
 
+def format_layout_in_qwerty_order(layout_mapping: Dict[str, str]) -> str:
+    """
+    Format layout mapping as character sequence in QWERTY position order.
+    
+    Args:
+        layout_mapping: Dictionary mapping characters to QWERTY positions
+        
+    Returns:
+        String of characters in QWERTY position order (e.g., "etaoinshrldu")
+    """
+    if not layout_mapping:
+        return ""
+    
+    # Standard QWERTY position order
+    qwerty_order = "QWERTYUIOPASDFGHJKL;ZXCVBNM,./"
+    
+    # Create position-to-character mapping (case-insensitive)
+    pos_to_char = {pos.upper(): char.lower() for char, pos in layout_mapping.items()}
+    
+    # Get characters in QWERTY position order
+    layout_chars = ''.join(pos_to_char.get(pos, '') for pos in qwerty_order if pos in pos_to_char)
+    
+    return layout_chars
+
+
 def format_csv_output(result: ScoreResult, 
                      config: Optional[Dict[str, Any]] = None,
                      include_metadata: bool = True) -> str:
@@ -475,52 +500,72 @@ def format_empirical_coverage(empirical_coverage: Dict[str, float]) -> str:
 
 
 def save_detailed_comparison_csv(results: Dict[str, Dict[str, ScoreResult]], 
-                               output_file: str) -> None:
+                               csv_file: str, 
+                               layout_mappings: Dict[str, Dict[str, str]] = None) -> None:
     """
-    Save detailed CSV comparison with all metrics to file.
+    Save detailed comparison results to CSV file with layout mappings.
     
     Args:
-        results: Nested dict {layout_name: {scorer_name: ScoreResult}}
-        output_file: File path to save CSV
+        results: Dictionary of {layout_name: {scorer_name: ScoreResult}}
+        csv_file: Output CSV file path
+        layout_mappings: Dictionary of {layout_name: {char: position}} mappings
     """
-    import csv
     
-    # Collect all unique metrics across all layouts and scorers
-    all_metrics = set()
-    detailed_data = {}
+    if not results:
+        print("No results to save")
+        return
+    
+    # Don't collect ALL metrics - this was causing the cross-contamination
+    # Instead, we'll add columns dynamically for each scorer's actual metrics
+    
+    # Prepare CSV data
+    csv_data = []
     
     for layout_name, layout_results in results.items():
-        detailed_data[layout_name] = {}
+        # Create base row for this layout
+        row = {
+            'layout': layout_name,
+            'layout_chars': '',  # Character sequence in QWERTY order
+        }
+        
+        # Add layout characters in QWERTY position order
+        if layout_mappings and layout_name in layout_mappings:
+            layout_chars = format_layout_in_qwerty_order(layout_mappings[layout_name])
+            row['layout_chars'] = layout_chars
+        elif layout_mappings:
+            # Try to extract from layout name if it contains the mapping
+            base_name = layout_name.replace('_filtered', '').replace('_full', '').replace('full_', '').replace('no_crosshand_', '')
+            if base_name in layout_mappings:
+                layout_chars = format_layout_in_qwerty_order(layout_mappings[base_name])
+                row['layout_chars'] = layout_chars
+            else:
+                row['layout_chars'] = ''
+        else:
+            row['layout_chars'] = ''
+        
+        # Add all scorer results for this layout - ONLY ACTUAL METRICS
         for scorer_name, result in layout_results.items():
-            if not result.metadata.get('scorer_failed', False):
-                metrics = result.extract_all_metrics()
-                detailed_data[layout_name].update(metrics)
-                all_metrics.update(metrics.keys())
-    
-    # Sort metrics logically
-    sorted_metrics = sorted(all_metrics)
-    
-    # Write CSV file
-    with open(output_file, 'w', newline='') as f:
-        writer = csv.writer(f)
-        
-        # Write header
-        header = ['layout'] + sorted_metrics
-        writer.writerow(header)
-        
-        # Write data rows
-        for layout_name in sorted(detailed_data.keys()):
-            row = [layout_name]
-            layout_metrics = detailed_data[layout_name]
+            # Add primary score
+            row[f'{scorer_name}_primary'] = result.primary_score
             
-            for metric in sorted_metrics:
-                if metric in layout_metrics:
-                    row.append(f"{layout_metrics[metric]:.6f}")
-                else:
-                    row.append("N/A")
-            
-            writer.writerow(row)
-
+            # Add ONLY the component scores that actually exist for this scorer
+            if hasattr(result, 'components') and result.components:
+                for metric, value in result.components.items():
+                    # Only add metrics that have actual values (not None)
+                    if value is not None:
+                        row[f'{scorer_name}_{metric}'] = value
+        
+        csv_data.append(row)
+    
+    # Write to CSV
+    if csv_data:
+        import pandas as pd
+        df = pd.DataFrame(csv_data)
+        df.to_csv(csv_file, index=False)
+        print(f"Detailed comparison saved to: {csv_file}")
+    else:
+        print("No data to save to CSV")
+               
 
 def print_comparison_summary(results: Dict[str, Dict[str, ScoreResult]], 
                            output_format: str = 'detailed',

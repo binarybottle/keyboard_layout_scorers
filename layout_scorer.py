@@ -222,18 +222,27 @@ def main() -> int:
             full_results_renamed = {}
             filtered_results_renamed = {}
             
+            # IMPORTANT: Create a mapping for CSV output
+            layout_mappings_for_csv = {}
+            
             for layout_name, layout_results in full_results.items():
                 full_results_renamed[f"full_{layout_name}"] = layout_results
+                # Store the original layout mapping for CSV
+                if layout_name in layouts:
+                    layout_mappings_for_csv[f"full_{layout_name}"] = layouts[layout_name]
                 
             for layout_name, layout_results in filtered_results.items():
-                filtered_results_renamed[f"{layout_name}_filtered"] = layout_results
+                filtered_results_renamed[f"no_crosshand_{layout_name}"] = layout_results
+                # Store the original layout mapping for CSV
+                if layout_name in layouts:
+                    layout_mappings_for_csv[f"no_crosshand_{layout_name}"] = layouts[layout_name]
             
             # Combine all results for output
             combined_results = {**full_results_renamed, **filtered_results_renamed}
             
-            # Handle CSV output
+            # Handle CSV output - NOW WITH LAYOUT MAPPINGS
             if args.csv:
-                save_detailed_comparison_csv(combined_results, args.csv)
+                save_detailed_comparison_csv(combined_results, args.csv, layout_mappings_for_csv)
                 if not args.quiet:
                     print(f"Detailed comparison saved to: {args.csv}")
             else:
@@ -248,17 +257,13 @@ def main() -> int:
                 print("Error: Must specify --letters and --positions for single layout scoring")
                 return 1
             
-            # Get layout mapping from arguments (with consistent filtering)
+            # Get layout mapping from arguments
             letters, positions, layout_mapping = get_layout_from_args(args)
             
             if not layout_mapping:
                 print("Error: No letters found in layout")
                 return 1
-                        
-            if not layout_mapping:
-                print("Error: No letters found in layout")
-                return 1
-            
+
             # Determine which scorers to run
             if args.scorer:
                 scorers = [args.scorer]
@@ -299,11 +304,22 @@ def main() -> int:
             # Handle CSV output for single layout
             if args.csv:
                 # Convert single layout results to comparison format with both versions
+                filtered_chars = ''.join(sorted(layout_mapping.keys()))
+                filtered_positions = ''.join(layout_mapping[c] for c in sorted(layout_mapping.keys()))
+                layout_name_base = f"{filtered_chars} → {filtered_positions}"
+                
                 comparison_results = {
                     f"full_{layout_name_base}": results_full,
-                    f"filtered_{layout_name_base}": results_filtered
+                    f"no_crosshand_{layout_name_base}": results_filtered
                 }
-                save_detailed_comparison_csv(comparison_results, args.csv)
+                
+                # Create layout mappings for CSV
+                layout_mappings_for_csv = {
+                    f"full_{layout_name_base}": layout_mapping,
+                    f"no_crosshand_{layout_name_base}": layout_mapping
+                }
+                
+                save_detailed_comparison_csv(comparison_results, args.csv, layout_mappings_for_csv)
                 if not args.quiet:
                     print(f"Detailed results saved to: {args.csv}")
             else:
