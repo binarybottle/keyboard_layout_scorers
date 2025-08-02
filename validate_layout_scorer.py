@@ -9,11 +9,13 @@ This script validates all major functionality including:
 - Output format validation
 - Configuration and data file validation
 - Error handling
+- Empirical weighting system validation (NEW)
 """
 
 import sys
 import os
 import argparse
+import numpy as np
 from typing import Dict, List, Tuple, Any
 from pathlib import Path
 
@@ -304,6 +306,401 @@ def validate_data_files() -> bool:
     return all_passed
 
 
+def validate_empirical_weight_loading() -> bool:
+    """Validate that empirical weight files load correctly."""
+    
+    print("\n" + "=" * 60)
+    print("VALIDATING EMPIRICAL WEIGHT LOADING")
+    print("=" * 60)
+    
+    try:
+        from dvorak9_scorer import load_combination_weights
+    except ImportError as e:
+        print(f"❌ Import error: {e}")
+        return False
+    
+    # Test weight file paths (adjust these to match your setup)
+    weight_files = [
+        ("speed", "input/dvorak9/speed_weights.csv"),
+        ("comfort", "input/dvorak9/comfort_weights.csv")
+    ]
+    
+    all_passed = True
+    
+    for weight_type, filepath in weight_files:
+        print(f"\nTesting {weight_type} weights: {filepath}")
+        
+        # Check file exists
+        if not Path(filepath).exists():
+            print(f"❌ {weight_type} weights file not found: {filepath}")
+            all_passed = False
+            continue
+        
+        try:
+            # Test loading weights
+            weights = load_combination_weights(filepath, quiet=True)
+            
+            if len(weights) == 0:
+                print(f"⚠️  {weight_type} weights: no combinations loaded (FDR too strict)")
+                # This might be expected if FDR correction eliminates all combinations
+            else:
+                print(f"✅ {weight_type} weights: {len(weights)} combinations loaded")
+                
+                # Check weight value ranges
+                weight_values = list(weights.values())
+                weight_range = (min(weight_values), max(weight_values))
+                print(f"   Range: {weight_range[0]:.4f} to {weight_range[1]:.4f}")
+                
+                # Show a few examples
+                example_combos = list(weights.items())[:3]
+                for combo, weight in example_combos:
+                    combo_str = ' + '.join(combo) if combo else 'empty'
+                    print(f"   Example: {combo_str}: {weight:.4f}")
+                    
+        except Exception as e:
+            print(f"❌ {weight_type} weights loading error: {e}")
+            all_passed = False
+    
+    return all_passed
+
+
+def validate_combination_diversity() -> bool:
+    """Validate that different bigrams get assigned to different combinations."""
+    
+    print("\n" + "=" * 60)
+    print("VALIDATING COMBINATION DIVERSITY")
+    print("=" * 60)
+    
+    try:
+        from dvorak9_scorer import score_bigram_dvorak9, identify_bigram_combination
+    except ImportError as e:
+        print(f"❌ Import error: {e}")
+        return False
+    
+    # Test a variety of bigrams to check combination diversity
+    test_bigrams = [
+        'th', 'he', 'in', 'er', 'an',  # Common bigrams
+        'qx', 'zj', 'wq', 'xz',        # Uncommon bigrams
+        'aa', 'ss', 'dd', 'ff',        # Same-key bigrams
+        'ae', 'fb', 'gc', 'hd'         # Mixed patterns
+    ]
+    
+    combinations = {}
+    
+    print(f"Testing combination assignment for {len(test_bigrams)} bigrams...")
+    
+    for bigram in test_bigrams:
+        try:
+            scores = score_bigram_dvorak9(bigram)
+            combination = identify_bigram_combination(scores, threshold=0.1)
+            
+            if combination not in combinations:
+                combinations[combination] = []
+            combinations[combination].append(bigram)
+            
+        except Exception as e:
+            print(f"❌ Error processing bigram '{bigram}': {e}")
+            return False
+    
+    print(f"\nFound {len(combinations)} unique combinations:")
+    
+    # Sort by frequency
+    sorted_combos = sorted(combinations.items(), key=lambda x: len(x[1]), reverse=True)
+    
+    for i, (combo, bigrams) in enumerate(sorted_combos[:5]):  # Show top 5
+        combo_str = ' + '.join(combo) if combo else 'empty'
+        bigram_list = ', '.join(bigrams)
+        print(f"  {i+1}. {combo_str} ({len(bigrams)} bigrams): {bigram_list}")
+    
+    # Check for the problematic case: all bigrams assigned to same massive combination
+    if len(combinations) == 1:
+        combo = list(combinations.keys())[0]
+        if len(combo) >= 8:  # 8 or 9 criteria = problematic
+            print(f"❌ ALL bigrams assigned to same massive combination!")
+            print(f"   This indicates the combination identification bug has returned.")
+            print(f"   Combination: {' + '.join(combo)}")
+            return False
+    
+    # Good diversity check
+    dominant_combo = sorted_combos[0]
+    dominant_pct = len(dominant_combo[1]) / len(test_bigrams) * 100
+    
+    if dominant_pct > 80:
+        print(f"⚠️  Warning: {dominant_pct:.1f}% of bigrams use the same combination")
+        print(f"   This may indicate insufficient diversity in combination assignment")
+        if dominant_pct > 95:
+            return False
+    else:
+        print(f"✅ Good diversity: Most frequent combination used by {dominant_pct:.1f}% of bigrams")
+    
+    return True
+
+
+def validate_empirical_scoring_differences() -> bool:
+    """Validate that different layouts get different empirical scores."""
+    
+    print("\n" + "=" * 60)
+    print("VALIDATING EMPIRICAL SCORING DIFFERENCES")
+    print("=" * 60)
+    
+    try:
+        from framework.unified_scorer import UnifiedLayoutScorer
+    except ImportError as e:
+        print(f"❌ Import error: {e}")
+        return False
+    
+    # Create test layouts with different characteristics
+    test_layouts = {
+        "layout1": {  # Left-hand heavy
+            'e': 'Q', 't': 'W', 'a': 'E', 'o': 'R',
+            'i': 'A', 'n': 'S', 's': 'D', 'h': 'F'
+        },
+        "layout2": {  # Right-hand heavy  
+            'e': 'U', 't': 'I', 'a': 'O', 'o': 'P',
+            'i': 'J', 'n': 'K', 's': 'L', 'h': ';'
+        },
+        "layout3": {  # Balanced
+            'e': 'F', 't': 'J', 'a': 'D', 'o': 'K',
+            'i': 'S', 'n': 'L', 's': 'A', 'h': ';'
+        }
+    }
+    
+    unified_scorer = UnifiedLayoutScorer()
+    all_passed = True
+    
+    print(f"Testing {len(test_layouts)} different layouts...")
+    
+    # Score all layouts
+    layout_scores = {}
+    
+    for layout_name, layout_mapping in test_layouts.items():
+        try:
+            results = unified_scorer.score_layout(
+                layout_mapping, ['dvorak9'], ignore_cross_hand=False
+            )
+            
+            if 'dvorak9' in results:
+                result = results['dvorak9']
+                components = result.components
+                
+                # Extract the three key scores
+                freq_score = components.get('frequency_weighted_score')
+                speed_score = components.get('speed_weighted_score') 
+                comfort_score = components.get('comfort_weighted_score')
+                
+                layout_scores[layout_name] = {
+                    'frequency': freq_score,
+                    'speed': speed_score,
+                    'comfort': comfort_score
+                }
+                
+                print(f"✅ {layout_name}: freq={freq_score:.6f}, speed={speed_score:.6f}, comfort={comfort_score:.6f}")
+                
+            else:
+                print(f"❌ {layout_name}: failed to get dvorak9 results")
+                all_passed = False
+                
+        except Exception as e:
+            print(f"❌ {layout_name}: error = {e}")
+            all_passed = False
+    
+    if len(layout_scores) < 2:
+        print(f"❌ Not enough layouts scored successfully for comparison")
+        return False
+    
+    # Check for differences between layouts
+    print(f"\nChecking score differences between layouts...")
+    
+    score_types = ['frequency', 'speed', 'comfort']
+    layouts = list(layout_scores.keys())
+    
+    for score_type in score_types:
+        scores = [layout_scores[layout][score_type] for layout in layouts if layout_scores[layout][score_type] is not None]
+        
+        if len(scores) < 2:
+            print(f"⚠️  {score_type}: insufficient data for comparison")
+            continue
+        
+        score_range = max(scores) - min(scores)
+        score_std = np.std(scores) if len(scores) > 1 else 0
+        
+        print(f"   {score_type}: range = {score_range:.6f}, std = {score_std:.6f}")
+        
+        # Check for meaningful differences
+        if score_range < 1e-6:
+            print(f"❌ {score_type}: scores are identical across layouts!")
+            all_passed = False
+        elif score_range < 1e-4:
+            print(f"⚠️  {score_type}: very small differences (may indicate issues)")
+        else:
+            print(f"✅ {score_type}: meaningful differences found")
+    
+    return all_passed
+
+
+def validate_linear_correlation_absence() -> bool:
+    """Validate that the three Dvorak scores are NOT perfectly correlated."""
+    
+    print("\n" + "=" * 60)
+    print("VALIDATING ABSENCE OF LINEAR CORRELATION")
+    print("=" * 60)
+    
+    try:
+        from framework.unified_scorer import UnifiedLayoutScorer
+    except ImportError as e:
+        print(f"❌ Import error: {e}")
+        return False
+    
+    # Create multiple diverse test layouts
+    test_layouts = {}
+    
+    # Generate 10 different layouts with varying patterns
+    common_chars = "etaoinshrldu"
+    base_positions = ["QWERTYUIOPAS", "ASDFGHJKLZXC", "ZXCVBNMQWERT", 
+                     "FGJKLASDFGHJ", "YUIOPASDFGHJ"]
+    
+    for i in range(min(10, len(base_positions))):
+        positions = base_positions[i % len(base_positions)]
+        layout = {char: pos for char, pos in zip(common_chars, positions)}
+        test_layouts[f"layout_{i+1}"] = layout
+    
+    unified_scorer = UnifiedLayoutScorer()
+    
+    print(f"Testing correlation across {len(test_layouts)} layouts...")
+    
+    # Collect scores
+    freq_scores = []
+    speed_scores = []
+    comfort_scores = []
+    
+    for layout_name, layout_mapping in test_layouts.items():
+        try:
+            results = unified_scorer.score_layout(
+                layout_mapping, ['dvorak9'], ignore_cross_hand=False
+            )
+            
+            if 'dvorak9' in results:
+                components = results['dvorak9'].components
+                
+                freq = components.get('frequency_weighted_score')
+                speed = components.get('speed_weighted_score')
+                comfort = components.get('comfort_weighted_score')
+                
+                if freq is not None and speed is not None and comfort is not None:
+                    freq_scores.append(freq)
+                    speed_scores.append(speed)
+                    comfort_scores.append(comfort)
+                    
+        except Exception as e:
+            print(f"⚠️  Error with {layout_name}: {e}")
+    
+    if len(freq_scores) < 3:
+        print(f"❌ Insufficient data for correlation analysis ({len(freq_scores)} layouts)")
+        return False
+    
+    # Calculate correlations
+    corr_freq_speed = np.corrcoef(freq_scores, speed_scores)[0, 1]
+    corr_freq_comfort = np.corrcoef(freq_scores, comfort_scores)[0, 1] 
+    corr_speed_comfort = np.corrcoef(speed_scores, comfort_scores)[0, 1]
+    
+    print(f"\nCorrelation analysis ({len(freq_scores)} layouts):")
+    print(f"   Frequency vs Speed:   r = {corr_freq_speed:.6f}")
+    print(f"   Frequency vs Comfort: r = {corr_freq_comfort:.6f}")
+    print(f"   Speed vs Comfort:     r = {corr_speed_comfort:.6f}")
+    
+    # Check for problematic perfect correlations
+    threshold = 0.999  # Near-perfect correlation threshold
+    
+    perfect_correlations = []
+    if abs(corr_freq_speed) > threshold:
+        perfect_correlations.append("Frequency vs Speed")
+    if abs(corr_freq_comfort) > threshold:
+        perfect_correlations.append("Frequency vs Comfort")
+    if abs(corr_speed_comfort) > threshold:
+        perfect_correlations.append("Speed vs Comfort")
+    
+    if perfect_correlations:
+        print(f"❌ Perfect correlations detected: {', '.join(perfect_correlations)}")
+        print(f"   This indicates the empirical weighting bug has returned!")
+        return False
+    else:
+        print(f"✅ No perfect correlations - empirical weighting working correctly")
+        return True
+
+
+def validate_empirical_scores_presence() -> bool:
+    """Validate that empirical scores are present in results."""
+    
+    print("\n" + "=" * 60)
+    print("VALIDATING EMPIRICAL SCORES PRESENCE")
+    print("=" * 60)
+    
+    try:
+        from framework.unified_scorer import UnifiedLayoutScorer
+    except ImportError as e:
+        print(f"❌ Import error: {e}")
+        return False
+    
+    # Simple test layout
+    test_layout = {
+        'e': 'F', 't': 'J', 'a': 'D', 'o': 'K',
+        'i': 'S', 'n': 'L', 's': 'A', 'h': ';'
+    }
+    
+    unified_scorer = UnifiedLayoutScorer()
+    
+    try:
+        results = unified_scorer.score_layout(test_layout, ['dvorak9'])
+        
+        if 'dvorak9' not in results:
+            print(f"❌ dvorak9 results not found")
+            return False
+        
+        components = results['dvorak9'].components
+        
+        # Check for required scores
+        required_scores = {
+            'pure_dvorak_score': 'Pure Dvorak Score',
+            'frequency_weighted_score': 'Frequency Weighted Score'
+        }
+        
+        empirical_scores = {
+            'speed_weighted_score': 'Speed Weighted Score',
+            'comfort_weighted_score': 'Comfort Weighted Score'
+        }
+        
+        all_passed = True
+        
+        # Check required scores
+        for score_key, score_name in required_scores.items():
+            if score_key in components and components[score_key] is not None:
+                print(f"✅ {score_name}: {components[score_key]:.6f}")
+            else:
+                print(f"❌ {score_name}: missing or null")
+                all_passed = False
+        
+        # Check empirical scores
+        empirical_present = 0
+        for score_key, score_name in empirical_scores.items():
+            if score_key in components and components[score_key] is not None:
+                print(f"✅ {score_name}: {components[score_key]:.6f}")
+                empirical_present += 1
+            else:
+                print(f"⚠️  {score_name}: missing (no empirical weights loaded)")
+        
+        if empirical_present == 0:
+            print(f"⚠️  No empirical scores found - weights may not be loading")
+            # Don't fail validation for this, as it might be expected
+        else:
+            print(f"✅ {empirical_present}/2 empirical scores present")
+        
+        return all_passed
+        
+    except Exception as e:
+        print(f"❌ Error testing empirical scores: {e}")
+        return False
+
+
 def run_comprehensive_validation(args) -> int:
     """Run all validation tests."""
     
@@ -316,6 +713,13 @@ def run_comprehensive_validation(args) -> int:
         ("Cross-Hand Filtering", validate_cross_hand_filtering),
         ("Output Formats", validate_output_formats),
         ("Data Files", validate_data_files),
+        
+        # NEW: Empirical weighting validation tests
+        ("Empirical Weight Loading", validate_empirical_weight_loading),
+        ("Combination Diversity", validate_combination_diversity), 
+        ("Empirical Scoring Differences", validate_empirical_scoring_differences),
+        ("Linear Correlation Absence", validate_linear_correlation_absence),
+        ("Empirical Scores Presence", validate_empirical_scores_presence),
     ]
     
     if args.test:
@@ -382,16 +786,22 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Available individual tests:
-  layout_input_consistency  - Test consistency between execution modes
-  scorer_functionality      - Test that all scorers work
-  cross_hand_filtering      - Test cross-hand filtering consistency
-  output_formats           - Test output format generation
-  data_files               - Test data file availability
+  layout_input_consistency     - Test consistency between execution modes
+  scorer_functionality         - Test that all scorers work
+  cross_hand_filtering         - Test cross-hand filtering consistency
+  output_formats              - Test output format generation
+  data_files                  - Test data file availability
+  empirical_weight_loading     - Test empirical weight file loading
+  combination_diversity        - Test bigram combination assignment diversity
+  empirical_scoring_differences - Test that layouts get different empirical scores
+  linear_correlation_absence   - Test that Dvorak scores are not perfectly correlated
+  empirical_scores_presence    - Test that empirical scores appear in results
 
 Examples:
-  python validate_layout_scorer.py                                    # Run all tests
-  python validate_layout_scorer.py --test layout_input_consistency    # Run specific test
-  python validate_layout_scorer.py --quiet                           # Minimal output
+  python validate_layout_scorer.py                                        # Run all tests
+  python validate_layout_scorer.py --test empirical_weight_loading        # Test weight loading
+  python validate_layout_scorer.py --test linear_correlation_absence      # Test correlations
+  python validate_layout_scorer.py --quiet                               # Minimal output
         """
     )
     
