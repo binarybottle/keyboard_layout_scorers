@@ -9,6 +9,61 @@ from typing import Dict, List, Tuple, Optional, Set
 import re
 
 
+def filter_layout_strings_consistently(letters: str, positions: str) -> Tuple[str, str]:
+    """
+    Filter letters and positions strings to letters-only while preserving position relationships.
+    
+    This ensures that each letter maps to its intended QWERTY position regardless of
+    where non-letters appeared in the original strings.
+    
+    Args:
+        letters: String of characters (e.g., "bfnc'\"liukpsat,.eormvxgd-?hyjwqz")
+        positions: String of corresponding positions (e.g., "qwertyuiop..." or standard QWERTY)
+        
+    Returns:
+        Tuple of (filtered_letters, filtered_positions) with only alphabetic characters
+        
+    Example:
+        Input:  letters="bfnc'\"li", positions="qwertyu"
+        Output: ("bfncli", "qwerty")  # non-letters filtered but positions preserved
+    """
+    if len(letters) != len(positions):
+        raise ValueError(f"Letters length ({len(letters)}) != positions length ({len(positions)})")
+    
+    filtered_letters = []
+    filtered_positions = []
+    
+    for char, pos in zip(letters, positions):
+        if char.isalpha():
+            filtered_letters.append(char.lower())
+            filtered_positions.append(pos.upper())
+    
+    return ''.join(filtered_letters), ''.join(filtered_positions)
+
+
+def create_layout_mapping_consistent(letters: str, positions: str) -> Dict[str, str]:
+    """
+    Create layout mapping with consistent filtering behavior.
+    
+    This replaces the old create_layout_mapping + filter_to_letters_only pattern
+    with a single function that filters input strings before creating the mapping.
+    
+    Args:
+        letters: String of characters 
+        positions: String of corresponding positions
+        
+    Returns:
+        Dict mapping alphabetic characters to positions
+    """
+    # Filter consistently BEFORE creating mapping
+    filtered_letters, filtered_positions = filter_layout_strings_consistently(letters, positions)
+    
+    if not filtered_letters:
+        raise ValueError("No alphabetic characters found in layout")
+    
+    return dict(zip(filtered_letters, filtered_positions))
+
+
 def create_layout_mapping(letters: str, positions: str) -> Dict[str, str]:
     """
     Create a layout mapping from letter and position strings.
@@ -329,7 +384,10 @@ def compare_layouts(mapping1: Dict[str, str],
 
 def parse_layout_compare(compare_args: List[str]) -> Dict[str, Dict[str, str]]:
     """
-    Parse layout comparison arguments.
+    Parse layout comparison arguments with consistent filtering.
+    
+    This version uses the same filtering logic as single scorer mode to ensure
+    identical character-to-position mappings regardless of execution path.
     
     Args:
         compare_args: List of "name:layout" strings where layout is the actual layout
@@ -348,19 +406,15 @@ def parse_layout_compare(compare_args: List[str]) -> Dict[str, Dict[str, str]]:
         
         name, layout_str = arg.split(':', 1)
         
-        # The layout string IS the layout - map each character to corresponding QWERTY position
+        # Truncate layout string if longer than standard positions
         if len(layout_str) > len(standard_positions):
             layout_str = layout_str[:len(standard_positions)]
         
-        # Create mapping: layout_char → QWERTY_position
-        layout_mapping = {}
-        for i, char in enumerate(layout_str):
-            if i < len(standard_positions):
-                layout_mapping[char.lower()] = standard_positions[i]
-        
-        # Filter to letters only
-        layout_mapping = filter_to_letters_only(layout_mapping)
-        
-        layouts[name] = layout_mapping
+        # Create consistent mapping using the same filtering logic as single mode
+        try:
+            layout_mapping = create_layout_mapping_consistent(layout_str, standard_positions)
+            layouts[name] = layout_mapping
+        except ValueError as e:
+            raise ValueError(f"Error processing layout '{name}': {e}")
     
     return layouts

@@ -41,10 +41,9 @@ from framework.base_scorer import BaseLayoutScorer, ScoreResult
 from framework.config_loader import load_scorer_config, get_config_loader
 from framework.layout_utils import create_layout_mapping, filter_to_letters_only, parse_layout_compare
 from framework.output_utils import print_results, save_detailed_comparison_csv, print_comparison_summary
-from framework.cli_utils import handle_common_errors
+from framework.cli_utils import handle_common_errors, get_layout_from_args
 from framework.scorer_factory import ScorerFactory
 from framework.unified_scorer import UnifiedLayoutScorer
-
 
 def find_common_keys(layouts: Dict[str, Dict[str, str]]) -> Set[str]:
     """
@@ -334,10 +333,13 @@ def main() -> int:
                 print("Error: Must specify --letters and --positions for single layout scoring")
                 return 1
             
-            # Create layout mapping
-            layout_mapping = create_layout_mapping(args.letters, args.positions)
-            layout_mapping = filter_to_letters_only(layout_mapping)
+            # Get layout mapping from arguments (with consistent filtering)
+            letters, positions, layout_mapping = get_layout_from_args(args)
             
+            if not layout_mapping:
+                print("Error: No letters found in layout")
+                return 1
+                        
             if not layout_mapping:
                 print("Error: No letters found in layout")
                 return 1

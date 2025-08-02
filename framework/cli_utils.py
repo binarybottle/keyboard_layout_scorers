@@ -416,13 +416,16 @@ def print_configuration_summary(config: Dict[str, Any],
 
 def get_layout_from_args(args: argparse.Namespace) -> Tuple[str, str, Dict[str, str]]:
     """
-    Extract layout information from parsed arguments.
+    Extract layout information from parsed arguments with consistent filtering.
+    
+    This version uses the same filtering logic as the compare mode to ensure
+    identical character-to-position mappings regardless of execution path.
     
     Args:
         args: Parsed command-line arguments
         
     Returns:
-        Tuple of (letters, positions, layout_mapping)
+        Tuple of (filtered_letters, filtered_positions, layout_mapping)
     """
     letters = getattr(args, 'letters', None)
     positions = getattr(args, 'positions', None)
@@ -430,9 +433,14 @@ def get_layout_from_args(args: argparse.Namespace) -> Tuple[str, str, Dict[str, 
     if not letters or not positions:
         raise ValueError("Layout letters and positions must be specified")
     
-    layout_mapping = create_layout_mapping(letters, positions)
+    # Use consistent filtering - import the new function
+    from framework.layout_utils import filter_layout_strings_consistently
     
-    return letters, positions, layout_mapping
+    # Filter consistently BEFORE creating mapping
+    filtered_letters, filtered_positions = filter_layout_strings_consistently(letters, positions)
+    layout_mapping = dict(zip(filtered_letters, filtered_positions))
+    
+    return filtered_letters, filtered_positions, layout_mapping
 
 
 def determine_output_mode(args: argparse.Namespace) -> str:
