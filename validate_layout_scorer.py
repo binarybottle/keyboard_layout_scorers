@@ -128,11 +128,6 @@ class LayoutScorerValidator:
                 
                 test_name = f"single_{scorer}_{layout_name}"
                 tests.append((test_name, args, True))
-                
-                # Test with cross-hand filtering (new feature)
-                cross_hand_args = args + ['--ignore-cross-hand']
-                test_name = f"single_{scorer}_{layout_name}_cross_hand"
-                tests.append((test_name, cross_hand_args, True))
         
         return self._run_test_batch("Single Scorer Modes", tests)
     

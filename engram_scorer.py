@@ -18,8 +18,8 @@ Usage:
     # Basic scoring (both 32-key and 24-key results)
     python engram_scorer.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ"
 
-    # With cross-hand filtering
-    python engram_scorer.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --ignore-cross-hand
+    # With cross-hand filtering (ignores different-hand pairs)
+    python engram_scorer.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --csv --ignore-cross-hand
 
     # CSV output
     python engram_scorer.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --csv

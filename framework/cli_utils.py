@@ -165,40 +165,32 @@ class StandardCLIParser:
         
         scorer_group = parser.add_argument_group(f'{self.scorer_name.title()} Options')
         
-        # Cross-hand filtering (available for all scorers)
-        scorer_group.add_argument(
-            '--ignore-cross-hand',
-            dest='ignore_cross_hand',
-            action='store_true',
-            help="Ignore bigrams that cross hands (available for all scorers)"
-        )
+        # REMOVE the cross-hand filtering argument entirely
+        # (it's now automatic in the unified scorer)
         
         # Distance scorer specific arguments
         if 'distance' in self.scorer_name:
-            # Text input is already handled in input arguments above
             pass
         
-        # Engram scorer specific arguments
+        # Engram scorer specific arguments  
         elif 'engram' in self.scorer_name:
-            # Cross-hand filtering already added above
             pass
         
         # Dvorak9 scorer specific arguments
         elif 'dvorak9' in self.scorer_name:
-            # Note: --weights argument removed since scorer automatically loads all available weights
             pass
         
         # Add data file overrides
         data_files = self.scorer_config.get('data_files', {})
         if data_files:
             for file_key, default_path in data_files.items():
-                if default_path:  # Only add arguments for files that have default paths
+                if default_path:
                     arg_name = f"--{file_key.replace('_', '-')}-file"
                     scorer_group.add_argument(
                         arg_name,
                         help=f"Path to {file_key} file (default: {default_path})"
                     )
-    
+                        
     def _generate_epilog(self) -> str:
         """Generate epilog text with examples and usage information."""
         

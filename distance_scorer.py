@@ -17,17 +17,17 @@ Usage:
   # Basic usage
   python distance_scorer.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --text "the quick brown fox jumps over the lazy dog"
 
-  # With cross-hand filtering
-  python distance_scorer.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --text "hello world" --ignore-cross-hand
-
   # With text file
   python distance_scorer.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --text-file sample.txt
 
+  # With cross-hand filtering (ignores different-hand pairs)
+  python distance_scorer.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --text "hello" --ignore-cross-hand
+
   # CSV output
-  python distance_scorer.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --text "hello world" --csv
+  python distance_scorer.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --text "hello" --csv
 
   # Score only
-  python distance_scorer.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --text "hello world" --score-only
+  python distance_scorer.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --text "hello" --score-only
 """
 
 import sys

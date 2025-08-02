@@ -143,20 +143,16 @@ def format_detailed_output(result: ScoreResult,
     
     lines = []
     
-    # Header
-    lines.append(f"\n{result.scorer_name.replace('_', ' ').capitalize()} results")
-    lines.append("=" * 70)
-    
     # Component scores
     if result.components:
-        lines.append(f"Scores:")
+        lines.append("Scores:")
         
         filtered_components = {}
         for component, score in result.components.items():
-            # Skip generic versions if specific versions exist
-            if component == 'Item Component' and 'Item Component 32Key' in result.components:
+            # Skip generic versions if specific versions exist (case-insensitive check)
+            if component.lower() == 'item component' and any('item component 32key' in c.lower() for c in result.components.keys()):
                 continue
-            if component == 'Item Pair Component' and 'Item Pair Component 32Key' in result.components:
+            if component.lower() == 'item pair component' and any('item pair component 32key' in c.lower() for c in result.components.keys()):
                 continue
             
             filtered_components[component] = score
@@ -167,9 +163,10 @@ def format_detailed_output(result: ScoreResult,
     
     # Layout info
     if result.layout_mapping:
+        lines.append("")
         chars = ''.join(sorted(result.layout_mapping.keys()))
         positions = ''.join(result.layout_mapping[c] for c in sorted(result.layout_mapping.keys()))
-        lines.append(f"\nLayout: {chars.lower()} → {positions.upper()}")
+        lines.append(f"Layout: {chars.lower()} → {positions.upper()}")
         
         # Show QWERTY-ordered version
         qwerty_positions = "QWERTYUIOPASDFGHJKL;ZXCVBNM,./"
@@ -216,11 +213,10 @@ def format_detailed_output(result: ScoreResult,
     # Metadata
     if result.metadata:
         important_metadata = {}
+        excluded_keys = ['scorer_failed', 'error', '_internal', 'layout size 24key', 'layout size 32key', 'normalization method', 'description', 'scoring method', 'description', 'scoring_method', 'method']
+        
         for key, value in result.metadata.items():
-            # Filter out normalization method unless actual normalization is happening
-            if key == 'Normalization Method' and value in ['auto', 'none', 'off', False]:
-                continue
-            if key not in ['scorer_failed', 'error', '_internal', 'Layout Size 24Key', 'Layout Size 32Key']:
+            if key.lower() not in excluded_keys:
                 important_metadata[key] = value
         
         if important_metadata:
@@ -248,6 +244,7 @@ def format_detailed_output(result: ScoreResult,
                     lines.append(f"  {file_key:<28}: {filepath}")
     
     return '\n'.join(lines)
+
 
 def _format_detailed_breakdown(breakdown: Dict[str, Any], 
                              lines: List[str], 
@@ -558,10 +555,17 @@ def print_comparison_summary(results: Dict[str, Dict[str, ScoreResult]],
     else:  # detailed
         for layout_name, layout_results in results.items():
             if not quiet:
-                print(f"\n=== {layout_name.upper()} ===")
+                # Format layout name: lowercase letters, uppercase positions
+                if " → " in layout_name:
+                    letters, positions = layout_name.split(" → ")
+                    formatted_name = f"{letters.lower()} → {positions.upper()}"
+                else:
+                    formatted_name = layout_name.lower()
+                print(f"\n{formatted_name}")
             
             for scorer_name, result in layout_results.items():
                 if not result.metadata.get('scorer_failed', False):
                     if not quiet:
-                        print(f"\n{scorer_name} scorer:")
+                        print(f"\n{scorer_name.replace('_', ' ').capitalize()} results")
+                        print("=" * 70)
                     print_results(result, 'detailed')

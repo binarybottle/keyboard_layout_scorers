@@ -28,8 +28,8 @@ Usage:
     # Basic scoring (shows all four approaches)
     python dvorak9_scorer.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ"
 
-    # With cross-hand filtering
-    python dvorak9_scorer.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --ignore-cross-hand
+    # With cross-hand filtering (ignores different-hand pairs)
+    python dvorak9_scorer.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --csv --ignore-cross-hand
 
     # CSV output
     python dvorak9_scorer.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --csv

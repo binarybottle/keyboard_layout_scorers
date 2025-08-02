@@ -53,12 +53,11 @@ class UnifiedLayoutScorer:
                 if scorer_name == 'distance' and 'text' in kwargs:
                     config['text'] = kwargs['text']
                 
-                # Add cross-hand filtering (available for all scorers)
-                if 'ignore_cross_hand' in kwargs and kwargs['ignore_cross_hand']:
-                    if 'scoring_options' not in config:
-                        config['scoring_options'] = {}
-                    config['scoring_options']['ignore_cross_hand'] = kwargs['ignore_cross_hand']
-                
+                # Add cross-hand filtering (available for all scorers) - always set explicitly
+                if 'scoring_options' not in config:
+                    config['scoring_options'] = {}
+                config['scoring_options']['ignore_cross_hand'] = kwargs.get('ignore_cross_hand', False)
+
                 # Add quiet mode
                 config['quiet_mode'] = kwargs.get('quiet', False)
                 

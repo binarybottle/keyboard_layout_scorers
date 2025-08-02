@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Unified Keyboard Layout Scorer for scoring keyboard layouts.
 
@@ -11,8 +10,7 @@ Features:
 - Run individual scorers (distance, dvorak9, engram)
 - Compare multiple scoring methods on the same layout
 - Compare multiple layouts across scoring methods
-- Consistent CLI interface across all scoring methods
-- Cross-hand filtering support for all scorers
+- Automatic cross-hand filtering comparison (shows both filtered and unfiltered results)
 - Common-keys-only comparison for layout comparisons
 
 Scoring methods available:
@@ -20,25 +18,16 @@ Scoring methods available:
 - Dvorak9 scorer: Four scoring approaches (pure, frequency-weighted, speed-weighted, comfort-weighted)
 - Engram scorer: Two scoring modes (32-key full layout, 24-key home block only)
 
-# Exactly like distance_scorer.py
-python layout_scorer.py --scorer distance --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --text "hello world"
-
-# Exactly like dvorak9_scorer.py (all 4 approaches)
+# Basic scoring (shows both full and cross-hand filtered results)
+python layout_scorer.py --scorer distance --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --text "hello"
 python layout_scorer.py --scorer dvorak9 --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ"
-
-# Exactly like engram_scorer.py (both 32-key and 24-key results)
 python layout_scorer.py --scorer engram --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ"
 
-# With cross-hand filtering (available for all scorers)
-python layout_scorer.py --scorer distance --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --text "hello" --ignore-cross-hand
+# Multiple methods with automatic cross-hand filtering comparison
+python layout_scorer.py --scorers engram,dvorak9 --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ"
+python layout_scorer.py --scorers all --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --text "hello"
 
-# Run all scorers and get ranking table
-python layout_scorer.py --scorers all --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --text "hello world"
-
-# Run specific subset
-python layout_scorer.py --scorers distance,dvorak9 --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --text "hello"
-
-# Compare QWERTY vs Dvorak across all methods (shows both full and common-keys-only results)
+# Compare layouts (shows full, filtered, and common-keys-only results)
 python layout_scorer.py --compare qwerty:"qwertyuiopasdfghjklzxcvbnm" dvorak:"',.pyfgcrlaoeuidhtnsqjkxbmwvz" --text "hello"
 
 """
@@ -182,14 +171,6 @@ Note: Layout comparison automatically shows both full layout results and common-
         help="Path to configuration file (default: config.yaml)"
     )
     
-    # Scorer options
-    options_group = parser.add_argument_group('Scorer Options')
-    options_group.add_argument(
-        '--ignore-cross-hand',
-        action='store_true',
-        help="Ignore bigrams that cross hands (available for all scorers)"
-    )
-    
     # Output options
     output_group = parser.add_argument_group('Output Options')
     output_group.add_argument(
@@ -263,16 +244,37 @@ def main() -> int:
                 print(f"Layouts: {', '.join(layout_names)}")
                 print(f"Scorers: {', '.join(scorers)}")
             
-            # Run comparison on full layouts
+            # Run comparison WITHOUT cross-hand filtering
             if not args.quiet:
                 print(f"\n=== FULL LAYOUT COMPARISON ===")
             
             full_results = unified_scorer.compare_layouts(
                 layouts, scorers,
                 text=text,
-                ignore_cross_hand=args.ignore_cross_hand,
+                ignore_cross_hand=False,
                 quiet=args.quiet
             )
+            
+            # Run comparison WITH cross-hand filtering
+            if not args.quiet:
+                print(f"\n=== CROSS-HAND FILTERED COMPARISON ===")
+            
+            filtered_results = unified_scorer.compare_layouts(
+                layouts, scorers,
+                text=text,
+                ignore_cross_hand=True,
+                quiet=args.quiet
+            )
+            
+            # Rename results to distinguish them
+            full_results_renamed = {}
+            filtered_results_renamed = {}
+            
+            for layout_name, layout_results in full_results.items():
+                full_results_renamed[f"{layout_name}_full"] = layout_results
+                
+            for layout_name, layout_results in filtered_results.items():
+                filtered_results_renamed[f"{layout_name}_filtered"] = layout_results
             
             # Find common keys and run comparison on common keys only
             common_keys = find_common_keys(layouts)
@@ -281,26 +283,39 @@ def main() -> int:
                 print(f"\n=== COMMON KEYS ONLY COMPARISON ===")
                 print(f"Common keys ({len(common_keys)}): {''.join(sorted(common_keys))}")
             
+            common_results_renamed = {}
             if len(common_keys) > 0:
                 filtered_layouts = filter_layouts_to_common_keys(layouts, common_keys)
-                common_results = unified_scorer.compare_layouts(
+                
+                # Common keys WITHOUT cross-hand filtering
+                common_results_full = unified_scorer.compare_layouts(
                     filtered_layouts, scorers,
                     text=text,
-                    ignore_cross_hand=args.ignore_cross_hand,
+                    ignore_cross_hand=False,
                     quiet=args.quiet
                 )
                 
-                # Rename results to indicate common-keys-only
-                common_results_renamed = {}
-                for layout_name, layout_results in common_results.items():
-                    common_results_renamed[f"{layout_name}_common"] = layout_results
+                # Common keys WITH cross-hand filtering  
+                common_results_filtered = unified_scorer.compare_layouts(
+                    filtered_layouts, scorers,
+                    text=text,
+                    ignore_cross_hand=True,
+                    quiet=args.quiet
+                )
+                
+                # Rename common results
+                for layout_name, layout_results in common_results_full.items():
+                    common_results_renamed[f"{layout_name}_common_full"] = layout_results
+                    
+                for layout_name, layout_results in common_results_filtered.items():
+                    common_results_renamed[f"{layout_name}_common_filtered"] = layout_results
+                    
             else:
-                common_results_renamed = {}
                 if not args.quiet:
                     print("No common keys found across all layouts.")
             
-            # Combine results for output
-            combined_results = {**full_results, **common_results_renamed}
+            # Combine all results for output
+            combined_results = {**full_results_renamed, **filtered_results_renamed, **common_results_renamed}
             
             # Handle CSV output
             if args.csv:
@@ -343,34 +358,61 @@ def main() -> int:
                         print(f"Error: Unknown scorers: {invalid}. Available: {available}")
                         return 1
             
-            # Run scoring
-            results = unified_scorer.score_layout(
+            # Create filtered layout name for display
+            filtered_chars = ''.join(sorted(layout_mapping.keys()))
+            filtered_positions = ''.join(layout_mapping[c] for c in sorted(layout_mapping.keys()))
+            layout_name_base = f"{filtered_chars} → {filtered_positions}"
+            
+            # Run scoring WITHOUT cross-hand filtering
+            results_full = unified_scorer.score_layout(
                 layout_mapping, scorers,
                 text=text,
-                ignore_cross_hand=args.ignore_cross_hand,
+                ignore_cross_hand=False,
+                quiet=args.quiet
+            )
+            
+            # Run scoring WITH cross-hand filtering
+            results_filtered = unified_scorer.score_layout(
+                layout_mapping, scorers,
+                text=text,
+                ignore_cross_hand=True,
                 quiet=args.quiet
             )
             
             # Handle CSV output for single layout
             if args.csv:
-                # Convert single layout results to comparison format
-                layout_name = f"{args.letters} → {args.positions}"
-                comparison_results = {layout_name: results}
+                # Convert single layout results to comparison format with both versions
+                comparison_results = {
+                    f"{layout_name_base}_full": results_full,
+                    f"{layout_name_base}_filtered": results_filtered
+                }
                 save_detailed_comparison_csv(comparison_results, args.csv)
                 if not args.quiet:
                     print(f"Detailed results saved to: {args.csv}")
             else:
                 # Print results to stdout
-                if len(results) == 1:
-                    # Single scorer output
-                    result = list(results.values())[0]
-                    print_results(result, args.format)
+                if len(results_full) == 1:
+                    # Single scorer output - show both versions
+                    scorer_name = list(results_full.keys())[0]
+                    
+                    print(f"{layout_name_base}_full")
+                    if not args.quiet:
+                        print(f"\n{scorer_name.replace('_', ' ').capitalize()} results")
+                        print("=" * 70)
+                    print_results(results_full[scorer_name], args.format)
+                    
+                    print(f"\n{layout_name_base}_filtered")
+                    if not args.quiet:
+                        print(f"\n{scorer_name.replace('_', ' ').capitalize()} results (cross-hand filtered)")
+                        print("=" * 70)
+                    print_results(results_filtered[scorer_name], args.format)
                 else:
                     # Multiple scorer output
-                    layout_name = f"{args.letters} → {args.positions}"
-                    comparison_results = {layout_name: results}
-                    print_comparison_summary(comparison_results, args.format, args.quiet)
-                            
+                    comparison_results = {
+                        f"{layout_name_base}_full": results_full,
+                        f"{layout_name_base}_filtered": results_filtered
+                    }
+                    print_comparison_summary(comparison_results, args.format, args.quiet)                            
         return 0
         
     except Exception as e:
