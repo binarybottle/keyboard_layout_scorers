@@ -391,9 +391,7 @@ class DistanceScorer(BaseLayoutScorer):
             },
             metadata={
                 'text_length': len(text),
-                'scoring_method': 'cumulative_finger_travel',
                 'ignore_cross_hand': self.ignore_cross_hand,
-                'description': 'Tracks each finger position and calculates cumulative travel distance with optional cross-hand filtering',
             },
             validation_info={
                 'keystroke_count': analysis['keystroke_count'],

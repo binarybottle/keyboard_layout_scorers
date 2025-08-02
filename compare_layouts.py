@@ -20,13 +20,17 @@ ARGUMENTS:
             - Useful for comparing different layout groups (e.g., standard vs experimental)
             - Legend shows table names and layout counts
     
-    --variant {full,filtered}
+    --variant {common_filtered,common,full,filtered}
         Optional filter to select specific layout variants from the data.
         
-        full:          Include only layouts with '_full' in their name  
-                      (all letter patterns, all letter-pair analyses included)
+        common_filtered: Include only layouts with '_common_filtered' in their name
+                        (common letter patterns, cross-hand bigrams removed)
+        common:         Include only layouts with '_common_full' in their name
+                       (common letter patterns, all analyses included)  
         filtered:       Include only layouts with '_filtered' in their name
                        (all letter patterns, cross-hand bigrams removed)
+        full:          Include only layouts with '_full' in their name  
+                      (all letter patterns, all letter-pair analyses included)
         
         If not specified, all layouts in the CSV files are included.
         
@@ -81,6 +85,9 @@ Usage Examples:
     
     # Analyze only filtered (cross-hand bigrams removed) data
     python compare_layouts.py --tables layouts.csv --variant filtered --output filtered_analysis.pdf
+    
+    # Compare common letter patterns only
+    python compare_layouts.py --tables standard.csv experimental.csv --variant common
 """
 
 import argparse
@@ -95,9 +102,9 @@ from typing import List, Dict, Tuple, Optional
 # Define the metrics in the specified order
 METRICS = [
     'distance_scorer_primary',
-    'engram_scorer_item_component_24key',
+    #'engram_scorer_item_component_24key',
     'engram_scorer_item_component_32key', 
-    'engram_scorer_item_pair_component_24key',
+    #'engram_scorer_item_pair_component_24key',
     'engram_scorer_item_pair_component_32key',
     'dvorak9_scorer_pure_dvorak_score',
     'dvorak9_scorer_frequency_weighted_score',
@@ -117,9 +124,9 @@ METRICS = [
 # Short names for display
 METRIC_LABELS = {
     'distance_scorer_primary': 'Distance\nPrimary',
-    'engram_scorer_item_component_24key': 'Engram\nItem 24k',
+    #'engram_scorer_item_component_24key': 'Engram\nItem 24k',
     'engram_scorer_item_component_32key': 'Engram\nItem 32k',
-    'engram_scorer_item_pair_component_24key': 'Engram\nPair 24k',
+    #'engram_scorer_item_pair_component_24key': 'Engram\nPair 24k',
     'engram_scorer_item_pair_component_32key': 'Engram\nPair 32k',
     'dvorak9_scorer_pure_dvorak_score': 'Pure\nDvorak',
     'dvorak9_scorer_frequency_weighted_score': 'Frequency\nScore',
@@ -145,9 +152,9 @@ def load_and_filter_data(file_path: str, variant: Optional[str] = None) -> pd.Da
         if variant:
             # Filter by variant 
             if variant == 'filtered':
-                filtered_df = df[df['layout'].str.contains('_filtered', na=False)]
+                filtered_df = df[df['layout'].str.contains('filtered_', na=False)]
             elif variant == 'full':
-                filtered_df = df[df['layout'].str.contains('_full', na=False)]
+                filtered_df = df[df['layout'].str.contains('full_', na=False)]
             else:
                 print(f"Warning: Unknown variant '{variant}', using all data")
                 filtered_df = df
@@ -178,10 +185,10 @@ def normalize_data(dfs: List[pd.DataFrame]) -> List[pd.DataFrame]:
                 if global_max != global_min:
                     normalized_df[metric] = (df[metric] - global_min) / (global_max - global_min)
                 else:
-                    normalized_df[metric] = 0.5  # If no variation, put in middle
+                    normalized_df[metric] = 0.0  # If no variation, put at bottom
             else:
                 print(f"Warning: Metric '{metric}' not found in data")
-                normalized_df[metric] = 0.5
+                normalized_df[metric] = 0.0  # Default to 0 if metric is missing
         
         normalized_dfs.append(normalized_df)
     
@@ -269,11 +276,15 @@ def create_parallel_plot(dfs: List[pd.DataFrame], table_names: List[str],
     ax.grid(True, alpha=0.3)
     
     # Title and legend
-    variant_title = variant.upper() if variant else "ALL VARIANTS"
-    ax.set_title(f'Keyboard Layout Comparison - {variant_title}\n'
-                f'Parallel Coordinates Across {len(METRICS)} Performance Metrics', 
-                fontsize=16, fontweight='bold', pad=20)
-    
+    if variant:
+        ax.set_title(f'Keyboard Layout Comparison ({variant})\n'
+                    f'Parallel coordinates across {len(METRICS)} scores', 
+                    fontsize=16, fontweight='bold', pad=20)
+    else:
+        ax.set_title(f'Keyboard Layout Comparison\n'
+                    f'Parallel coordinates across {len(METRICS)} scores', 
+                    fontsize=16, fontweight='bold', pad=20)
+
     if len(dfs) > 1 or len(dfs[0]) <= 10:
         ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left', fontsize=10)
     
@@ -281,8 +292,8 @@ def create_parallel_plot(dfs: List[pd.DataFrame], table_names: List[str],
     category_positions = {
         'Distance': 0,
         'Engram': 2.5,
-        'Dvorak9 Main': 7.5,
-        'Dvorak9 Subscores': 12.5
+        'Dvorak9': 7.5,
+        'Dvorak9 subscores': 12.5
     }
     
     for category, pos in category_positions.items():
@@ -319,7 +330,7 @@ def print_summary_stats(dfs: List[pd.DataFrame], table_names: List[str]) -> None
         if 'layout' in df.columns:
             sample_layouts = df['layout'].head(3).tolist()
             print(f"  Sample layouts: {', '.join(sample_layouts)}")
-
+            
 def main():
     parser = argparse.ArgumentParser(
         description='Create parallel coordinates plots comparing keyboard layouts',
@@ -328,6 +339,7 @@ def main():
 Examples:
   python compare_layouts.py --tables layouts.csv
   python compare_layouts.py --tables standard.csv experimental.csv
+  python compare_layouts.py --tables *.csv --variant common_filtered
   python compare_layouts.py --tables data1.csv data2.csv --output comparison.png
   python compare_layouts.py --tables layouts.csv --variant filtered --verbose
         """
@@ -335,8 +347,8 @@ Examples:
     
     parser.add_argument('--tables', nargs='+', required=True,
                        help='One or more CSV files containing layout data')
-    parser.add_argument('--variant', choices=['filtered', 'full'], 
-                       help='Filter layouts by variant (filtered/full)')
+    parser.add_argument('--variant', choices=['common_filtered', 'common', 'filtered', 'full'], 
+                       help='Filter layouts by variant (common_filtered/common/filtered/full)')
     parser.add_argument('--output', '-o', 
                        help='Output file path (if not specified, plot is shown)')
     parser.add_argument('--verbose', '-v', action='store_true',
@@ -358,7 +370,8 @@ Examples:
         df = load_and_filter_data(table_path, args.variant)
         
         if len(df) == 0:
-            print(f"Warning: No data found in {table_path} for variant '{args.variant}'")
+            if args.verbose:
+                print(f"Warning: No data found in {table_path} for variant '{args.variant}'")
             continue
             
         dfs.append(df)
@@ -369,23 +382,26 @@ Examples:
         sys.exit(1)
     
     # Print summary
-    print_summary_stats(dfs, table_names)
+    if args.verbose:
+        print_summary_stats(dfs, table_names)
     
     # Verify metrics exist
     all_metrics_present = True
     for df in dfs:
         missing_metrics = [metric for metric in METRICS if metric not in df.columns]
         if missing_metrics:
-            print(f"Warning: Missing metrics in {table_names[dfs.index(df)]}: {missing_metrics}")
+            if args.verbose:
+                print(f"Warning: Missing metrics in {table_names[dfs.index(df)]}: {missing_metrics}")
             all_metrics_present = False
     
-    if not all_metrics_present:
+    if not all_metrics_present and args.verbose:
         print("\nContinuing with available metrics...")
     
     # Create plot
-    print(f"\nCreating parallel coordinates plot...")
-    print(f"Tables: {len(dfs)}")
-    print(f"Total layouts: {sum(len(df) for df in dfs)}")
+    if args.verbose:
+        print(f"\nCreating parallel coordinates plot...")
+        print(f"Tables: {len(dfs)}")
+        print(f"Total layouts: {sum(len(df) for df in dfs)}")
     
     create_parallel_plot(dfs, table_names, args.variant or "all", args.output)
 

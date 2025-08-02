@@ -276,7 +276,7 @@ def load_combination_weights(csv_path: str, quiet: bool = False) -> Dict[Tuple[s
     return combination_weights
 
 
-def identify_bigram_combination(bigram_scores: Dict[str, float], threshold: float = 0.0) -> Tuple[str, ...]:
+def identify_bigram_combination(bigram_scores: Dict[str, float], threshold: float = 0.1) -> Tuple[str, ...]:
     """Identify which feature combination a bigram exhibits."""
     active_features = []
     
@@ -545,14 +545,14 @@ class Dvorak9Scorer(BaseLayoutScorer):
             metadata={
                 'scoring_approaches': {
                     'pure_available': True,
-                    'frequency_weighted_available': True,
-                    'speed_weighted_available': final_speed_score is not None,
-                    'comfort_weighted_available': final_comfort_score is not None,
+                    'frequency_weighted': True,
+                    'speed_weighted': final_speed_score is not None,
+                    'comfort_weighted': final_comfort_score is not None,
                 },
                 'ignore_cross_hand': self.ignore_cross_hand,
                 'theoretical_maximum': 1.0,
-                'available_speed_combinations': len(self.speed_weights) if self.speed_weights else 0,
-                'available_comfort_combinations': len(self.comfort_weights) if self.comfort_weights else 0,
+                'speed_combinations': len(self.speed_weights) if self.speed_weights else 0,
+                'comfort_combinations': len(self.comfort_weights) if self.comfort_weights else 0,
             },
             validation_info={
                 'bigram_count': covered_bigrams,

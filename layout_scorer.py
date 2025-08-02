@@ -223,7 +223,7 @@ def main() -> int:
             filtered_results_renamed = {}
             
             for layout_name, layout_results in full_results.items():
-                full_results_renamed[f"{layout_name}_full"] = layout_results
+                full_results_renamed[f"full_{layout_name}"] = layout_results
                 
             for layout_name, layout_results in filtered_results.items():
                 filtered_results_renamed[f"{layout_name}_filtered"] = layout_results
@@ -300,8 +300,8 @@ def main() -> int:
             if args.csv:
                 # Convert single layout results to comparison format with both versions
                 comparison_results = {
-                    f"{layout_name_base}_full": results_full,
-                    f"{layout_name_base}_filtered": results_filtered
+                    f"full_{layout_name_base}": results_full,
+                    f"filtered_{layout_name_base}": results_filtered
                 }
                 save_detailed_comparison_csv(comparison_results, args.csv)
                 if not args.quiet:
@@ -312,13 +312,13 @@ def main() -> int:
                     # Single scorer output - show both versions
                     scorer_name = list(results_full.keys())[0]
                     
-                    print(f"{layout_name_base}_full")
+                    print(f"full_{layout_name_base}")
                     if not args.quiet:
                         print(f"\n{scorer_name.replace('_', ' ').capitalize()} results")
                         print("=" * 70)
                     print_results(results_full[scorer_name], args.format)
                     
-                    print(f"\n{layout_name_base}_filtered")
+                    print(f"\nfiltered_{layout_name_base}")
                     if not args.quiet:
                         print(f"\n{scorer_name.replace('_', ' ').capitalize()} results (cross-hand filtered)")
                         print("=" * 70)
@@ -326,8 +326,8 @@ def main() -> int:
                 else:
                     # Multiple scorer output
                     comparison_results = {
-                        f"{layout_name_base}_full": results_full,
-                        f"{layout_name_base}_filtered": results_filtered
+                        f"full_{layout_name_base}": results_full,
+                        f"filtered_{layout_name_base}": results_filtered
                     }
                     print_comparison_summary(comparison_results, args.format, args.quiet)                            
         return 0
