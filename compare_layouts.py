@@ -7,6 +7,20 @@ Each layout is represented as a line connecting its normalized scores across ava
 
 This version is more robust and handles missing columns gracefully.
 
+
+# Single table - sorts all layouts by performance
+python compare_layouts.py --tables moo_69_layouts_e_in_J.csv
+
+# Multiple tables - sorts within each table, maintains grouping  
+python compare_layouts.py --tables score_13_layouts.csv moo_69_layouts_e_in_J.csv
+
+# With filtering and output
+python compare_layouts.py --tables data1.csv data2.csv --variant full --output comparison
+
+# Verbose mode
+python compare_layouts.py --tables layouts.csv --verbose
+
+
 For reference:
 - Halmak 2.2	     wlrbz;qudjshnt,.aeoifmvc/gpxky['
 - Hieamtsrn	       byou'kdclphiea,mtsrnx-".?wgfjzqv
@@ -38,7 +52,7 @@ IDEAL_METRICS = [
     'engram_total_score_32key', 
     'engram_item_component_32key', 
     'engram_item_pair_component_32key',
-    'distance_primary',
+    'distance_total_travel',
     'distance_left_finger1',
     'distance_left_finger2',
     'distance_left_finger3',
@@ -67,7 +81,7 @@ METRIC_LABELS = {
     'engram_total_score_32key': 'Engram\ntotal',
     'engram_item_component_32key': '- items',
     'engram_item_pair_component_32key': '- pairs',
-    'distance_primary': 'Distance',
+    'distance_total_travel': 'Distance',
     'distance_left_finger1': '- finger L1',
     'distance_left_finger2': '- finger L2',
     'distance_left_finger3': '- finger L3',
@@ -154,12 +168,27 @@ def load_and_filter_data(file_path: str, variant: Optional[str] = None, verbose:
 
 def normalize_data(dfs: List[pd.DataFrame], metrics: List[str]) -> List[pd.DataFrame]:
     """Normalize all data across tables for fair comparison."""
+
     # Combine all data to get global min/max for each metric
     all_data = pd.concat(dfs, ignore_index=True)
     
+    # Define metrics where lower values are better (should be inverted)
+    invert_metrics = {
+        'distance_total_travel',
+        'distance_average_travel',
+        'distance_left_finger1',
+        'distance_left_finger2', 
+        'distance_left_finger3',
+        'distance_left_finger4',
+        'distance_right_finger1',
+        'distance_right_finger2',
+        'distance_right_finger3', 
+        'distance_right_finger4'
+    }
+    
     normalized_dfs = []
     
-    for df in dfs:
+    for table_idx, df in enumerate(dfs):
         normalized_df = df.copy()
         
         for metric in metrics:
@@ -168,7 +197,15 @@ def normalize_data(dfs: List[pd.DataFrame], metrics: List[str]) -> List[pd.DataF
                 global_max = all_data[metric].max()
                 
                 if pd.notna(global_min) and pd.notna(global_max) and global_max != global_min:
-                    normalized_df[metric] = (df[metric] - global_min) / (global_max - global_min)
+                    # Standard normalization first
+                    standard_norm = (df[metric] - global_min) / (global_max - global_min)
+                    
+                    if metric in invert_metrics:
+                        # For distance metrics: lower raw value = better performance = higher score
+                        normalized_df[metric] = 1 - standard_norm
+                    else:
+                        # For other metrics: higher raw value = better performance = higher score
+                        normalized_df[metric] = standard_norm
                 else:
                     normalized_df[metric] = 0.5  # Default to middle if no variation
             else:
@@ -193,10 +230,145 @@ def get_colors(num_tables: int) -> List[str]:
         cmap = plt.cm.Set3
         return [cmap(i / num_tables) for i in range(num_tables)]
 
+
+def create_heatmap_plot(dfs: List[pd.DataFrame], table_names: List[str], 
+                       metrics: List[str], variant: str, output_path: Optional[str] = None) -> None:
+    """Create heatmap visualization with layouts on y-axis and metrics on x-axis."""
+    
+    # Normalize data across all tables
+    normalized_dfs = normalize_data(dfs, metrics)
+    
+    # Prepare data with sorting within each table
+    all_data = []
+    layout_names = []
+    
+    for i, (df, table_name) in enumerate(zip(normalized_dfs, table_names)):
+        # Collect data for this table
+        table_data = []
+        table_layout_names = []
+        
+        for _, row in df.iterrows():
+            # Get metric values for this layout
+            metric_values = []
+            valid_count = 0
+            
+            for metric in metrics:
+                if metric in row and pd.notna(row[metric]):
+                    metric_values.append(row[metric])
+                    valid_count += 1
+                else:
+                    metric_values.append(0.0)  # Default for missing data
+            
+            # Skip layouts with too much missing data
+            if valid_count < len(metrics) * 0.5:
+                continue
+            
+            table_data.append(metric_values)
+            
+            # Create layout name and remove variant prefixes
+            raw_layout_name = row.get('layout', f'Layout_{len(table_layout_names)+1}')
+            layout_name = raw_layout_name.replace('full_', '').replace('no_crosshand_', '')
+
+            table_layout_names.append(layout_name)
+        
+        if not table_data:
+            continue
+        
+        # Convert to numpy array for sorting
+        table_matrix = np.array(table_data)
+        
+        # Sort this table's layouts by average performance (descending)
+        table_averages = np.mean(table_matrix, axis=1)
+        sort_indices = np.argsort(table_averages)[::-1]  # Descending order
+        
+        # Apply sorting
+        sorted_table_data = table_matrix[sort_indices]
+        sorted_table_names = [table_layout_names[idx] for idx in sort_indices]
+        
+        # Add to combined data
+        all_data.extend(sorted_table_data.tolist())
+        layout_names.extend(sorted_table_names)
+    
+    if not all_data:
+        print("No valid data found for heatmap")
+        return
+    
+    # Convert to numpy array
+    data_matrix = np.array(all_data)
+    
+    # Set up the plot
+    fig, ax = plt.subplots(figsize=(max(12, len(metrics) * 0.8), max(8, len(layout_names) * 0.3)))
+    
+    # Create heatmap
+    im = ax.imshow(data_matrix, cmap='RdYlBu_r', aspect='auto', vmin=0, vmax=1)
+    
+    # Set ticks and labels
+    ax.set_xticks(range(len(metrics)))
+    ax.set_yticks(range(len(layout_names)))
+    
+    # Prepare metric labels
+    metric_display_names = []
+    for metric in metrics:
+        if metric in METRIC_LABELS:
+            # Remove newlines for heatmap labels
+            display_name = METRIC_LABELS[metric].replace('\n', ' ')
+        else:
+            display_name = metric.replace('_', ' ').title()
+        metric_display_names.append(display_name)
+    
+    ax.set_xticklabels(metric_display_names, rotation=45, ha='right', fontsize=9)
+    ax.set_yticklabels(layout_names, fontsize=8)
+    
+    # Add colorbar
+    cbar = plt.colorbar(im, ax=ax, shrink=0.8)
+    cbar.set_label('Normalized Score (0 = worst, 1 = best)', rotation=270, labelpad=20)
+    
+    # Add value annotations for smaller matrices
+    if len(layout_names) <= 20 and len(metrics) <= 15:
+        for i in range(len(layout_names)):
+            for j in range(len(metrics)):
+                value = data_matrix[i, j]
+                # Use white text for dark cells, black for light cells
+                text_color = 'white' if value < 0.5 else 'black'
+                ax.text(j, i, f'{value:.2f}', ha='center', va='center', 
+                       color=text_color, fontsize=7, weight='bold')
+    
+    # Title with sorting info
+    sort_info = " (sorted by avg. performance)"
+    if len(dfs) > 1:
+        sort_info = " (sorted within each table)"
+    
+    if variant and variant != "all":
+        title = f'Keyboard Layout Comparison Heatmap ({variant}){sort_info}\n{len(layout_names)} layouts across {len(metrics)} metrics'
+    else:
+        title = f'Keyboard Layout Comparison Heatmap{sort_info}\n{len(layout_names)} layouts across {len(metrics)} metrics'
+    
+    ax.set_title(title, fontsize=14, fontweight='bold', pad=20)
+    
+    # Labels
+    ax.set_xlabel('Metrics', fontsize=12)
+    ax.set_ylabel('Keyboard Layouts', fontsize=12)
+    
+    # Adjust layout
+    plt.tight_layout()
+    
+    # Save or show
+    if output_path:
+        # Modify output path for heatmap
+        if output_path.endswith('.png'):
+            heatmap_path = output_path.replace('.png', '_heatmap.png')
+        else:
+            heatmap_path = output_path + '_heatmap.png'
+        plt.savefig(heatmap_path, dpi=300, bbox_inches='tight', 
+                   facecolor='white', edgecolor='none')
+        print(f"Heatmap saved to {heatmap_path}")
+    else:
+        plt.show()
+
+
 def create_parallel_plot(dfs: List[pd.DataFrame], table_names: List[str], 
                         metrics: List[str], variant: str, output_path: Optional[str] = None) -> None:
     """Create parallel coordinates plot."""
-    
     # Normalize data across all tables
     normalized_dfs = normalize_data(dfs, metrics)
     
@@ -300,9 +472,14 @@ def create_parallel_plot(dfs: List[pd.DataFrame], table_names: List[str],
     
     # Save or show
     if output_path:
-        plt.savefig(output_path, dpi=300, bbox_inches='tight', 
-                   facecolor='white', edgecolor='none')
-        print(f"Plot saved to {output_path}")
+        # Modify output path for parallel plot
+        if output_path.endswith('.png'):
+            parallel_path = output_path.replace('.png', '_parallel.png')
+        else:
+            parallel_path = output_path + '_parallel.png'
+        plt.savefig(parallel_path, dpi=300, bbox_inches='tight', 
+                facecolor='white', edgecolor='none')
+        print(f"Parallel plot saved to {parallel_path}")
     else:
         plt.show()
 
@@ -398,7 +575,11 @@ Examples:
         print(f"Total layouts: {sum(len(df) for df in dfs)}")
         print(f"Metrics to plot: {len(metrics)}")
     
+    # Generate parallel coordinates plot
     create_parallel_plot(dfs, table_names, metrics, args.variant or "all", args.output)
+
+    # Generate heatmap plot  
+    create_heatmap_plot(dfs, table_names, metrics, args.variant or "all", args.output)
 
 if __name__ == "__main__":
     main()
