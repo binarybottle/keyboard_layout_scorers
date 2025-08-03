@@ -42,9 +42,9 @@ Required input files:
       DF,7.2
 
 For reference:
-    QWERTY: "qwertyuiopasdfghjkl;zxcvbnm,./"  
-    Dvorak: "',.pyfgcrlaoeuidhtns;qjkxbmwvz"
-    Colemak: "qwfpgjluy;arstdhneiozxcvbkm,./"
+    QWERTY:  "qwertyuiopasdfghjkl;zxcvbnm,./['"  
+    Dvorak:  "',.pyfgcrlaoeuidhtns;qjkxbmwvz['"
+    Colemak: "qwfpgjluy;arstdhneiozxcvbkm,./['"
 """
 import sys
 from typing import Dict, Any, List, Tuple, Optional, Set

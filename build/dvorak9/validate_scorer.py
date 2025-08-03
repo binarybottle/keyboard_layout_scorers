@@ -183,10 +183,10 @@ def test_weighted_scoring_simple(weights, output_dir="output"):
     print(f"  Weights type: {weights_type}")
     print(f"  Output file: {weighted_file}")
     
-    # Create a simple test layout with common characters
+    # Create a simple test layout
     common_chars = "etaoinshrdlcumwfgypbvkjxqz"
-    qwerty_positions = "DKTPYGCRLFASUIXZHVB"  # Approximate home/top row positions
-    
+    qwerty_positions = "QWERTYUIOPASDFGHJKL;ZXCVBN"
+
     # Map first N characters to first N positions
     layout_mapping = {}
     for i, char in enumerate(common_chars):

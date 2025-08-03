@@ -27,7 +27,7 @@ python layout_scorer.py --scorers engram,dvorak9 --letters "etaoinshrlcu" --posi
 python layout_scorer.py --scorers all --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --text "hello"
 
 # Compare layouts (shows full and filtered results)
-python layout_scorer.py --compare qwerty:"qwertyuiopasdfghjklzxcvbnm" dvorak:"',.pyfgcrlaoeuidhtnsqjkxbmwvz" --text "hello"
+python layout_scorer.py --compare qwerty:"qwertyuiopasdfghjkl;zxcvbnm,./['" dvorak:"',.pyfgcrlaoeuidhtns;qjkxbmwvz['" --text "hello"
 
 """
 

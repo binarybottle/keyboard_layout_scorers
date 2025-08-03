@@ -40,19 +40,19 @@ def validate_layout_input_consistency() -> bool:
     # Test cases with different input patterns
     test_cases = [
         {
-            "name": "Mixed letters and punctuation (your original case)",
+            "name": "Mixed letters and punctuation",
             "letters": "bfnc'\"liukpsat,.eormvxgd-?hyjwqz",
-            "positions": "qwertyuiop[asdfghjkl;'zxcvbnm,./"
+            "positions": "qwertyuiopasdfghjkl;zxcvbnm,./['"
         },
         {
             "name": "Standard 26-letter alphabet",
             "letters": "abcdefghijklmnopqrstuvwxyz[';,./",
-            "positions": "qwertyuiop[asdfghjkl;'zxcvbnm,./"
+            "positions": "qwertyuiopasdfghjkl;zxcvbnm,./['"
         },
         {
-            "name": "Dvorak layout (32 chars)",
+            "name": "Dvorak layout",
             "letters": "',.pyfgcrlaoeuidhtns;qjkxbmwvz[/",
-            "positions": "qwertyuiop[asdfghjkl;'zxcvbnm,./"
+            "positions": "qwertyuiopasdfghjkl;zxcvbnm,./['"
         }
     ]
     
@@ -319,7 +319,7 @@ def validate_empirical_weight_loading() -> bool:
         print(f"❌ Import error: {e}")
         return False
     
-    # Test weight file paths (adjust these to match your setup)
+    # Test weight file paths (adjust these to match setup)
     weight_files = [
         ("speed", "input/dvorak9/speed_weights.csv"),
         ("comfort", "input/dvorak9/comfort_weights.csv")

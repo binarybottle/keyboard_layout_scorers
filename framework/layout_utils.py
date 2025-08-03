@@ -8,6 +8,8 @@ Common functions for creating, validating, and manipulating layout mappings.
 from typing import Dict, List, Tuple, Optional, Set
 import re
 
+# Standard 32-key QWERTY layout in position order
+QWERTY_POSITIONS = "QWERTYUIOPASDFGHJKL;ZXCVBNM,./['"
 
 def filter_layout_strings_consistently(letters: str, positions: str) -> Tuple[str, str]:
     """
@@ -412,7 +414,7 @@ def parse_layout_compare(compare_args: List[str]) -> Dict[str, Dict[str, str]]:
     layouts = {}
     
     # Standard QWERTY positions for mapping
-    standard_positions = "QWERTYUIOPASDFGHJKL;ZXCVBNM,./['"
+    standard_positions = QWERTY_POSITIONS
     
     for arg in compare_args:
         if ':' not in arg:

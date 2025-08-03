@@ -80,17 +80,6 @@ COLUMN_MAP = {
     '[': 11, "'": 11
 }
 
-finger_mapping = {
-    'L1': 'left_finger1',
-    'L2': 'left_finger2',
-    'L3': 'left_finger3',
-    'L4': 'left_finger4',
-    'R1': 'right_finger1',
-    'R2': 'right_finger2',
-    'R3': 'right_finger3',
-    'R4': 'right_finger4'
-}
-
 # Home row positions for each finger (where fingers start)
 HOME_ROW_POSITIONS = {
     'L4': 'a',  # Left pinky
@@ -102,7 +91,6 @@ HOME_ROW_POSITIONS = {
     'R3': 'l',  # Right ring
     'R4': ';'   # Right pinky
 }
-
 
 def calculate_euclidean_distance(pos1: Tuple[float, float], pos2: Tuple[float, float]) -> float:
     """Calculate Euclidean distance between two positions in mm."""

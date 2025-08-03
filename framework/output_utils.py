@@ -8,6 +8,7 @@ Common functions for formatting and displaying scoring results in various format
 from typing import Dict, Any, List, Optional
 import sys
 from framework.base_scorer import ScoreResult
+from framework.layout_utils import QWERTY_POSITIONS
 
 
 def format_layout_in_qwerty_order(layout_mapping: Dict[str, str]) -> str:
@@ -24,7 +25,7 @@ def format_layout_in_qwerty_order(layout_mapping: Dict[str, str]) -> str:
         return ""
     
     # Standard QWERTY position order
-    qwerty_order = "QWERTYUIOPASDFGHJKL;ZXCVBNM,./['"
+    qwerty_order = QWERTY_POSITIONS
     
     # Create position-to-character mapping (case-insensitive)
     pos_to_char = {pos.upper(): char.lower() for char, pos in layout_mapping.items()}
@@ -194,7 +195,7 @@ def format_detailed_output(result: ScoreResult,
         lines.append(f"Layout: {chars.lower()} → {positions.upper()}")
         
         # Show QWERTY-ordered version
-        qwerty_positions = "QWERTYUIOPASDFGHJKL;ZXCVBNM,./"
+        qwerty_positions = QWERTY_POSITIONS
         position_to_char = {pos.upper(): char.lower() for char, pos in result.layout_mapping.items()}
         qwerty_ordered_chars = ""
         qwerty_ordered_positions = ""
