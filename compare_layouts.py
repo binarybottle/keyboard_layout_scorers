@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-compare_layouts.py - Parallel Coordinates Layout Comparison (Fixed Version)
+compare_layouts.py - Parallel Coordinates Layout Comparison
 
 Creates parallel coordinates plots comparing keyboard layouts across performance metrics.
 Each layout is represented as a line connecting its normalized scores across available metrics.
@@ -19,46 +19,46 @@ from typing import List, Dict, Tuple, Optional
 
 # Define the metrics in the specified order (matching your actual CSV columns)
 IDEAL_METRICS = [
-    'distance_primary',
     'engram_item_component_32key', 
     'engram_item_pair_component_32key',
+    'distance_primary',
     'dvorak9_pure_dvorak_score',
     'dvorak9_frequency_weighted_score',
     'dvorak9_speed_weighted_score',
     'dvorak9_comfort_weighted_score',
-    'dvorak9_columns',
-    'dvorak9_dont_cross_home',
-    'dvorak9_fingers',
     'dvorak9_hands',
-    'dvorak9_home_row',
-    'dvorak9_same_row',
+    'dvorak9_fingers',
     'dvorak9_skip_fingers',
-    'dvorak9_strong_fingers',
-    'dvorak9_strum'
+    'dvorak9_dont_cross_home',
+    'dvorak9_same_row',
+    'dvorak9_home_row',
+    'dvorak9_columns',
+    'dvorak9_strum',
+    'dvorak9_strong_fingers'
 ]
 
 # Short names for display
 METRIC_LABELS = {
-    'distance_primary': 'Distance\nPrimary',
-    'engram_item_component_32key': 'Engram\nItem 32k',
-    'engram_item_pair_component_32key': 'Engram\nPair 32k',
-    'dvorak9_pure_dvorak_score': 'Pure\nDvorak',
-    'dvorak9_frequency_weighted_score': 'Frequency\nScore',
-    'dvorak9_speed_weighted_score': 'Speed\nScore',
-    'dvorak9_comfort_weighted_score': 'Comfort\nScore',
-    'dvorak9_columns': 'Columns',
-    'dvorak9_dont_cross_home': 'Dont Cross\nHome',
-    'dvorak9_fingers': 'Fingers',
-    'dvorak9_hands': 'Hands',
-    'dvorak9_home_row': 'Home\nRow',
-    'dvorak9_same_row': 'Same\nRow',
-    'dvorak9_skip_fingers': 'Skip\nFingers',
-    'dvorak9_strong_fingers': 'Strong\nFingers',
-    'dvorak9_strum': 'Strum'
+    'engram_item_component_32key': 'Engram\nitem',
+    'engram_item_pair_component_32key': 'Engram\npair',
+    'distance_primary': 'Distance',
+    'dvorak9_pure_dvorak_score': 'Dvorak-9',
+    'dvorak9_frequency_weighted_score': 'Dvorak-9\nfrequency',
+    'dvorak9_speed_weighted_score': 'Dvorak-9\nspeed',
+    'dvorak9_comfort_weighted_score': 'Dvorak-9\ncomfort',
+    'dvorak9_hands': '1. different\nhands',
+    'dvorak9_fingers': '2. different\nfingers',
+    'dvorak9_skip_fingers': '3. skip\nfingers',
+    'dvorak9_dont_cross_home': '4. don\'t cross\nhome row',
+    'dvorak9_same_row': '5. same\nrow',
+    'dvorak9_home_row': '6. home\nrow',
+    'dvorak9_columns': '7. within\ncolumns',
+    'dvorak9_strum': '8. inward\nroll',
+    'dvorak9_strong_fingers': '9. strong\nfingers'
 }
 
 def find_available_metrics(dfs: List[pd.DataFrame], verbose: bool = False) -> List[str]:
-    """Find which metrics are actually available in the data."""
+    """Find which metrics from IDEAL_METRICS are actually available in the data."""
     # Get all columns that appear to be numeric metrics
     all_columns = set()
     for df in dfs:
@@ -72,25 +72,14 @@ def find_available_metrics(dfs: List[pd.DataFrame], verbose: bool = False) -> Li
                 if col not in numeric_metrics:
                     numeric_metrics.append(col)
     
-    # Prioritize ideal metrics that are available
+    # Only use metrics from IDEAL_METRICS that are available in the data
     available_metrics = []
     for metric in IDEAL_METRICS:
         if metric in numeric_metrics:
             available_metrics.append(metric)
     
-    # Add any other numeric columns that might be metrics
-    for col in numeric_metrics:
-        if col not in available_metrics and col != 'layout':
-            # Look for common patterns that suggest this is a metric
-            if any(keyword in col.lower() for keyword in ['score', 'metric', 'rating', 'value']):
-                available_metrics.append(col)
-    
-    # If we still don't have many metrics, just use all numeric columns
-    if len(available_metrics) < 3:
-        available_metrics = [col for col in numeric_metrics if col != 'layout']
-    
     if verbose:
-        print(f"\nFound {len(available_metrics)} metrics to plot:")
+        print(f"\nFound {len(available_metrics)} metrics from IDEAL_METRICS to plot:")
         for i, metric in enumerate(available_metrics):
             print(f"  {i+1:2d}. {metric}")
         
@@ -112,14 +101,10 @@ def load_and_filter_data(file_path: str, variant: Optional[str] = None, verbose:
         
         if variant:
             # Filter by variant 
-            if variant == 'filtered':
+            if variant == 'no_crosshand':
                 filtered_df = df[df['layout'].str.contains('no_crosshand_', na=False)]
             elif variant == 'full':
                 filtered_df = df[df['layout'].str.contains('full_', na=False)]
-            elif variant == 'common':
-                filtered_df = df[df['layout'].str.contains('_common_full', na=False)]
-            elif variant == 'common_filtered':
-                filtered_df = df[df['layout'].str.contains('_common_filtered', na=False)]
             else:
                 print(f"Warning: Unknown variant '{variant}', using all data")
                 filtered_df = df
@@ -319,7 +304,7 @@ def main():
 Examples:
   python compare_layouts.py --tables layouts.csv
   python compare_layouts.py --tables standard.csv experimental.csv
-  python compare_layouts.py --tables *.csv --variant common_filtered
+  python compare_layouts.py --tables *.csv --variant full
   python compare_layouts.py --tables data1.csv data2.csv --output comparison.png
   python compare_layouts.py --tables layouts.csv --variant filtered --verbose
         """
@@ -327,8 +312,8 @@ Examples:
     
     parser.add_argument('--tables', nargs='+', required=True,
                        help='One or more CSV files containing layout data')
-    parser.add_argument('--variant', choices=['common_filtered', 'common', 'filtered', 'full'], 
-                       help='Filter layouts by variant (common_filtered/common/filtered/full)')
+    parser.add_argument('--variant', choices=['full', 'no_crosshand'], 
+                       help='Filter layouts by variant (full/no_crosshand)')
     parser.add_argument('--output', '-o', 
                        help='Output file path (if not specified, plot is shown)')
     parser.add_argument('--verbose', '-v', action='store_true',

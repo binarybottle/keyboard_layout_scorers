@@ -14,7 +14,8 @@ def filter_layout_strings_consistently(letters: str, positions: str) -> Tuple[st
     Filter letters and positions strings to letters-only while preserving position relationships.
     
     This ensures that each letter maps to its intended QWERTY position regardless of
-    where non-letters appeared in the original strings.
+    where non-letters appeared in the original strings. Both non-letter characters
+    and their corresponding positions are filtered out together.
     
     Args:
         letters: String of characters (e.g., "bfnc'\"liukpsat,.eormvxgd-?hyjwqz")
@@ -22,10 +23,23 @@ def filter_layout_strings_consistently(letters: str, positions: str) -> Tuple[st
         
     Returns:
         Tuple of (filtered_letters, filtered_positions) with only alphabetic characters
+        and their corresponding positions
         
     Example:
-        Input:  letters="bfnc'\"li", positions="qwertyu"
-        Output: ("bfncli", "qwerty")  # non-letters filtered but positions preserved
+        Input:  letters="bfnc'\"li", positions="QWERTYIU"
+        Output: ("bfncli", "QWERIU")  # filter out non-letters and corresponding positions
+        
+        Explanation:
+        b -> Q (kept)
+        f -> W (kept) 
+        n -> E (kept)
+        c -> R (kept)
+        ' -> T (filtered out - non-letter)
+        " -> Y (filtered out - non-letter)
+        l -> I (kept)
+        i -> U (kept)
+        
+        Result: letters "bfncli" map to positions "QWERIU"
     """
     if len(letters) != len(positions):
         raise ValueError(f"Letters length ({len(letters)}) != positions length ({len(positions)})")
@@ -398,7 +412,7 @@ def parse_layout_compare(compare_args: List[str]) -> Dict[str, Dict[str, str]]:
     layouts = {}
     
     # Standard QWERTY positions for mapping
-    standard_positions = "QWERTYUIOP[ASDFGHJKL;'ZXCVBNM,./"
+    standard_positions = "QWERTYUIOPASDFGHJKL;ZXCVBNM,./['"
     
     for arg in compare_args:
         if ':' not in arg:

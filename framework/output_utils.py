@@ -24,7 +24,7 @@ def format_layout_in_qwerty_order(layout_mapping: Dict[str, str]) -> str:
         return ""
     
     # Standard QWERTY position order
-    qwerty_order = "QWERTYUIOPASDFGHJKL;ZXCVBNM,./"
+    qwerty_order = "QWERTYUIOPASDFGHJKL;ZXCVBNM,./['"
     
     # Create position-to-character mapping (case-insensitive)
     pos_to_char = {pos.upper(): char.lower() for char, pos in layout_mapping.items()}
