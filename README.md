@@ -7,26 +7,11 @@ Framework for evaluating keyboard layouts using multiple scoring methods
 
 This framework unifies several keyboard layout scoring approaches under a common architecture. Their scores are not directly comparable with each other since they measure fundamentally different aspects of layout quality, but it is useful to see how the same scoring method evaluates different layouts:
 
-- [Distance Scorer](distance_scorer.py): Physical finger travel distance analysis
+- [Distance Scorer](distance_scorer.py): Physical finger travel distance analysis with per-finger distance tracking
 - [Dvorak-9 Scorer](dvorak9_scorer.py): Four scoring approaches (pure, and frequency-, speed-, and comfort-weighted)
 - [Engram Scorer](engram_scorer.py): Comfort + frequency scoring (32-key and 24-key home block only)
   - GitHub: https://github.com/binarybottle/optimize_layouts
   - OSF: https://osf.io/6dt75/  (DOI: 10.17605/OSF.IO/6DT75)
-
-For reference:
-- Halmak 2.2	     wlrbz;qudjshnt,.aeoifmvc/gpxky['
-- Hieamtsrn	       byou'kdclphiea,mtsrnx-".?wgfjzqv
-- Colemak-DH	     qwfpbjluy;arstgmneiozxcdvkh,./['
-- Norman	         qwdfkjurl;asetgyniohzxcvbpm,./['
-- Workman	         qdrwbjfup;ashtgyneoizxmcvkl,./['
-- MTGAP 2.0	       ,fhdkjcul.oantgmseriqxbpzyw'v;['
-- QGMLWB	         qgmlwbyuv;dstnriaeohzxcfjkp,./['
-- Colemak	         qwfpgjluy;arstdhneiozxcvbkm,./['
-- Asset	           qwfgjypul;asetdhniorzxcvbkm,./['
-- Capewell-Dvorak	 ',.pyqfgrkoaeiudhtnszxcvjlmwb;['
-- Klausler	       k,uypwlmfcoaeidrnthsq.';zxvgbj['
-- Dvorak	         ',.pyfgcrlaoeuidhtns;qjkxbmwvz['
-- QWERTY	         qwertyuiopasdfghjkl;zxcvbnm,./['
 
 ## Installation
   ```bash
@@ -122,7 +107,7 @@ The framework uses `config.yaml` for centralized configuration:
       dvorak9: "input/dvorak9/"
 
   distance_scorer:
-    description: "Physical finger travel distance analysis with cross-hand filtering support"
+    description: "Physical finger travel distance analysis with per-finger tracking and cross-hand filtering support"
     scoring_options:
       ignore_cross_hand: false
 
@@ -248,37 +233,46 @@ All data files use CSV format with headers:
 
 ### Dvorak-9 Scorer Output
   ```
-  Dvorak9 Scorer Results
-  ======================================================================
-  Primary score:     0.750000
-
-  Component scores:
-    Pure Dvorak Score              :   0.720000
-    Frequency Weighted Score       :   0.750000
-    Speed Weighted Score           :   0.680000
-    Comfort Weighted Score         :   0.710000
-    Hands                          :   0.850000
-    Fingers                        :   0.920000
-    [... other criteria ...]
-
-  Execution time: 0.045 seconds
+Dvorak9 results
+======================================================================
+Scores:
+  Pure dvorak score           : 0.638117
+  Frequency weighted score    : 0.719108
+  Hands                       : 0.616602
+  Fingers                     : 0.908405
+  Skip fingers                : 0.703914
+  Dont cross home             : 0.954806
+  Same row                    : 0.378113
+  Home row                    : 0.495776
+  Columns                     : 1.000000
+  Strum                       : 0.772531
+  Strong fingers              : 0.641825
+  Speed weighted score        : 0.122304
+  Comfort weighted score      : 0.231602
+Dvorak9 results (cross-hand filtered)
+======================================================================
+Scores:
+  ...
   ```
 
 ### Engram Scorer Output  
   ```
-  Engram Scorer Results
-  ======================================================================
-  Primary score:     2.450000
-
-  Component scores:
-    Total Score 32key              :   2.450000
-    Total Score 24key              :   1.890000
-    Item Component 32key           :   0.720000
-    Item Pair Component 32key      :   0.850000
-    Item Component 24key           :   0.680000
-    Item Pair Component 24key      :   0.790000
-
-  Execution time: 0.032 seconds
+Engram results
+======================================================================
+Scores:
+  Total score 32key           : 0.017579
+  Item component 32key        : 0.145954
+  Item pair component 32key   : 0.120440
+  Total score 24key           : 0.017579
+  Item component 24key        : 0.145954
+  Item pair component 24key   : 0.120440
+  Item component              : 0.145954
+  Item pair component         : 0.120440
+  ...
+Engram results (cross-hand filtered)
+======================================================================
+Scores:
+  ...
   ```
 
 ### Layout Comparison Output

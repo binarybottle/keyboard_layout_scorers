@@ -144,9 +144,8 @@ class ScoreResult:
         for component, score in self.components.items():
             metrics[f"{self.scorer_name}_{component}"] = score
         
-        # Extract scorer-specific metrics from metadata
         if 'distance' in self.scorer_name:
-            # Distance scorer metrics
+            # Distance scorer metrics - include per-finger distances from components
             for key, value in self.metadata.items():
                 if isinstance(value, (int, float)) and not key.startswith('_'):
                     metrics[f"distance_{key}"] = float(value)

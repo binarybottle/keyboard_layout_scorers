@@ -16,8 +16,8 @@ common:
 
 # Physical distance-based scoring
 distance_scorer:
-  description: "Physical finger travel distance analysis with cross-hand filtering support"
-  method: "Euclidean distance between key positions tracking cumulative finger movement"
+  description: "Physical finger travel distance analysis with per-finger tracking and cross-hand filtering support"
+  method: "Euclidean distance between key positions tracking cumulative finger movement with individual finger distance components"
   
   data_files:
     # Built-in position mapping (no external file needed)
@@ -37,6 +37,14 @@ distance_scorer:
       - "max_distance"
       - "min_distance"
       - "coverage"
+      - "left_finger1"
+      - "left_finger2"
+      - "left_finger3"
+      - "left_finger4"
+      - "right_finger1"
+      - "right_finger2"
+      - "right_finger3"
+      - "right_finger4"
 
 # Dvorak's 9 evaluation criteria with multiple scoring approaches
 dvorak9_scorer:

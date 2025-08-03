@@ -6,6 +6,22 @@ Creates parallel coordinates plots comparing keyboard layouts across performance
 Each layout is represented as a line connecting its normalized scores across available metrics.
 
 This version is more robust and handles missing columns gracefully.
+
+For reference:
+- Halmak 2.2	     wlrbz;qudjshnt,.aeoifmvc/gpxky['
+- Hieamtsrn	       byou'kdclphiea,mtsrnx-".?wgfjzqv
+- Colemak-DH	     qwfpbjluy;arstgmneiozxcdvkh,./['
+- Norman	         qwdfkjurl;asetgyniohzxcvbpm,./['
+- Workman	         qdrwbjfup;ashtgyneoizxmcvkl,./['
+- MTGAP 2.0	       ,fhdkjcul.oantgmseriqxbpzyw'v;['
+- QGMLWB	         qgmlwbyuv;dstnriaeohzxcfjkp,./['
+- Colemak	         qwfpgjluy;arstdhneiozxcvbkm,./['
+- Asset	           qwfgjypul;asetdhniorzxcvbkm,./['
+- Capewell-Dvorak	 ',.pyqfgrkoaeiudhtnszxcvjlmwb;['
+- Klausler	       k,uypwlmfcoaeidrnthsq.';zxvgbj['
+- Dvorak	         ',.pyfgcrlaoeuidhtns;qjkxbmwvz['
+- QWERTY	         qwertyuiopasdfghjkl;zxcvbnm,./['
+
 """
 
 import argparse
@@ -19,9 +35,18 @@ from typing import List, Dict, Tuple, Optional
 
 # Define the metrics in the specified order (matching your actual CSV columns)
 IDEAL_METRICS = [
+    'engram_total_score_32key', 
     'engram_item_component_32key', 
     'engram_item_pair_component_32key',
     'distance_primary',
+    'distance_left_finger1',
+    'distance_left_finger2',
+    'distance_left_finger3',
+    'distance_left_finger4',
+    'distance_right_finger1',
+    'distance_right_finger2',
+    'distance_right_finger3',
+    'distance_right_finger4',
     'dvorak9_pure_dvorak_score',
     'dvorak9_frequency_weighted_score',
     'dvorak9_speed_weighted_score',
@@ -39,13 +64,22 @@ IDEAL_METRICS = [
 
 # Short names for display
 METRIC_LABELS = {
-    'engram_item_component_32key': 'Engram\nitem',
-    'engram_item_pair_component_32key': 'Engram\npair',
+    'engram_total_score_32key': 'Engram\ntotal',
+    'engram_item_component_32key': '- item score',
+    'engram_item_pair_component_32key': '- pair score',
     'distance_primary': 'Distance',
+    'distance_left_finger1': '- left finger 1',
+    'distance_left_finger2': '- left finger 2',
+    'distance_left_finger3': '- left finger 3',
+    'distance_left_finger4': '- left finger 4',
+    'distance_right_finger1': '- right finger 1',
+    'distance_right_finger2': '- right finger 2',
+    'distance_right_finger3': '- right finger 3',
+    'distance_right_finger4': '- right finger 4',
     'dvorak9_pure_dvorak_score': 'Dvorak-9',
-    'dvorak9_frequency_weighted_score': 'Dvorak-9\nfrequency',
-    'dvorak9_speed_weighted_score': 'Dvorak-9\nspeed',
-    'dvorak9_comfort_weighted_score': 'Dvorak-9\ncomfort',
+    'dvorak9_frequency_weighted_score': '- frequency\nweighted',
+    'dvorak9_speed_weighted_score': '- speed\nweighted',
+    'dvorak9_comfort_weighted_score': '- comfort\nweighted',
     'dvorak9_hands': '1. different\nhands',
     'dvorak9_fingers': '2. different\nfingers',
     'dvorak9_skip_fingers': '3. skip\nfingers',

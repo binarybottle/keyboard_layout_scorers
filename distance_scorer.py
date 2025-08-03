@@ -80,6 +80,17 @@ COLUMN_MAP = {
     '[': 11, "'": 11
 }
 
+finger_mapping = {
+    'L1': 'left_finger1',
+    'L2': 'left_finger2',
+    'L3': 'left_finger3',
+    'L4': 'left_finger4',
+    'R1': 'right_finger1',
+    'R2': 'right_finger2',
+    'R3': 'right_finger3',
+    'R4': 'right_finger4'
+}
+
 # Home row positions for each finger (where fingers start)
 HOME_ROW_POSITIONS = {
     'L4': 'a',  # Left pinky
@@ -236,7 +247,7 @@ class DistanceScorer(BaseLayoutScorer):
             text: Text to analyze
             
         Returns:
-            Dictionary with travel analysis results
+            Dictionary with travel analysis results including per-finger statistics
         """
         if not text.strip():
             return self._empty_results()
@@ -379,6 +390,27 @@ class DistanceScorer(BaseLayoutScorer):
             # Normalize score where lower average travel = higher score
             normalized_score = 1000.0 / (avg_travel + 1000.0)
         
+        # Extract per-finger distances and map to component names
+        finger_components = {}
+        finger_stats = analysis.get('finger_statistics', {})
+        
+        finger_mapping = {
+            'L1': 'left_finger1',
+            'L2': 'left_finger2', 
+            'L3': 'left_finger3',
+            'L4': 'left_finger4',
+            'R1': 'right_finger1',
+            'R2': 'right_finger2',
+            'R3': 'right_finger3',
+            'R4': 'right_finger4'
+        }
+        
+        for finger_id, component_name in finger_mapping.items():
+            if finger_id in finger_stats:
+                finger_components[component_name] = finger_stats[finger_id]['total_travel']
+            else:
+                finger_components[component_name] = 0.0
+        
         # Create result using framework structure
         result = ScoreResult(
             primary_score=normalized_score,
@@ -388,6 +420,7 @@ class DistanceScorer(BaseLayoutScorer):
                 'max_travel': analysis['max_travel'],
                 'min_travel': analysis['min_travel'],
                 'keystroke_count': analysis['keystroke_count'],
+                **finger_components
             },
             metadata={
                 'text_length': len(text),
