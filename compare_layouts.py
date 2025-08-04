@@ -383,46 +383,24 @@ def create_parallel_plot(dfs: List[pd.DataFrame], table_names: List[str],
     
     # Plot each table's data
     for i, (df, table_name, color) in enumerate(zip(normalized_dfs, table_names, colors)):
+        valid_layout_count = 0
+        for _, row in df.iterrows():
+            y_values = [row.get(metric, 0) for metric in metrics]
+            
+            # Skip rows with too much missing data
+            valid_values = [val for val in y_values if pd.notna(val)]
+            if len(valid_values) < len(metrics) * 0.5:  # Need at least 50% valid data
+                continue
+            
+            # Replace NaN values with 0
+            y_values = [val if pd.notna(val) else 0 for val in y_values]
+            
+            ax.plot(x_positions, y_values, color=color, alpha=0.6, linewidth=1.5)
+            valid_layout_count += 1
         
-        if len(dfs) == 1:
-            # Single table: use grayscale with line numbers
-            num_layouts = len(df)
-            gray_values = np.linspace(0.2, 0.8, num_layouts)
-            
-            for j, (_, row) in enumerate(df.iterrows()):
-                y_values = [row.get(metric, 0) for metric in metrics]
-                
-                # Skip rows with too much missing data
-                valid_values = [val for val in y_values if pd.notna(val)]
-                if len(valid_values) < len(metrics) * 0.5:  # Need at least 50% valid data
-                    continue
-                
-                # Replace NaN values with 0
-                y_values = [val if pd.notna(val) else 0 for val in y_values]
-                
-                gray_color = str(gray_values[j])
-                ax.plot(x_positions, y_values, color=gray_color, alpha=0.7, linewidth=1.5,
-                       label=f"Layout {j+1}" if j < 10 else "")  # Only label first 10
-        else:
-            # Multiple tables: use color groups
-            valid_layout_count = 0
-            for _, row in df.iterrows():
-                y_values = [row.get(metric, 0) for metric in metrics]
-                
-                # Skip rows with too much missing data
-                valid_values = [val for val in y_values if pd.notna(val)]
-                if len(valid_values) < len(metrics) * 0.5:  # Need at least 50% valid data
-                    continue
-                
-                # Replace NaN values with 0
-                y_values = [val if pd.notna(val) else 0 for val in y_values]
-                
-                ax.plot(x_positions, y_values, color=color, alpha=0.6, linewidth=1.5)
-                valid_layout_count += 1
-            
-            # Add a single legend entry for this table
-            ax.plot([], [], color=color, linewidth=3, label=f"{table_name} ({valid_layout_count} layouts)")
-    
+        # Add a single legend entry for this table
+        ax.plot([], [], color=color, linewidth=3, label=f"{table_name} ({valid_layout_count} layouts)")
+
     # Customize the plot
     ax.set_xlim(-0.5, len(metrics) - 0.5)
     ax.set_ylim(-0.05, 1.05)
