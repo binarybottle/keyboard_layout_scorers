@@ -5,6 +5,8 @@ create_keypair_score_table.py - Standalone script to create comprehensive key pa
 Creates a CSV table with scores for all possible key pairs (1024 ordered pairs)
 from 32 QWERTY keys for use by compare_layouts.py visualization.
 
+This is a completely standalone script with no external dependencies beyond standard library.
+
 Columns:
 1. key_pair - all 1024 ordered pairs of 32 QWERTY keys  
 2. speed - zeros (placeholder for future calculation)
@@ -17,8 +19,9 @@ Columns:
 9-17. Each of the 9 Dvorak criteria individually (with dvorak9_ prefix)
 
 Usage:
-    python create_keypair_score_table.py --raw_comfort_scores comfort_raw.csv --output keypair_scores.csv
-    python create_keypair_score_table.py --raw_comfort_scores comfort_raw.csv --output keypair_scores.csv --verbose
+    python create_keypair_score_table.py --raw-comfort-scores comfort_raw.csv --output keypair_scores.csv
+    python create_keypair_score_table.py --raw-comfort-scores comfort_raw.csv --output keypair_scores.csv --verbose
+    python create_keypair_score_table.py --raw-comfort-scores comfort_raw.csv --output keypair_scores.csv --default_comfort_score 0.5 --verbose
 """
 
 import sys
@@ -298,7 +301,7 @@ def load_csv_simple(filepath: str, verbose: bool = False) -> pd.DataFrame:
 # ============================================================================
 
 def load_comfort_scores(filepath: str, verbose: bool = False) -> Dict[str, float]:
-    """Load comfort scores from CSV file with position_pair,score format."""
+    """Load comfort scores from CSV file with key_pair,comfort_score format."""
     if not Path(filepath).exists():
         raise FileNotFoundError(f"Comfort scores file not found: {filepath}")
     
@@ -397,6 +400,7 @@ def calculate_all_dvorak9_scores(key_pairs: List[str], verbose: bool = False) ->
 
 def create_keypair_score_table(raw_comfort_file: str, 
                               output_file: str,
+                              default_comfort_score: float = 1.0,
                               verbose: bool = False) -> None:
     """Create the comprehensive key pair scoring table."""
     
@@ -415,6 +419,15 @@ def create_keypair_score_table(raw_comfort_file: str,
     # Load raw comfort scores only (we'll normalize using smart detection)
     raw_comfort_scores = load_comfort_scores(raw_comfort_file, verbose)
     
+    if verbose:
+        missing_pairs = [pair for pair in key_pairs if pair not in raw_comfort_scores]
+        print(f"  Found {len(raw_comfort_scores)} comfort scores in input file")
+        print(f"  Missing {len(missing_pairs)} key pairs (will use default {default_comfort_score})")
+        if len(missing_pairs) <= 10:
+            print(f"  Missing pairs: {missing_pairs}")
+        elif missing_pairs:
+            print(f"  Sample missing pairs: {missing_pairs[:5]}... (and {len(missing_pairs)-5} more)")
+    
     # Calculate distance scores (includes smart normalization)
     raw_distances, norm_distances = calculate_all_distances(key_pairs, verbose)
     
@@ -424,9 +437,10 @@ def create_keypair_score_table(raw_comfort_file: str,
     # Apply smart normalization to comfort scores
     if verbose:
         print("Applying smart normalization to comfort scores...")
+        print(f"  Using default comfort score {default_comfort_score} for missing key pairs")
     
     # Extract raw comfort values in the same order as key_pairs
-    raw_comfort_values = [raw_comfort_scores.get(pair, 0.0) for pair in key_pairs]
+    raw_comfort_values = [raw_comfort_scores.get(pair, default_comfort_score) for pair in key_pairs]
     norm_comfort_values = detect_and_normalize_distribution(np.array(raw_comfort_values), 'comfort', verbose)
     
     # Prepare data for CSV output
@@ -514,6 +528,7 @@ def main():
 Examples:
     python create_keypair_score_table.py --raw_comfort_scores comfort_raw.csv --output keypair_scores.csv
     python create_keypair_score_table.py --raw_comfort_scores comfort_raw.csv --output keypair_scores.csv --verbose
+    python create_keypair_score_table.py --raw_comfort_scores comfort_raw.csv --output keypair_scores.csv --default_comfort_score 0.5
 
 Input CSV file format:
     key_pair,comfort_score
@@ -529,6 +544,7 @@ The output CSV will contain 1024 rows (one for each ordered key pair) with the f
 - dvorak9_score: Average of all 9 Dvorak criteria
 - dvorak9_hands, dvorak9_fingers, dvorak9_skip_fingers, dvorak9_dont_cross_home, dvorak9_same_row, dvorak9_home_row, dvorak9_columns, dvorak9_strum, dvorak9_strong_fingers: Individual Dvorak-9 criteria scores
 
+Key pairs not found in the input comfort file will use the --default_comfort_score value (default: 1.0).
 All floating point values are formatted to 6 decimal places.
 All "_0_1" columns use smart normalization with automatic distribution detection.
 
@@ -537,15 +553,22 @@ This is a completely standalone script with no external dependencies beyond stan
     )
     
     parser.add_argument(
-        '--raw_comfort_scores',
+        '--raw-comfort-scores',
         required=True,
-        help="CSV file with raw comfort scores (key_pair,comfort_score format)"
+        help="CSV file with raw comfort scores (position_pair,score format)"
     )
     
     parser.add_argument(
         '--output',
         required=True,
         help="Output CSV file path for the key pair scoring table"
+    )
+    
+    parser.add_argument(
+        '--default-comfort-score',
+        type=float,
+        default=1.0,
+        help="Default comfort score for missing key pairs (default: 1.0)"
     )
     
     parser.add_argument(
@@ -564,6 +587,7 @@ This is a completely standalone script with no external dependencies beyond stan
         create_keypair_score_table(
             args.raw_comfort_scores,
             args.output,
+            args.default_comfort_score,
             args.verbose
         )
         
