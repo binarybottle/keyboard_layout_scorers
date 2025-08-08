@@ -20,7 +20,7 @@ Usage:
     python prep_keypair_distance_scores.py --text-files corpus.txt
 
 Output:
-    output/keypair_distance_scores.csv - CSV with columns: key_pair, distance_score
+    output/keypair_distance_scores.csv - CSV with columns: key_pair, distance_score, raw_distance
 """
 
 import argparse
@@ -87,11 +87,12 @@ def calculate_euclidean_distance(pos1: Tuple[float, float], pos2: Tuple[float, f
 
 def get_finger_id(char: str) -> Optional[str]:
     """Get unique finger identifier for a character (combines hand and finger number)."""
-    if char not in FINGER_MAP or char not in COLUMN_MAP:
+    char_lower = char.lower()  # FIXED: Convert to lowercase for map lookups
+    if char_lower not in FINGER_MAP or char_lower not in COLUMN_MAP:
         return None
     
-    hand = 'L' if COLUMN_MAP[char] < 6 else 'R'
-    finger_num = FINGER_MAP[char]
+    hand = 'L' if COLUMN_MAP[char_lower] < 6 else 'R'
+    finger_num = FINGER_MAP[char_lower]
     return f"{hand}{finger_num}"
 
 def get_physical_position(qwerty_key: str) -> Optional[Tuple[float, float]]:
@@ -230,37 +231,35 @@ def compute_all_theoretical_distances() -> Dict[str, float]:
 def extract_bigrams_and_distances_from_text(text: str) -> Dict[str, List[float]]:
     """
     Extract bigrams from text and compute their distances with proper finger tracking.
-    
-    For each word, simulates typing character by character and records the distance
-    for each bigram as it occurs in context.
-    
-    Example: "EDF"
-    - Type E: distance = home→E (finger 2: D→E), prev_distance = home→E  
-    - Type D: distance = E→D (finger 2: E→D), ED bigram = (home→E) + (E→D)
-    - Type F: distance = home→F = 0 (finger 1: F→F), DF bigram = (E→D) + 0
-    
-    The DF bigram gets distance (E→D) + 0 because finger 2 is at E when we start 
-    typing the DF bigram in this context.
-    
-    Args:
-        text: Input text (should be uppercase)
-        
-    Returns:
-        Dictionary mapping bigrams to lists of distance values
     """
     bigram_distances = defaultdict(list)
     
     # Split text by spaces to handle space resets
     words = text.split()
-
-    for word in words:
+    print(f"    Processing {len(words)} words from text")
+    
+    # Sample the first few words to show what we're working with
+    sample_words = words[:10]
+    print(f"    Sample words: {' '.join(sample_words)}")
+    
+    total_bigrams_found = 0
+    
+    for word_idx, word in enumerate(words):
+        # Show progress every 100k words
+        if word_idx % 100000 == 0 and word_idx > 0:
+            print(f"    Progress: {word_idx}/{len(words)} words, {total_bigrams_found} bigrams found")
+        
         # Replace non-QWERTY with spaces, then re-split
         cleaned_word = ''
         for char in word:
-            if char in STAGGERED_POSITION_MAP:
+            if char.lower() in STAGGERED_POSITION_MAP:  # FIXED: Convert to lowercase for lookup
                 cleaned_word += char
             else:
                 cleaned_word += ' '
+        
+        # Show some cleaning examples for the first few words
+        if word_idx < 5 and word != cleaned_word:
+            print(f"    Cleaning example: '{word}' -> '{cleaned_word}'")
         
         # Re-split by spaces to handle embedded non-QWERTY characters
         sub_words = cleaned_word.split()
@@ -270,6 +269,10 @@ def extract_bigrams_and_distances_from_text(text: str) -> Dict[str, List[float]]
             
             if len(valid_chars) < 2:
                 continue  # Need at least 2 characters for bigrams
+            
+            # Show first few valid sub-words
+            if total_bigrams_found < 5:
+                print(f"    Valid sub-word: '{sub_word}'")
             
             # Simulate typing this sub-word character by character
             finger_tracker = FingerTracker()  # Start with all fingers at home
@@ -287,10 +290,17 @@ def extract_bigrams_and_distances_from_text(text: str) -> Dict[str, List[float]]
                     # Bigram distance is the sum of distances for both characters
                     bigram_distance = prev_distance + distance
                     bigram_distances[bigram].append(bigram_distance)
+                    
+                    total_bigrams_found += 1
+                    
+                    # Show first few bigrams found
+                    if total_bigrams_found <= 10:
+                        print(f"    Bigram #{total_bigrams_found}: '{bigram}' distance={bigram_distance:.2f}mm")
                 
                 # Remember this distance for the next bigram
                 prev_distance = distance
     
+    print(f"    ✅ Found {total_bigrams_found} total bigram instances")
     return bigram_distances
 
 def compute_text_based_distances(text_files: List[str]) -> Dict[str, float]:
