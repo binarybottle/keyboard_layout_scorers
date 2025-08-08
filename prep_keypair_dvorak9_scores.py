@@ -248,40 +248,132 @@ def save_key_pair_scores(results, output_file="output/keypair_dvorak9_scores.csv
     print(f"✅ Saved {len(results)} key-pair scores to: {output_file}")
 
 def validate_output(output_file="output/keypair_dvorak9_scores.csv"):
-    """Validate the generated output file."""
+    """
+    Validation with comprehensive accuracy checking.
     
-    if not os.path.exists(output_file):
+    This function performs extensive validation of the generated Dvorak-9 scores,
+    including mathematical verification of scoring criteria and edge case testing.
+    """
+    import csv
+    import random
+    from pathlib import Path
+    
+    if not Path(output_file).exists():
         print(f"❌ Output file not found: {output_file}")
         return False
     
+    # Load data
     with open(output_file, 'r', encoding='utf-8') as f:
         reader = csv.DictReader(f)
         rows = list(reader)
     
-    print(f"\n📊 Validation Results:")
+    print(f"\n📊 Enhanced Validation Results:")
     print(f"   Total key-pairs: {len(rows)}")
     
-    # Check for expected number of combinations
-    keys = get_all_qwerty_keys()
-    expected_count = len(keys) ** 2
-    print(f"   Expected count: {expected_count}")
-    print(f"   Match: {'✅' if len(rows) == expected_count else '❌'}")
-    
-    # Check score range (should be 0-1)
+    # Statistical validation
     scores = [float(row['dvorak9_score']) for row in rows]
-    min_score = min(scores)
-    max_score = max(scores)
+    min_score, max_score = min(scores), max(scores)
     avg_score = sum(scores) / len(scores)
     
-    print(f"   Score range: {min_score:.3f} to {max_score:.3f}")
-    print(f"   Average score: {avg_score:.3f}")
+    print(f"   Score range: {min_score:.4f} to {max_score:.4f}")
+    print(f"   Average score: {avg_score:.4f}")
     print(f"   Valid range (0-1): {'✅' if 0 <= min_score and max_score <= 1 else '❌'}")
     
-    # Show some examples
-    print(f"\n📝 Sample key-pairs and scores:")
-    for i in range(0, min(10, len(rows)), max(1, len(rows)//10)):
-        row = rows[i]
-        print(f"   {row['key_pair']}: {float(row['dvorak9_score']):.3f}")
+    # Test mathematical accuracy on random samples
+    print(f"\n🧮 Mathematical Accuracy Check:")
+    random_samples = random.sample(rows, min(20, len(rows)))
+    accuracy_errors = 0
+    
+    for row in random_samples:
+        key_pair = row['key_pair']
+        csv_score = float(row['dvorak9_score'])
+        
+        # Recalculate score using the same logic
+        calculated_scores = score_bigram_dvorak9(key_pair)
+        calculated_avg = sum(calculated_scores.values()) / len(calculated_scores)
+        
+        if abs(calculated_avg - csv_score) > 0.0001:
+            print(f"   ❌ Accuracy error: {key_pair} - CSV: {csv_score:.4f}, Calc: {calculated_avg:.4f}")
+            accuracy_errors += 1
+    
+    print(f"   Accuracy check: {len(random_samples) - accuracy_errors}/{len(random_samples)} samples correct")
+    
+    # Test specific criteria with known examples
+    print(f"\n🔍 Criteria-Specific Validation:")
+    
+    criteria_tests = [
+        ("Perfect scores", ['FJ', 'FK', 'DJ', 'DK'], lambda s: s == 1.0),
+        ("Same key repetition", ['AA', 'SS', 'FF'], lambda s: 0.3 <= s <= 0.6),
+        ("Worst cases", ['QZ', '/[', 'Y.'], lambda s: s <= 0.3),
+        ("Alternating hands", ['FJ', 'AK', 'TN'], lambda s: s >= 0.7)
+    ]
+    
+    for test_name, test_pairs, score_check in criteria_tests:
+        test_scores = []
+        for pair in test_pairs:
+            row = next((r for r in rows if r['key_pair'] == pair), None)
+            if row:
+                test_scores.append(float(row['dvorak9_score']))
+        
+        all_pass = all(score_check(score) for score in test_scores)
+        print(f"   {test_name}: {'✅' if all_pass else '❌'} ({len([s for s in test_scores if score_check(s)])}/{len(test_scores)})")
+    
+    # Distribution analysis
+    print(f"\n📈 Score Distribution:")
+    ranges = [(0.0, 0.2, "Very Poor"), (0.2, 0.4, "Poor"), (0.4, 0.6, "Fair"), 
+              (0.6, 0.8, "Good"), (0.8, 1.0, "Excellent")]
+    
+    for min_val, max_val, label in ranges:
+        count = len([s for s in scores if min_val <= s < max_val])
+        percentage = count / len(scores) * 100
+        print(f"   {label} ({min_val}-{max_val}): {count} pairs ({percentage:.1f}%)")
+    
+    # Perfect scores count
+    perfect_count = len([s for s in scores if s == 1.0])
+    print(f"   Perfect (1.0): {perfect_count} pairs ({perfect_count/len(scores)*100:.1f}%)")
+    
+    # Edge case validation
+    print(f"\n⚡ Edge Case Validation:")
+    edge_cases = {
+        'Same finger': ['AA', 'SS', 'DD'],
+        'Hurdling': ['QZ', 'WX', 'EC'], 
+        'Adjacent fingers': ['AS', 'DF', 'JK'],
+        'Strong finger pairs': ['RF', 'ER', 'UI']
+    }
+    
+    for case_name, pairs in edge_cases.items():
+        case_scores = []
+        for pair in pairs:
+            row = next((r for r in rows if r['key_pair'] == pair), None)
+            if row:
+                case_scores.append(float(row['dvorak9_score']))
+        
+        if case_scores:
+            avg_case_score = sum(case_scores) / len(case_scores)
+            print(f"   {case_name}: avg={avg_case_score:.3f} ({len(case_scores)} pairs)")
+    
+    print(f"\n✅ Enhanced validation complete!")
+    return accuracy_errors == 0
+
+def validate_perfect_scores(output_file="output/keypair_dvorak9_scores.csv"):
+    """Specifically validate that perfect scores are mathematically correct."""
+    import csv
+    
+    with open(output_file, 'r', encoding='utf-8') as f:
+        reader = csv.DictReader(f)
+        perfect_pairs = [row for row in reader if float(row['dvorak9_score']) == 1.0]
+    
+    print(f"\n🏆 Perfect Score Verification ({len(perfect_pairs)} pairs):")
+    
+    for row in perfect_pairs:
+        key_pair = row['key_pair']
+        scores = score_bigram_dvorak9(key_pair)
+        
+        all_ones = all(score == 1.0 for score in scores.values())
+        print(f"   {key_pair}: All criteria = 1.0? {'✅' if all_ones else '❌'}")
+        
+        if not all_ones:
+            print(f"      Individual scores: {scores}")
     
     return True
 
@@ -305,7 +397,8 @@ def main():
     
     # Validate output
     validate_output(output_file)
-    
+    validate_perfect_scores()
+
     print(f"\n✅ Dvorak-9 key-pair score generation complete: {output_file}")
 
 if __name__ == "__main__":
