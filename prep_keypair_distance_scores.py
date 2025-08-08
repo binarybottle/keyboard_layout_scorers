@@ -20,7 +20,7 @@ Usage:
     python prep_keypair_distance_scores.py --text-files corpus.txt
 
 Output:
-    output/keypair_distance_scores.csv - CSV with columns: key_pair, distance_score, raw_distance
+    output/keypair_distance_scores.csv - CSV with columns: key_pair, distance_score, raw_distance, common_preceding
 """
 
 import argparse
@@ -228,11 +228,18 @@ def compute_all_theoretical_distances() -> Dict[str, float]:
     
     return theoretical_scores
 
-def extract_bigrams_and_distances_from_text(text: str) -> Dict[str, List[float]]:
+def extract_bigrams_and_distances_from_text(text: str) -> Tuple[Dict[str, List[float]], Dict[str, Dict[str, int]]]:
     """
     Extract bigrams from text and compute their distances with proper finger tracking.
+    Also track preceding characters for each bigram.
+    
+    Returns:
+        Tuple of (bigram_distances, bigram_preceding) where:
+        - bigram_distances: Dict mapping bigrams to lists of distance values
+        - bigram_preceding: Dict mapping bigrams to dict of {preceding_char: count}
     """
     bigram_distances = defaultdict(list)
+    bigram_preceding = defaultdict(lambda: defaultdict(int))
     
     # Split text by spaces to handle space resets
     words = text.split()
@@ -282,7 +289,7 @@ def extract_bigrams_and_distances_from_text(text: str) -> Dict[str, List[float]]
                 # Calculate distance to type this character
                 distance = finger_tracker.calculate_distance_and_move_finger(char)
                 
-                # If this forms a bigram, record the bigram distance
+                # If this forms a bigram, record the bigram distance and preceding character
                 if i > 0:
                     prev_char = valid_chars[i - 1]
                     bigram = prev_char + char
@@ -291,31 +298,42 @@ def extract_bigrams_and_distances_from_text(text: str) -> Dict[str, List[float]]
                     bigram_distance = prev_distance + distance
                     bigram_distances[bigram].append(bigram_distance)
                     
+                    # Track preceding character (the character before this bigram)
+                    if i > 1:  # There's a character before the bigram
+                        preceding_char = valid_chars[i - 2]
+                        bigram_preceding[bigram][preceding_char] += 1
+                    # If bigram is at start of word, we could track space, but let's skip that
+                    
                     total_bigrams_found += 1
                     
                     # Show first few bigrams found
                     if total_bigrams_found <= 10:
-                        print(f"    Bigram #{total_bigrams_found}: '{bigram}' distance={bigram_distance:.2f}mm")
+                        preceding_info = f" (after '{valid_chars[i-2]}')" if i > 1 else " (word start)"
+                        print(f"    Bigram #{total_bigrams_found}: '{bigram}' distance={bigram_distance:.2f}mm{preceding_info}")
                 
                 # Remember this distance for the next bigram
                 prev_distance = distance
     
     print(f"    ✅ Found {total_bigrams_found} total bigram instances")
-    return bigram_distances
+    return bigram_distances, bigram_preceding
 
-def compute_text_based_distances(text_files: List[str]) -> Dict[str, float]:
+def compute_text_based_distances(text_files: List[str]) -> Tuple[Dict[str, float], Dict[str, str]]:
     """
     Stage 2: Process text files to find actual key-pairs and compute averaged distances.
+    Also determine most common preceding characters.
     
     Args:
         text_files: List of text file paths
         
     Returns:
-        Dictionary mapping key-pairs found in text to averaged distance scores
+        Tuple of (text_based_scores, common_preceding) where:
+        - text_based_scores: Dictionary mapping key-pairs to averaged distance scores
+        - common_preceding: Dictionary mapping key-pairs to comma-separated top preceding chars
     """
     print("\n🟡 Stage 2: Processing text files for real-world key-pair usage")
     
     all_bigram_distances = defaultdict(list)
+    all_bigram_preceding = defaultdict(lambda: defaultdict(int))
     
     for text_file in text_files:
         print(f"  Processing: {text_file}")
@@ -332,12 +350,16 @@ def compute_text_based_distances(text_files: List[str]) -> Dict[str, float]:
         
         print(f"    Text length: {len(text)} characters")
         
-        # Extract bigrams and their distances with proper finger tracking
-        bigram_distances = extract_bigrams_and_distances_from_text(text)
+        # Extract bigrams, distances, and preceding characters
+        bigram_distances, bigram_preceding = extract_bigrams_and_distances_from_text(text)
         
         # Combine results from this file
         for bigram, distances in bigram_distances.items():
             all_bigram_distances[bigram].extend(distances)
+        
+        for bigram, preceding_counts in bigram_preceding.items():
+            for preceding_char, count in preceding_counts.items():
+                all_bigram_preceding[bigram][preceding_char] += count
         
         total_bigram_instances = sum(len(distances) for distances in bigram_distances.values())
         print(f"    Found {total_bigram_instances} total bigram instances")
@@ -348,20 +370,30 @@ def compute_text_based_distances(text_files: List[str]) -> Dict[str, float]:
     for key_pair, distances in all_bigram_distances.items():
         text_based_scores[key_pair] = sum(distances) / len(distances)
     
+    # Determine most common preceding characters (top 3)
+    common_preceding = {}
+    for key_pair, preceding_counts in all_bigram_preceding.items():
+        # Sort by count (descending) and take top 3
+        sorted_preceding = sorted(preceding_counts.items(), key=lambda x: x[1], reverse=True)
+        top_preceding = [char for char, count in sorted_preceding[:3]]
+        common_preceding[key_pair] = ','.join(top_preceding) if top_preceding else ''
+    
     print(f"  ✅ Computed averaged distances for {len(text_based_scores)} key-pairs from text")
     
-    # Show some examples
+    # Show some examples with preceding characters
     if text_based_scores:
-        print(f"  Sample text-based scores:")
+        print(f"  Sample text-based scores with common preceding characters:")
         sample_pairs = list(text_based_scores.items())[:5]
         for pair, distance in sample_pairs:
             instances = len(all_bigram_distances[pair])
-            print(f"    {pair}: {distance:.2f}mm (avg of {instances} instances)")
+            preceding = common_preceding.get(pair, '')
+            print(f"    {pair}: {distance:.2f}mm (avg of {instances} instances, common preceding: {preceding})")
     
-    return text_based_scores
+    return text_based_scores, common_preceding
 
 def combine_theoretical_and_text_scores(theoretical_scores: Dict[str, float], 
-                                       text_scores: Dict[str, float]) -> Dict[str, Tuple[float, float]]:
+                                       text_scores: Dict[str, float],
+                                       common_preceding: Dict[str, str]) -> Dict[str, Tuple[float, float, str]]:
     """
     Combine theoretical and text-based scores.
     Text-based scores override theoretical scores when available.
@@ -369,18 +401,19 @@ def combine_theoretical_and_text_scores(theoretical_scores: Dict[str, float],
     Args:
         theoretical_scores: All key-pairs with theoretical distances
         text_scores: Key-pairs found in text with averaged distances
+        common_preceding: Key-pairs mapped to common preceding characters
         
     Returns:
-        Dictionary mapping key-pairs to (raw_distance, final_distance) tuples
+        Dictionary mapping key-pairs to (raw_distance, final_distance, preceding_chars) tuples
         where raw_distance is always theoretical, final_distance is text-based when available
     """
     print("\n🟢 Stage 3: Combining theoretical and text-based scores")
     
     final_scores = {}
     
-    # For all key-pairs, start with theoretical as both raw and final
+    # For all key-pairs, start with theoretical as both raw and final, empty preceding
     for key_pair, theoretical_distance in theoretical_scores.items():
-        final_scores[key_pair] = (theoretical_distance, theoretical_distance)
+        final_scores[key_pair] = (theoretical_distance, theoretical_distance, '')
     
     # Override ONLY the final distance with text-based scores where available
     overridden_count = 0
@@ -389,14 +422,15 @@ def combine_theoretical_and_text_scores(theoretical_scores: Dict[str, float],
     for key_pair, text_distance in text_scores.items():
         if key_pair in theoretical_scores:  # Should always be true
             theoretical_distance = theoretical_scores[key_pair]
-            final_scores[key_pair] = (theoretical_distance, text_distance)  # raw=theoretical, final=text
+            preceding_chars = common_preceding.get(key_pair, '')
+            final_scores[key_pair] = (theoretical_distance, text_distance, preceding_chars)  # raw, final, preceding
             overridden_count += 1
             
             # Check for significant differences (> 0.1mm) between theoretical and text-based
             if abs(theoretical_distance - text_distance) > 0.1:
                 significant_differences += 1
                 if significant_differences <= 5:  # Show first 5 examples
-                    print(f"    Example override: {key_pair} theoretical={theoretical_distance:.3f}mm -> text={text_distance:.3f}mm")
+                    print(f"    Example override: {key_pair} theoretical={theoretical_distance:.3f}mm -> text={text_distance:.3f}mm (common preceding: {preceding_chars})")
         else:
             # This shouldn't happen since we compute all theoretical scores first
             print(f"  Warning: Text-based score found for unknown key-pair: {key_pair}")
@@ -421,18 +455,19 @@ def compute_all_key_pair_scores(text_files: List[str]):
     theoretical_scores = compute_all_theoretical_distances()
     
     # Stage 2: Process text files for real-world usage patterns
-    text_scores = compute_text_based_distances(text_files)
+    text_scores, common_preceding = compute_text_based_distances(text_files)
     
     # Stage 3: Combine scores (text overrides theoretical)
-    combined_scores = combine_theoretical_and_text_scores(theoretical_scores, text_scores)
+    combined_scores = combine_theoretical_and_text_scores(theoretical_scores, text_scores, common_preceding)
     
-    # Convert to results format with both raw and final distances
+    # Convert to results format with raw distance, final distance, and common preceding
     results = []
-    for key_pair, (raw_distance, final_distance) in sorted(combined_scores.items()):
+    for key_pair, (raw_distance, final_distance, preceding_chars) in sorted(combined_scores.items()):
         results.append({
             'key_pair': key_pair,
             'distance_score': final_distance,
-            'raw_distance': raw_distance
+            'raw_distance': raw_distance,
+            'common_preceding': preceding_chars
         })
     
     print(f"\n✅ Total key-pairs computed: {len(results)}")
@@ -440,7 +475,7 @@ def compute_all_key_pair_scores(text_files: List[str]):
     return results
 
 def save_key_pair_scores(results, output_file="output/keypair_distance_scores.csv"):
-    """Save key-pair scores to CSV file with both distance_score and raw_distance columns."""
+    """Save key-pair scores to CSV file with distance_score, raw_distance, and common_preceding columns."""
     
     # Create output directory if it doesn't exist
     Path(output_file).parent.mkdir(parents=True, exist_ok=True)
@@ -449,7 +484,7 @@ def save_key_pair_scores(results, output_file="output/keypair_distance_scores.cs
     results.sort(key=lambda x: x['key_pair'])
     
     with open(output_file, 'w', newline='', encoding='utf-8') as f:
-        writer = csv.DictWriter(f, fieldnames=['key_pair', 'distance_score', 'raw_distance'])
+        writer = csv.DictWriter(f, fieldnames=['key_pair', 'distance_score', 'raw_distance', 'common_preceding'])
         writer.writeheader()
         writer.writerows(results)
     
@@ -488,6 +523,10 @@ def validate_output(output_file="output/keypair_distance_scores.csv"):
     different_count = sum(1 for row in rows if float(row['distance_score']) != float(row['raw_distance']))
     print(f"   Pairs with text-based overrides: {different_count}")
     
+    # Count pairs with preceding character data
+    with_preceding = sum(1 for row in rows if row['common_preceding'].strip())
+    print(f"   Pairs with preceding character data: {with_preceding}")
+    
     # Count zero scores for both columns
     zero_final = sum(1 for score in final_scores if score == 0.0)
     zero_raw = sum(1 for score in raw_scores if score == 0.0)
@@ -502,13 +541,22 @@ def validate_output(output_file="output/keypair_distance_scores.csv"):
     if different_examples:
         print("   Text-based overrides (final ≠ raw):")
         for row in different_examples:
-            print(f"     {row['key_pair']}: final={float(row['distance_score']):.3f}mm, raw={float(row['raw_distance']):.3f}mm")
+            preceding = row['common_preceding'] if row['common_preceding'] else 'none'
+            print(f"     {row['key_pair']}: final={float(row['distance_score']):.3f}mm, raw={float(row['raw_distance']):.3f}mm, preceding={preceding}")
+    
+    # Examples with interesting preceding character patterns
+    with_preceding_examples = [row for row in rows if row['common_preceding'].strip()][:5]
+    if with_preceding_examples:
+        print("   Examples with common preceding characters:")
+        for row in with_preceding_examples:
+            print(f"     {row['key_pair']}: {float(row['distance_score']):.3f}mm, common preceding: {row['common_preceding']}")
     
     # Zero distance examples
     zero_examples = [row for row in rows if float(row['distance_score']) == 0.0][:3]
     print("   Zero distance pairs:")
     for row in zero_examples:
-        print(f"     {row['key_pair']}: final={float(row['distance_score']):.3f}mm, raw={float(row['raw_distance']):.3f}mm")
+        preceding = row['common_preceding'] if row['common_preceding'] else 'none'
+        print(f"     {row['key_pair']}: final={float(row['distance_score']):.3f}mm, raw={float(row['raw_distance']):.3f}mm, preceding={preceding}")
     
     return True
 
