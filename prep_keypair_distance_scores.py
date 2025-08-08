@@ -252,36 +252,44 @@ def extract_bigrams_and_distances_from_text(text: str) -> Dict[str, List[float]]
     
     # Split text by spaces to handle space resets
     words = text.split()
-    
+
     for word in words:
-        # Filter to valid QWERTY characters
-        valid_chars = []
+        # Replace non-QWERTY with spaces, then re-split
+        cleaned_word = ''
         for char in word:
             if char in STAGGERED_POSITION_MAP:
-                valid_chars.append(char)
+                cleaned_word += char
+            else:
+                cleaned_word += ' '
         
-        if len(valid_chars) < 2:
-            continue  # Need at least 2 characters for bigrams
+        # Re-split by spaces to handle embedded non-QWERTY characters
+        sub_words = cleaned_word.split()
         
-        # Simulate typing this word character by character
-        finger_tracker = FingerTracker()  # Start with all fingers at home
-        prev_distance = 0.0
-        
-        for i, char in enumerate(valid_chars):
-            # Calculate distance to type this character
-            distance = finger_tracker.calculate_distance_and_move_finger(char)
+        for sub_word in sub_words:
+            valid_chars = list(sub_word)
             
-            # If this forms a bigram, record the bigram distance
-            if i > 0:
-                prev_char = valid_chars[i - 1]
-                bigram = prev_char + char
+            if len(valid_chars) < 2:
+                continue  # Need at least 2 characters for bigrams
+            
+            # Simulate typing this sub-word character by character
+            finger_tracker = FingerTracker()  # Start with all fingers at home
+            prev_distance = 0.0
+            
+            for i, char in enumerate(valid_chars):
+                # Calculate distance to type this character
+                distance = finger_tracker.calculate_distance_and_move_finger(char)
                 
-                # Bigram distance is the sum of distances for both characters
-                bigram_distance = prev_distance + distance
-                bigram_distances[bigram].append(bigram_distance)
-            
-            # Remember this distance for the next bigram
-            prev_distance = distance
+                # If this forms a bigram, record the bigram distance
+                if i > 0:
+                    prev_char = valid_chars[i - 1]
+                    bigram = prev_char + char
+                    
+                    # Bigram distance is the sum of distances for both characters
+                    bigram_distance = prev_distance + distance
+                    bigram_distances[bigram].append(bigram_distance)
+                
+                # Remember this distance for the next bigram
+                prev_distance = distance
     
     return bigram_distances
 
@@ -343,7 +351,7 @@ def compute_text_based_distances(text_files: List[str]) -> Dict[str, float]:
     return text_based_scores
 
 def combine_theoretical_and_text_scores(theoretical_scores: Dict[str, float], 
-                                       text_scores: Dict[str, float]) -> Dict[str, float]:
+                                       text_scores: Dict[str, float]) -> Dict[str, Tuple[float, float]]:
     """
     Combine theoretical and text-based scores.
     Text-based scores override theoretical scores when available.
@@ -353,27 +361,45 @@ def combine_theoretical_and_text_scores(theoretical_scores: Dict[str, float],
         text_scores: Key-pairs found in text with averaged distances
         
     Returns:
-        Final combined scores for all key-pairs
+        Dictionary mapping key-pairs to (raw_distance, final_distance) tuples
+        where raw_distance is always theoretical, final_distance is text-based when available
     """
     print("\n🟢 Stage 3: Combining theoretical and text-based scores")
     
-    final_scores = theoretical_scores.copy()
+    final_scores = {}
     
-    # Override with text-based scores where available
+    # For all key-pairs, start with theoretical as both raw and final
+    for key_pair, theoretical_distance in theoretical_scores.items():
+        final_scores[key_pair] = (theoretical_distance, theoretical_distance)
+    
+    # Override ONLY the final distance with text-based scores where available
     overridden_count = 0
+    significant_differences = 0
+    
     for key_pair, text_distance in text_scores.items():
-        if key_pair in final_scores:
-            final_scores[key_pair] = text_distance
+        if key_pair in theoretical_scores:  # Should always be true
+            theoretical_distance = theoretical_scores[key_pair]
+            final_scores[key_pair] = (theoretical_distance, text_distance)  # raw=theoretical, final=text
             overridden_count += 1
+            
+            # Check for significant differences (> 0.1mm) between theoretical and text-based
+            if abs(theoretical_distance - text_distance) > 0.1:
+                significant_differences += 1
+                if significant_differences <= 5:  # Show first 5 examples
+                    print(f"    Example override: {key_pair} theoretical={theoretical_distance:.3f}mm -> text={text_distance:.3f}mm")
+        else:
+            # This shouldn't happen since we compute all theoretical scores first
+            print(f"  Warning: Text-based score found for unknown key-pair: {key_pair}")
     
     print(f"  ✅ Overrode {overridden_count} theoretical scores with text-based averages")
+    print(f"  📊 {significant_differences} pairs have significant differences (>0.1mm)")
     print(f"  Final scores: {len(final_scores)} total key-pairs")
     
-    # Statistics
+    # Statistics  
     text_pairs = len(text_scores)
-    theoretical_pairs = len(final_scores) - text_pairs
-    print(f"    - {text_pairs} from text analysis")
-    print(f"    - {theoretical_pairs} from theoretical calculation")
+    theoretical_only_pairs = len(final_scores) - text_pairs
+    print(f"    - {text_pairs} pairs have text-based overrides")
+    print(f"    - {theoretical_only_pairs} pairs use theoretical distances only")
     
     return final_scores
 
@@ -388,14 +414,15 @@ def compute_all_key_pair_scores(text_files: List[str]):
     text_scores = compute_text_based_distances(text_files)
     
     # Stage 3: Combine scores (text overrides theoretical)
-    final_scores = combine_theoretical_and_text_scores(theoretical_scores, text_scores)
+    combined_scores = combine_theoretical_and_text_scores(theoretical_scores, text_scores)
     
-    # Convert to results format
+    # Convert to results format with both raw and final distances
     results = []
-    for key_pair, score in sorted(final_scores.items()):
+    for key_pair, (raw_distance, final_distance) in sorted(combined_scores.items()):
         results.append({
             'key_pair': key_pair,
-            'distance_score': score
+            'distance_score': final_distance,
+            'raw_distance': raw_distance
         })
     
     print(f"\n✅ Total key-pairs computed: {len(results)}")
@@ -403,7 +430,7 @@ def compute_all_key_pair_scores(text_files: List[str]):
     return results
 
 def save_key_pair_scores(results, output_file="output/keypair_distance_scores.csv"):
-    """Save key-pair scores to CSV file."""
+    """Save key-pair scores to CSV file with both distance_score and raw_distance columns."""
     
     # Create output directory if it doesn't exist
     Path(output_file).parent.mkdir(parents=True, exist_ok=True)
@@ -412,7 +439,7 @@ def save_key_pair_scores(results, output_file="output/keypair_distance_scores.cs
     results.sort(key=lambda x: x['key_pair'])
     
     with open(output_file, 'w', newline='', encoding='utf-8') as f:
-        writer = csv.DictWriter(f, fieldnames=['key_pair', 'distance_score'])
+        writer = csv.DictWriter(f, fieldnames=['key_pair', 'distance_score', 'raw_distance'])
         writer.writeheader()
         writer.writerows(results)
     
@@ -438,31 +465,40 @@ def validate_output(output_file="output/keypair_distance_scores.csv"):
     print(f"   Expected count: {expected_count}")
     print(f"   Match: {'✅' if len(rows) == expected_count else '❌'}")
     
-    # Check score range
-    scores = [float(row['distance_score']) for row in rows]
-    min_score = min(scores)
-    max_score = max(scores)
-    avg_score = sum(scores) / len(scores)
+    # Check score ranges for both columns
+    final_scores = [float(row['distance_score']) for row in rows]
+    raw_scores = [float(row['raw_distance']) for row in rows]
     
-    print(f"   Score range: {min_score:.3f} to {max_score:.3f} mm")
-    print(f"   Average score: {avg_score:.3f} mm")
+    print(f"   Final distance range: {min(final_scores):.3f} to {max(final_scores):.3f} mm")
+    print(f"   Raw distance range: {min(raw_scores):.3f} to {max(raw_scores):.3f} mm")
+    print(f"   Average final: {sum(final_scores)/len(final_scores):.3f} mm")
+    print(f"   Average raw: {sum(raw_scores)/len(raw_scores):.3f} mm")
     
-    # Count zero scores (should be home row key-pairs where no movement needed)
-    zero_count = sum(1 for score in scores if score == 0.0)
-    print(f"   Zero scores (no finger movement): {zero_count}")
+    # Count differences between raw and final
+    different_count = sum(1 for row in rows if float(row['distance_score']) != float(row['raw_distance']))
+    print(f"   Pairs with text-based overrides: {different_count}")
     
-    # Show some examples including zero scores
+    # Count zero scores for both columns
+    zero_final = sum(1 for score in final_scores if score == 0.0)
+    zero_raw = sum(1 for score in raw_scores if score == 0.0)
+    print(f"   Zero final scores: {zero_final}")
+    print(f"   Zero raw scores: {zero_raw}")
+    
+    # Show some examples
     print(f"\n📝 Sample key-pairs and scores:")
-    zero_examples = [row for row in rows if float(row['distance_score']) == 0.0][:5]
-    non_zero_examples = [row for row in rows if float(row['distance_score']) > 0.0][:5]
     
-    print("   Zero distance pairs (no finger movement):")
+    # Examples where raw and final differ
+    different_examples = [row for row in rows if float(row['distance_score']) != float(row['raw_distance'])][:3]
+    if different_examples:
+        print("   Text-based overrides (final ≠ raw):")
+        for row in different_examples:
+            print(f"     {row['key_pair']}: final={float(row['distance_score']):.3f}mm, raw={float(row['raw_distance']):.3f}mm")
+    
+    # Zero distance examples
+    zero_examples = [row for row in rows if float(row['distance_score']) == 0.0][:3]
+    print("   Zero distance pairs:")
     for row in zero_examples:
-        print(f"     {row['key_pair']}: {float(row['distance_score']):.3f} mm")
-    
-    print("   Non-zero distance pairs:")
-    for row in non_zero_examples:
-        print(f"     {row['key_pair']}: {float(row['distance_score']):.3f} mm")
+        print(f"     {row['key_pair']}: final={float(row['distance_score']):.3f}mm, raw={float(row['raw_distance']):.3f}mm")
     
     return True
 
