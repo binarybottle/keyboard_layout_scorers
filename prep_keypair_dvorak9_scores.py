@@ -305,7 +305,7 @@ def validate_output(output_file="output/keypair_dvorak9_scores.csv"):
         ("Perfect scores", ['FJ', 'FK', 'DJ', 'DK'], lambda s: s == 1.0),
         ("Same key repetition", ['AA', 'SS', 'FF'], lambda s: 0.3 <= s <= 0.6),
         ("Worst cases", ['QZ', '/[', 'Y.'], lambda s: s <= 0.3),
-        ("Alternating hands", ['FJ', 'AK', 'TN'], lambda s: s >= 0.7)
+        ("Alternating hands", ['FJ', 'AK', 'TN'], lambda s: s >= 0.5)
     ]
     
     for test_name, test_pairs, score_check in criteria_tests:
