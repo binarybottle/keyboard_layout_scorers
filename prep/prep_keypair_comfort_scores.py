@@ -26,10 +26,10 @@ Key-pairs that cannot be calculated due to insufficient data are skipped.
 Generated key-pairs have empty uncertainty values.
 
 Input:
-    input/prep/comfort_keypair_scores_24keys.csv - CSV with existing 24-key comfort scores
+    input/comfort_keypair_scores_24keys.csv - CSV with existing 24-key comfort scores
 
 Output:
-    output/keypair_comfort_scores.csv - Complete CSV with all calculable key-pair scores
+    tables/keypair_comfort_scores.csv - Complete CSV with all calculable key-pair scores
 
 Usage:
     python prep_keypair_comfort_scores.py
@@ -73,7 +73,7 @@ def is_same_hand(key1: str, key2: str) -> bool:
     hand2 = get_key_hand(key2)
     return hand1 == hand2 and hand1 is not None
 
-def load_existing_scores(input_file: str = "input/prep/comfort_keypair_scores_24keys.csv") -> Dict[str, Tuple[float, float]]:
+def load_existing_scores(input_file: str = "input/comfort_keypair_scores_24keys.csv") -> Dict[str, Tuple[float, float]]:
     """Load existing comfort scores from CSV file."""
     scores = {}
     
@@ -190,7 +190,7 @@ def update_stats_with_new_scores(original_stats: Dict[str, Dict],
 
 def save_complete_scores(existing_scores: Dict[str, Tuple[float, float]], 
                         generated_scores: Dict[str, Tuple[float, float]], 
-                        output_file: str = "output/keypair_comfort_scores.csv"):
+                        output_file: str = "tables/keypair_comfort_scores.csv"):
     """Save complete comfort scores to CSV file."""
     
     # Create output directory if it doesn't exist
@@ -475,7 +475,7 @@ def main():
     
     try:
         # Load and validate existing scores
-        input_file = "input/prep/comfort_keypair_scores_24keys.csv"
+        input_file = "input/comfort_keypair_scores_24keys.csv"
         existing_scores = load_existing_scores(input_file)
         
         # Analyze existing scores
@@ -485,7 +485,7 @@ def main():
         generated_scores = generate_missing_scores(existing_scores, stats)
         
         # Save complete dataset
-        output_file = "output/keypair_comfort_scores.csv"
+        output_file = "tables/keypair_comfort_scores.csv"
         total_count = save_complete_scores(existing_scores, generated_scores, output_file)
         
         # Comprehensive output validation

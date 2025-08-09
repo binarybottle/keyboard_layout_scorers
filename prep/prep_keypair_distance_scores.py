@@ -20,7 +20,7 @@ Usage:
     python prep_keypair_distance_scores.py --text-files corpus.txt
 
 Output:
-    output/keypair_distance_scores.csv - CSV with columns: key_pair, distance_score, raw_distance, common_preceding
+    tables/keypair_distance_scores.csv - CSV with columns: key_pair, distance_score, raw_distance, common_preceding
 """
 
 import argparse
@@ -474,7 +474,7 @@ def compute_all_key_pair_scores(text_files: List[str]):
     
     return results
 
-def save_key_pair_scores(results, output_file="output/keypair_distance_scores.csv"):
+def save_key_pair_scores(results, output_file="tables/keypair_distance_scores.csv"):
     """Save key-pair scores to CSV file with distance_score, raw_distance, and common_preceding columns."""
     
     # Create output directory if it doesn't exist
@@ -490,7 +490,7 @@ def save_key_pair_scores(results, output_file="output/keypair_distance_scores.cs
     
     print(f"✅ Saved {len(results)} key-pair scores to: {output_file}")
 
-def validate_output(output_file="output/keypair_distance_scores.csv"):
+def validate_output(output_file="tables/keypair_distance_scores.csv"):
     """Perform thorough validation of the generated output file with manual verification."""
     
     if not os.path.exists(output_file):
@@ -719,7 +719,7 @@ def main():
     parser = argparse.ArgumentParser(description='Generate precomputed distance scores for QWERTY key-pairs')
     parser.add_argument('--text-files', required=True,
                         help='Comma-separated list of text files to analyze')
-    parser.add_argument('--output', default='output/keypair_distance_scores.csv',
+    parser.add_argument('--output', default='tables/keypair_distance_scores.csv',
                         help='Output CSV file path')
     
     args = parser.parse_args()

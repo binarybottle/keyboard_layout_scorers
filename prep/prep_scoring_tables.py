@@ -12,12 +12,12 @@ Input files expected:
 - keypair_dvorak9_scores.csv (key_pair, dvorak9_score)
 
 Output:
-- output/keypair_scores.csv: Unified key-pair scores with normalized versions (0-1 range)
-- output/key_scores.csv: Individual key comfort scores extracted from same-key bigrams
+- tables/keypair_scores.csv: Unified key-pair scores with normalized versions (0-1 range)
+- tables/key_scores.csv: Individual key comfort scores extracted from same-key bigrams
 
 Usage:
-    python prep_scoring_tables.py --input-dir output/
-    python prep_scoring_tables.py --input-dir output/ --verbose
+    python prep_scoring_tables.py --input-dir tables/
+    python prep_scoring_tables.py --input-dir tables/ --verbose
 """
 
 import sys
@@ -341,8 +341,8 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-    python prep_scoring_tables.py --input-dir output/
-    python prep_scoring_tables.py --input-dir output/ --verbose
+    python prep_scoring_tables.py --input-dir tables/
+    python prep_scoring_tables.py --input-dir tables/ --verbose
 
 Input files expected in input directory:
     - keypair_time_scores.csv (key_pair, time_score)
@@ -351,12 +351,12 @@ Input files expected in input directory:
     - keypair_dvorak9_scores.csv (key_pair, dvorak9_score)
 
 Creates two standardized output files:
-    - output/keypair_scores.csv: Unified key-pair scores
+    - tables/keypair_scores.csv: Unified key-pair scores
         - key_pair: Two-character key pair (e.g., "QW", "AS")
         - Original score columns (time_score, comfort_score, distance_score, dvorak9_score)
         - Normalized score columns (*_score_normalized) with smart distribution-aware normalization (0-1 range)
     
-    - output/key_scores.csv: Individual key comfort scores
+    - tables/key_scores.csv: Individual key comfort scores
         - key: Individual key character
         - comfort_score: Normalized comfort score for that key (extracted from same-key bigrams like "AA", ";;")
 

@@ -1,0 +1,607 @@
+> poetry run python3 prep_keypair_time_scores.py --input-dir /Users/arno/Downloads/x/typing/raws_prolific_nonprolific
+Generate timing-component key-pair time scores from CSV data
+============================================================
+QWERTY keys (32): ',./;ABCDEFGHIJKLMNOPQRSTUVWXYZ[
+Total key-pairs to compute: 1024
+Input directory: /Users/arno/Downloads/x/typing/raws_prolific_nonprolific
+CSV files found: 515
+Computing key-pair times using timing components from CSV data...
+
+🔵 Loading and processing CSV files from directory: /Users/arno/Downloads/x/typing/raws_prolific_nonprolific
+Found 515 CSV files
+  Processing: raw_data_6679dc943f855ba978447c25_1727410938643.csv
+  Processing: raw_data_62bb13844f833119cc98e55b_1727406743776.csv
+  Processing: raw_data_5e72e0d8adc903240ac70891_1727407544599.csv
+  Processing: raw_data_unknown4_1741214991789.csv
+  Processing: raw_data_unknown45_1743199922371.csv
+  Processing: raw_data_unknown37_1742851987992.csv
+  Processing: raw_data_unknown40_1743114230604.csv
+  Processing: raw_data_666ca8f24bc3a8e75b8f6ee2_1727409503960.csv
+  Processing: raw_data_67113e3dc5d91c5d72fd89ea_1738848349389.csv
+  Processing: raw_data_5fcd71c07283d321e75d28ce_1727405888595.csv
+  Processing: raw_data_5b970de9aa1729000192f57b_1727408960316.csv
+  Processing: raw_data_669d1e13adb50bc8c5501033_1727405989428.csv
+  Processing: raw_data_661c00717f3c9c81c132d2b0_1738850421546.csv
+  Processing: raw_data_6482f94e03d469a7669bade6_1728487198642.csv
+  Processing: raw_data_562eb896733ea000051638c6_1727407149479.csv
+  Processing: raw_data_655fc9dcc20e0befdda4251a_1738846509690.csv
+  Processing: raw_data_6157769623f8b93ecb608d03_1728483850795.csv
+  Processing: raw_data_666eb6c41a31f3c82021e23e_1728498144680.csv
+  Processing: raw_data_64389bf557e6a621e6a857ca_1727408024648.csv
+  Processing: raw_data_6697f953a43613fe2f6a2883_1742232222977.csv
+  Processing: raw_data_655fa9ff6682f3df8008abe6_1727405673831.csv
+  Processing: raw_data_66c2c6d8c0e6485f18f12c9c_1728483973722.csv
+  Processing: raw_data_6676e0723e8ac376937ac5fb_1727407545329.csv
+  Processing: raw_data_663ea57212f5d047cf5cb177_1727409665606.csv
+  Processing: raw_data_65469016298a36a49750973b_1727409181518.csv
+  Processing: raw_data_6598c280db248e4eefa054d0_1727408804524.csv
+  Processing: raw_data_66f0eda58aabb19b40a60936_1728879775490.csv
+  Processing: raw_data_67375a2da88640a6062be884_1738850873189.csv
+  Processing: raw_data_641ec1a9d9fe8a0941e39862_1727409650504.csv
+  Processing: raw_data_6109f02b5f6b3477fa8ddd8a_1727408018550.csv
+  Processing: raw_data_60e9f87217d55e86d5acd46a_1727405514563.csv
+  Processing: raw_data_65f90aac36abafe80c61a864_1727406906676.csv
+  Processing: raw_data_609f228c91118f1242805f43_1727408976391.csv
+  Processing: raw_data_63f796a016e377d12cff50f1_1727405310219.csv
+  Processing: raw_data_6521bb42d7515a18540a827a_1727407313028.csv
+  Processing: raw_data_66a8e51a6b38bc2999515099_1727408106821.csv
+  Processing: raw_data_6780536decee4b5d3a3dcb82_1738859427370.csv
+  Processing: raw_data_672c0491c5ac03124a6c1bd3_1738849196166.csv
+  Processing: raw_data_58060d08b869700001d70b8c_1727407187224.csv
+  Processing: raw_data_66e4a2a4cd6d2334a523de1d_1727405239725.csv
+  Processing: raw_data_55bc1119fdf99b5693f3ec47_1728498551513.csv
+  Processing: raw_data_5924f4910a3e3e0001f1018e_1728879843158.csv
+  Processing: raw_data_6758127b403382550f004fdc_1742236661301.csv
+  Processing: raw_data_673622389e541878f09ff69a_1738846604262.csv
+  Processing: raw_data_614e049f538645ead4ff4d49_1738845998577.csv
+  Processing: raw_data_6635c85dd8b7bc10073b323b_1727408105217.csv
+  Processing: raw_data_604227f752a00205aca8ad2d_1727407889210.csv
+  Processing: raw_data_6659ef479b424681dc3f60ba_1727405446212.csv
+  Processing: raw_data_66e6f00ffefd9839681ec1d9_1727412021464.csv
+  Processing: raw_data_5dd0918fc944d115f6f63047_1728880942493.csv
+  Processing: raw_data_65d674932b74e9b7383efaff_1727407046156.csv
+  Processing: raw_data_unknown33_1742687022383.csv
+  Processing: raw_data_66ba969d98d6213d7eb78572_1727408365448.csv
+  Processing: raw_data_65ecf22abc066fbabecdea60_1727409722292.csv
+  Processing: raw_data_66a3fdd3871b2ac3b3a0ae30_1727408222362.csv
+  Processing: raw_data_66afb6c4142f5a0ed5332ae9_1727408147619.csv
+  Processing: raw_data_66d56691108b393f29c2bb6c_1727407326277.csv
+  Processing: raw_data_65e0feb2eeec9576d085b9de_1727407496006.csv
+  Processing: raw_data_66c64705c94a64f678954e37_1727409933552.csv
+  Processing: raw_data_612bb0cdecc9e45781bbf511_1727407580833.csv
+  Processing: raw_data_664e2c02edf41c6338092b54_1727411611528.csv
+  Processing: raw_data_6745a12bc5cb92da1fa564d1_1738856024291.csv
+  Processing: raw_data_5d5b705b74428400019fbf5e_1728484860099.csv
+  Processing: raw_data_5884593bd920ed0001fdccb4_1727410104857.csv
+  Processing: raw_data_667ac1826ce22f03fab354c3_1728484618943.csv
+  Processing: raw_data_5d2df867d7cc160019673031_1742235036976.csv
+  Processing: raw_data_58cec6c08460040001e1ee79_1738847996127.csv
+  Processing: raw_data_66d104b78b053e2e8d88ad08_1727408851253.csv
+  Processing: raw_data_unknown24_1742240531107.csv
+  Processing: raw_data_65034d480a9dec0b9ceee931_1727408653961.csv
+  Processing: raw_data_63d152827c0438f07dee012f_1727412445555.csv
+  Processing: raw_data_66abb60791f0687fe5bdfd5b_1727407433628.csv
+  Processing: raw_data_6687621d74531e4a19757890_1727407077734.csv
+  Processing: raw_data_5fbbe3a696d6300008af539d_1727414280751.csv
+  Processing: raw_data_65603afb8e9cfc182d7b55bc_1727407953538.csv
+  Processing: raw_data_66c64b2de99422997495dd2b_1728497150586.csv
+  Processing: raw_data_66cc0be94d734db826f04f36_1727411988646.csv
+  Processing: raw_data_65959bfed43a65c4d24b7445_1727408837387.csv
+  Processing: raw_data_66bc0f6e5446d1168512ac1c_1727408610674.csv
+  Processing: raw_data_666203105e0c216230d31016_1727428344945.csv
+  Processing: raw_data_60ca846ffad77e5b1fee110a_1727407660837.csv
+  Processing: raw_data_60ccf8699102ef793a8fd37c_1728496286804.csv
+  Processing: raw_data_65c195f276646afc7d045d20_1727398199506.csv
+  Processing: raw_data_65649e26fc062fd174f780eb_1727407172278.csv
+  Processing: raw_data_63ea74a7e00a26d45e75244c_1728497771292.csv
+  Processing: raw_data_6315a102cb675027354ef5d8_1727409696888.csv
+  Processing: raw_data_6670e05a65d32df6fa3e7560_1727431324243.csv
+  Processing: raw_data_unknown38_1743111881306.csv
+  Processing: raw_data_unknown44_1743199063221.csv
+  Processing: raw_data_5c4ea6cc889752000156dd8e_1727412784239.csv
+  Processing: raw_data_unknown5_1741226966006.csv
+  Processing: raw_data_651eea44194fa8c200606af7_1727424927457.csv
+  Processing: raw_data_unknown11_1741623227818.csv
+  Processing: raw_data_6677048a2c044f09135b75be_1727430346259.csv
+  Processing: raw_data_6610a177f1857159ab6ff983_1727406509714.csv
+  Processing: raw_data_unknown25_1742245559711.csv
+  Processing: raw_data_669077185997bd8526c66906_1727408777771.csv
+  Processing: raw_data_5608a73fd7def20012b7389d_1728496924157.csv
+  Processing: raw_data_6646c36c34a9db30559987b3_1727409396405.csv
+  Processing: raw_data_641b75662ac773952a58da70_1738848636678.csv
+  Processing: raw_data_6578c0ce1348ad8e79a65d0b_1727408088502.csv
+  Processing: raw_data_66e641a57e7f41866f9e705f_1727407304858.csv
+  Processing: raw_data_67352ce06354a65a2a47a063_1738856528988.csv
+  Processing: raw_data_66de057ab63a3138342ab763_1727410336564.csv
+  Processing: raw_data_66e1f2708b21704eddaf8388_1727423096149.csv
+  Processing: raw_data_unknown14_1741648066417.csv
+  Processing: raw_data_67519e4abb644588aa2e804a_1742238775809.csv
+  Processing: raw_data_5c2ab2de9136140001b90737_1727411698343.csv
+  Processing: raw_data_65f00615cafbc1008642ff08_1727407744336.csv
+  Processing: raw_data_647a791065c6c348a325ab54_1738847838790.csv
+  Processing: raw_data_660233cd93def481944c2ae9_1728484191791.csv
+  Processing: raw_data_67d48d2462c72f8a426c892d_1742235299672.csv
+  Processing: raw_data_652d756e604b5f21b9141333_1727406603667.csv
+  Processing: raw_data_661de1d2f9c50b06f796b9cc_1727405579574.csv
+  Processing: raw_data_5dc8465ad362415b3383405f_1738847311228.csv
+  Processing: raw_data_unknown58_1745597159253.csv
+  Processing: raw_data_66f234675062b0115bfd0864_1727408818663.csv
+  Processing: raw_data_60fccfd7f6641e2f828fddc3_1727407852998.csv
+  Processing: raw_data_5d54fef50a2a1600195cb7cf_1727397401067.csv
+  Processing: raw_data_642954d588469609635ad049_1728484635834.csv
+  Processing: raw_data_657349585ce9d57f8c53e7fe_1738846634559.csv
+  Processing: raw_data_5fc2a0d812bc59000b746ee5_1728884630807.csv
+  Processing: raw_data_648343299ec8050d10aee27d_1728489055578.csv
+  Processing: raw_data_6638e6601cddfd62522b3913_1738850523687.csv
+  Processing: raw_data_66de52f34fdad9c47ab65a4e_1727410461474.csv
+  Processing: raw_data_5c78e07f9eabe400126d40be_1727414661035.csv
+  Processing: raw_data_664a1e4e7c5b31c8ef11743a_1727407256723.csv
+  Processing: raw_data_6648c26be264de08205276bf_1727406871773.csv
+  Processing: raw_data_663a6ba5dab218115013c324_1728879760737.csv
+  Processing: raw_data_6691809035e52ca9b2b0f39a_1727420707913.csv
+  Processing: raw_data_60887a654f55f863e95ca944_1728484409919.csv
+  Processing: raw_data_55aeaeb3fdf99b5c769f1f7c_1727410608778.csv
+  Processing: raw_data_66ce02820b2bec6b6685f027_1728484554496.csv
+  Processing: raw_data_64418a4fece4a37fc3cbcb5e_1727406086162.csv
+  Processing: raw_data_6679af725f681821b6bc1328_1728496188186.csv
+  Processing: raw_data_666eb8e8a72994f38c7755b0_1728500034979.csv
+  Processing: raw_data_unknown31_1742321041222.csv
+  Processing: raw_data_66731549db14893d2dcac60b_1728879368307.csv
+  Processing: raw_data_unknown30_1742309932592.csv
+  Processing: raw_data_55a2fa33fdf99b073cd94947_1742235550232.csv
+  Processing: raw_data_650ee274aa4447ac435b7830_1728880860580.csv
+  Processing: raw_data_60e512b2d1c5df8a26df8d8a_1742234419423.csv
+  Processing: raw_data_651c2cc23704dc10500ae77c_1727410995417.csv
+  Processing: raw_data_67725df51265f76e247ee399_1738853322134.csv
+  Processing: raw_data_63d1569edf6780583e4e3009_1728483902454.csv
+  Processing: raw_data_663bfe140c74c71901d42c73_1727407877747.csv
+  Processing: raw_data_5a382bd65a83ff00015ae9db_1727446052712.csv
+  Processing: raw_data_65c10f720f94a8697e141aa1_1742234460126.csv
+  Processing: raw_data_unknown27_1742270233254.csv
+  Processing: raw_data_5d4fc7b44ec90b0017218453_1728497394394.csv
+  Processing: raw_data_5f24b0fc546c5a0c3c2e43b6_1728879806051.csv
+  Processing: raw_data_668ec6d806bc125c6a6e71a5_1728880476972.csv
+  Processing: raw_data_670c0fcfae775bc7848d76d8_1728881870570.csv
+  Processing: raw_data_66d9f2d8fd2466162855abf8_1727412129663.csv
+  Processing: raw_data_66d0ad1b369daf67466ecfd3_1727409845505.csv
+  Processing: raw_data_665b314433cab3c88740d2da_1727408949935.csv
+  Processing: raw_data_66882aa24df0fd933a8b17b3_1727406303150.csv
+  Processing: raw_data_60e68d7dc0d998d1c7842a65_1727408273047.csv
+  Processing: raw_data_5c1c15f6bcc75f00016f7e5e_1728484045372.csv
+  Processing: raw_data_6018716ed4f78810e4763ecb_1727408216783.csv
+  Processing: raw_data_659c0d01b8ec64c5b142bdfc_1727413471508.csv
+  Processing: raw_data_653ab43a60a6514b9c3d2bd5_1727405881267.csv
+  Processing: raw_data_655a1ff1629a34555ae4315d_1727410701932.csv
+  Processing: raw_data_627952f93c698e40248a41ae_1727429296064.csv
+  Processing: raw_data_62b755ac8d4ceeb1a463c05a_1727409254609.csv
+  Processing: raw_data_66a72d05236826287427eeea_1727412149597.csv
+  Processing: raw_data_5a893c8cf49c9a0001f3a221_1728879856676.csv
+  Processing: raw_data_66f5a409907b497bd538fd03_1727406825608.csv
+  Processing: raw_data_63e554b7631c8ec3ce069e32_1727407878742.csv
+  Processing: raw_data_66f397d44047bae028827f69_1727407121108.csv
+  Processing: raw_data_6655ca0288143469fa6f473b_1727420994477.csv
+  Processing: raw_data_unknown20_1742003907810.csv
+  Processing: raw_data_636212999d9d4a04989c95e9_1728499625203.csv
+  Processing: raw_data_670b6533130981c2509b1c91_1738849212700.csv
+  Processing: raw_data_670c913a071259e523e96acc_1728879453226.csv
+  Processing: raw_data_5df9823aac9e16711320ea7f_1727406547566.csv
+  Processing: raw_data_unknown1_1741066303844.csv
+  Processing: raw_data_629d16db307da2e64ea7b1e7_1727406594316.csv
+  Processing: raw_data_66356ffe9661f0497f3860c8_1727413002089.csv
+  Processing: raw_data_60d41f1884db98332554af48_1727406844472.csv
+  Processing: raw_data_5e164e81502213c397f0cf39_1728496974869.csv
+  Processing: raw_data_unknown43_1743183048320.csv
+  Processing: raw_data_unknown48_1745377037407.csv
+  Processing: raw_data_unknown53_1745502717901.csv
+  Processing: raw_data_643cc6904e25347507713bce_1727409153769.csv
+  Processing: raw_data_66f3515ea0ea5ba3a2a05e7c_1727408195474.csv
+  Processing: raw_data_6716deaf9d399c9499b878cd_1738849496957.csv
+  Processing: raw_data_66d63bf354de4c20d9369e20_1727412558914.csv
+  Processing: raw_data_5c0bd930a822970001a95603_1728499986520.csv
+  Processing: raw_data_5caec6b270da3100017f35de_1727406945964.csv
+  Processing: raw_data_unknown42_1743181640947.csv
+  Processing: raw_data_666cd244c4e9f0b3a060c2c7_1727410567629.csv
+  Processing: raw_data_669c2c723cd836082cf65ebb_1727407099224.csv
+  Processing: raw_data_5e862ffe5c1f8424c8d03c25_1727406643917.csv
+  Processing: raw_data_66b4282a76f9d01e64dee065_1727408127403.csv
+  Processing: raw_data_unknown7_1741294619078.csv
+  Processing: raw_data_615b01ee4cd1755b6144e0a4_1727406026616.csv
+  Processing: raw_data_6112e8144698d4cb4141d3f7_1728878871620.csv
+  Processing: raw_data_unknown23_1742223928544.csv
+  Processing: raw_data_65d2d42bf0f4714e5dc1ec15_1728496442670.csv
+  Processing: raw_data_6684b94d57a0c012bbaa5398_1727406866577.csv
+  Processing: raw_data_6582f8df3caaad035e4eaf2f_1727407249778.csv
+  Processing: raw_data_63490aabacf820c6802bf494_1727406262198.csv
+  Processing: raw_data_unknown57_1745516764135.csv
+  Processing: raw_data_67d25567ec4287bfd0c99ca4_1742233045872.csv
+  Processing: raw_data_6567492900b32685a1ca02ae_1727407224964.csv
+  Processing: raw_data_604954e0c32f8060c52eee57_1728500698065.csv
+  Processing: raw_data_604d6b35873197f34491a761_1727407771729.csv
+  Processing: raw_data_61086006e86b66e7a6ecfa7e_1727409660493.csv
+  Processing: raw_data_66b79c03cc43c649a591931f_1727406538294.csv
+  Processing: raw_data_65ff3309a5d3c08d9b2e9ada_1727422997911.csv
+  Processing: raw_data_unknown18_1741977273553.csv
+  Processing: raw_data_66db721e677a3f0bf3087606_1727409068069.csv
+  Processing: raw_data_67b803bd39d29c2fbfd2e529_1742235391601.csv
+  Processing: raw_data_66b49d0cefff5e8db6c6b39d_1727406246085.csv
+  Processing: raw_data_63d7d63f02fe0c728604e529_1728483245027.csv
+  Processing: raw_data_5fc803709e587e1295172443_1728483719636.csv
+  Processing: raw_data_640f4e73468a5f639101e483_1727422715847.csv
+  Processing: raw_data_62cba72839d35cbf953cdd6f_1727410252441.csv
+  Processing: raw_data_6668a638ee51b4f1656862e8_1727413413340.csv
+  Processing: raw_data_63655ebbb1b1d02244d46c45_1727406397893.csv
+  Processing: raw_data_unknown55_1745515300575.csv
+  Processing: raw_data_5acfc892d9f7470001db04d6_1727407778071.csv
+  Processing: raw_data_5c33d22b6f160f0001349d6b_1728880285491.csv
+  Processing: raw_data_664fa9a4f946a81722b3f1c7_1738847990915.csv
+  Processing: raw_data_66d7b253c64eb18aa549d79c_1727414313994.csv
+  Processing: raw_data_665662df0ce81f2928bf6867_1727408868922.csv
+  Processing: raw_data_unknown35_1742746562296.csv
+  Processing: raw_data_66c80caa0c038c4f1ef01754_1738850625299.csv
+  Processing: raw_data_610858d216ad5a7a479e3f7c_1728879343799.csv
+  Processing: raw_data_5fb5ef0ab61b9e02d5752768_1727410142808.csv
+  Processing: raw_data_66d0c694ecb5edf6367120bb_1727406643598.csv
+  Processing: raw_data_66e21734b908570af82668ad_1727407722136.csv
+  Processing: raw_data_6547d2f1f53f11ae40ae3e54_1727405606599.csv
+  Processing: raw_data_66ba1ab61e18b5506107be07_1727407663685.csv
+  Processing: raw_data_6320e0bc9b0649f05c5bb242_1727410368193.csv
+  Processing: raw_data_5b9fe9879624180001134e44_1728484425423.csv
+  Processing: raw_data_610197ccfc001fec7476a5b8_1727405645298.csv
+  Processing: raw_data_66fd131b4ece3a7928716865_1738848136618.csv
+  Processing: raw_data_57bdf383467f26000125dbb9_1727406769184.csv
+  Processing: raw_data_6699a25283cc632fc8173c52_1727405568895.csv
+  Processing: raw_data_650c412ad5ca2b8f21fc963b_1727409712882.csv
+  Processing: raw_data_66455384e4b599e96769ba63_1727407781647.csv
+  Processing: raw_data_66df466f1d95ba0e8344249e_1727408693557.csv
+  Processing: raw_data_5efe8c25e921d23a9daec079_1738852833245.csv
+  Processing: raw_data_661438bb47dacc758ab949b9_1727407566848.csv
+  Processing: raw_data_66a4b71e4e2313876dfec9fc_1728879439630.csv
+  Processing: raw_data_663ba98aaef0a810990579ad_1727428045848.csv
+  Processing: raw_data_66ee033078ac153667a8aa2f_1727420959910.csv
+  Processing: raw_data_666f3a984473f14330d79410_1727408044485.csv
+  Processing: raw_data_66dff19f31bbef48a3543cb1_1727418304073.csv
+  Processing: raw_data_662943b6c211dec0e7e1c90e_1727405668266.csv
+  Processing: raw_data_67c37b3de7f32fe80ac6e915_1742234259678.csv
+  Processing: raw_data_65cc57762d238ef48ea0dce1_1727405427500.csv
+  Processing: raw_data_63da9d744c860382808770bd_1727412420710.csv
+  Processing: raw_data_676270223569a4b890a3d379_1738850509805.csv
+  Processing: raw_data_5fbb89e20ddd50a66ab62a67_1727408420419.csv
+  Processing: raw_data_66a3fd496e0535e7a500ae64_1727423245233.csv
+  Processing: raw_data_5d11e762cc2d290016bc2364_1727408445770.csv
+  Processing: raw_data_66b2062c8571c93aa39a8abc_1727407429894.csv
+  Processing: raw_data_643ead9be9be7fa2c20e1a53_1727415632095.csv
+  Processing: raw_data_664659b64590852a75962f8a_1728496510049.csv
+  Processing: raw_data_unknown19_1741980468922.csv
+  Processing: raw_data_66d620579e7ea624a7a63e19_1727412565973.csv
+  Processing: raw_data_665de165057136a924eda46a_1727427185699.csv
+  Processing: raw_data_663e1c7683991d278fb128a7_1727408921505.csv
+  Processing: raw_data_566a4cf27da0350012b4582d_1727406848737.csv
+  Processing: raw_data_unknown62_1745623182707.csv
+  Processing: raw_data_66f578343a3ef5afed111fb9_1727405968493.csv
+  Processing: raw_data_6778953ffe966e4dc7f49615_1738846384842.csv
+  Processing: raw_data_66a912176a9a68d2dc7c9ea3_1727408870963.csv
+  Processing: raw_data_669a800eaf38a94d6ecc4227_1738846940582.csv
+  Processing: raw_data_65c12143b109e591c2192ade_1728498448465.csv
+  Processing: raw_data_6091c2e02bbc549874e0227b_1727399600573.csv
+  Processing: raw_data_663314bcc8a90b60fb70b24d_1727407882557.csv
+  Processing: raw_data_unknown61_1745617057539.csv
+  Processing: raw_data_6508adaced024f8da237ff03_1727409182553.csv
+  Processing: raw_data_5b15307351caaf0001228d9b_1742236310462.csv
+  Processing: raw_data_66d3728a3990854e1d6e9939_1727413975717.csv
+  Processing: raw_data_unknown46_1743271254104.csv
+  Processing: raw_data_660c5750655445cb8eaa911f_1727410941582.csv
+  Processing: raw_data_5e7fe0a46db6e86cd7c6b213_1727407109251.csv
+  Processing: raw_data_668132a412dcb4b45a1537a4_1727428233816.csv
+  Processing: raw_data_6653954cef623f7a2ac0d3d5_1727406353986.csv
+  Processing: raw_data_662955d64cae1490b567c95b_1728483660919.csv
+  Processing: raw_data_62964d27c2b2866faa677493_1728499898323.csv
+  Processing: raw_data_662e5d88c1b7af9c33c75b6a_1728497235886.csv
+  Processing: raw_data_66464091c19149614012c5f6_1727407550890.csv
+  Processing: raw_data_6316212c1109a3b1bac89fe6_1728485068060.csv
+  Processing: raw_data_65c2510fa94c23aa2cc4de8b_1728483353755.csv
+  Processing: raw_data_66d868e82730a41b728e2bf0_1727417685345.csv
+  Processing: raw_data_5c66386c8654fe00018d4419_1727407216117.csv
+  Processing: raw_data_6666f1d3aa16345b24c7bef0_1727422599640.csv
+  Processing: raw_data_unknown50_1745415256625.csv
+  Processing: raw_data_670cf273c8b530a368f7843c_1742233745552.csv
+  Processing: raw_data_5ded95de4ee10e4632cab59b_1727406763845.csv
+  Processing: raw_data_5c1813d5d2790700010a718f_1728495863842.csv
+  Processing: raw_data_665f53a83f8f72ce0cdaf0d5_1728879959983.csv
+  Processing: raw_data_6138c15bd47ecca8b56a704f_1728484993077.csv
+  Processing: raw_data_6788080ea6fe6b1104bb0764_1738849160381.csv
+  Processing: raw_data_67ad733cf9a01c2ad45b7822_1742233112259.csv
+  Processing: raw_data_584626b7e0ba710001a47438_1727409206672.csv
+  Processing: raw_data_5f763e6e7632050c3712feac_1727408047418.csv
+  Processing: raw_data_66bab0489f9e283148edf36e_1727411168122.csv
+  Processing: raw_data_66495b83f9f5ed828568503f_1727421896665.csv
+  Processing: raw_data_66e486f09a61a799b7136e38_1727408951721.csv
+  Processing: raw_data_5e89533c4d3d675e800bfc7c_1738847015015.csv
+  Processing: raw_data_unknown21_1742071556541.csv
+  Processing: raw_data_unknown22_1742154048115.csv
+  Processing: raw_data_65e207f52aa80c2ecbb55ddd_1727409602902.csv
+  Processing: raw_data_66a1ef63b43b7c3b309ca628_1727411229495.csv
+  Processing: raw_data_61549a2caa92d84f392000e9_1728485279543.csv
+  Processing: raw_data_60c43074007f97df5d485459_1727405924582.csv
+  Processing: raw_data_65b1553ac22ba4c80aeecd16_1727409725947.csv
+  Processing: raw_data_668f8d7343028ae0faa7a907_1727418439855.csv
+  Processing: raw_data_65ee95114d6d083f224fb2fe_1728880579348.csv
+  Processing: raw_data_5c3820ee1ede2b0001155929_1727405821941.csv
+  Processing: raw_data_5e880e876d76504853b89be8_1727405382143.csv
+  Processing: raw_data_6631c64695915d210ae3c8de_1727405685779.csv
+  Processing: raw_data_6234965d3869b875dc31d93a_1738848260986.csv
+  Processing: raw_data_60d8c3f7b29ef0af10d9203b_1727409046357.csv
+  Processing: raw_data_66824f1966a46491ca3d15ec_1728880070511.csv
+  Processing: raw_data_67cf0868690037aa2997bdab_1742234323937.csv
+  Processing: raw_data_60abdc82ec2d1e548b986424_1727422275177.csv
+  Processing: raw_data_66da369f62b0e045fd9723f2_1727407838294.csv
+  Processing: raw_data_unknown26_1742264074537.csv
+  Processing: raw_data_5f723cf881f5c0159cfa6da1_1727409229817.csv
+  Processing: raw_data_66df255fc0e34d721c9b5f1e_1727410037292.csv
+  Processing: raw_data_unknown17_1741814432207.csv
+  Processing: raw_data_558a035bfdf99b2d75651378_1728484149103.csv
+  Processing: raw_data_66b7a568dc840de90fbedccf_1728446058337.csv
+  Processing: raw_data_6157d4e8c339aeb409d2e6a9_1727407603493.csv
+  Processing: raw_data_unknown47_1743337562763.csv
+  Processing: raw_data_63d426bd9835498f2906f458_1727406541634.csv
+  Processing: raw_data_67d18c20050ecfd766de3af3_1742235865092.csv
+  Processing: raw_data_unknown2_1741119842168.csv
+  Processing: raw_data_67d71d116086654c357b673b_1742233243762.csv
+  Processing: raw_data_564dd73edc21cd000dba8ce1_1738850435137.csv
+  Processing: raw_data_unknown49_1745408854248.csv
+  Processing: raw_data_66817f4754e17e6ec71a44b0_1727407731451.csv
+  Processing: raw_data_655cc974613aec120f21293b_1738848120809.csv
+  Processing: NO_SUMMARY_raw_data_unknown_1741293337149.csv
+  Processing: raw_data_5c2cb4149461620001c075c2_1738851506782.csv
+  Processing: raw_data_66ead9e7a8a1d43eed2fac97_1727406993695.csv
+  Processing: raw_data_66d9e5be01c10680b7e12aa4_1727409596904.csv
+  Processing: raw_data_5b60ddcc6b25590001782ce4_1738847567202.csv
+  Processing: raw_data_6668d0285bed676ff3ddbb19_1727442930516.csv
+  Processing: raw_data_670c6686f62af8890119fe98_1728880453736.csv
+  Processing: raw_data_665fc69fe8d5562ac1294f30_1727397911808.csv
+  Processing: raw_data_6664f2a4df585dff20e4c1a1_1727408859923.csv
+  Processing: raw_data_6643c5d1c53f7ffbef7b96e0_1727406008668.csv
+  Processing: raw_data_65f7ec662fa211731f90c300_1727407869390.csv
+  Processing: raw_data_6419ae0434916e5dde92e2f2_1727406315346.csv
+  Processing: raw_data_5a95fee189de8200013eddd4_1742233653830.csv
+  Processing: raw_data_unknown16_1741731556567.csv
+  Processing: raw_data_64b74fc78ad5beabe87e901f_1727410617002.csv
+  Processing: raw_data_64d525cf660422c33e465cf4_1727409976213.csv
+  Processing: raw_data_66323d939b2d0034bf2e729b_1727408035336.csv
+  Processing: raw_data_668dcac9d198558b30239601_1727443350619.csv
+  Processing: raw_data_5c6215140a6eb100012abfc5_1727405898194.csv
+  Processing: raw_data_66da08c0a595569edd55aea9_1727404808308.csv
+  Processing: raw_data_67d6ed509e957b73254d6165_1742234097670.csv
+  Processing: raw_data_64012a657bba30f125af8ddb_1728879907105.csv
+  Processing: raw_data_65590d4d83c54f5e1c90fd67_1738848259073.csv
+  Processing: raw_data_64a1b6b6f8c0eef920b7905d_1728878793872.csv
+  Processing: raw_data_unknown13_1741640702910.csv
+  Processing: raw_data_56e019f1a3b147000bc63028_1728483765487.csv
+  Processing: raw_data_662a43a5ff89ca80855969b8_1727425202882.csv
+  Processing: raw_data_664a4342cfb111168d73bdc6_1738853514297.csv
+  Processing: raw_data_565a3d24c51d430005875042_1728497266150.csv
+  Processing: raw_data_66f1b4e2d875c6785ca1d50a_1742233218331.csv
+  Processing: raw_data_637ec171840002bcfac0d78f_1727411078191.csv
+  Processing: raw_data_5c7307403065320001bdf00f_1727413321447.csv
+  Processing: raw_data_66f5bad5c6756d9ab2f54d44_1727405586612.csv
+  Processing: raw_data_6636396184346e2371d067ec_1728498858505.csv
+  Processing: raw_data_66cbb7d15f437327d8954aaf_1727405386134.csv
+  Processing: raw_data_5f82567f1e720a3842580d23_1727428412392.csv
+  Processing: raw_data_unknown41_1743118649918.csv
+  Processing: raw_data_6680d577ce8b233327b0272e_1728491256611.csv
+  Processing: raw_data_unknown36_1742775941441.csv
+  Processing: raw_data_66b66b2ef7f71d99c4688115_1727407191629.csv
+  Processing: raw_data_65a57eb301986aa457416186_1728878820904.csv
+  Processing: raw_data_6642df031fa926d87545bc56_1727409573333.csv
+  Processing: raw_data_unknown15_1741726418855.csv
+  Processing: raw_data_66d5ed00cebb7301854e2f9e_1727407447784.csv
+  Processing: raw_data_unknown56_1745516204760.csv
+  Processing: raw_data_60d8c6bc9686529cdc824a49_1727407835960.csv
+  Processing: raw_data_66f5c81fa771db6db1bc2382_1727405477667.csv
+  Processing: raw_data_unknown6_1741284036104.csv
+  Processing: raw_data_65dddf17b8d6050c2ffd5f30_1727427678074.csv
+  Processing: raw_data_664a145511338d9b7165824c_1727407321367.csv
+  Processing: raw_data_574ce0a57fd0ec000db73aa6_1727410726271.csv
+  Processing: raw_data_668a6f07c623b9b9500b962f_1727412434226.csv
+  Processing: raw_data_662e87b96103ede100a0d5c2_1727407719235.csv
+  Processing: raw_data_6725c2fd953ca2886c5fb4cd_1738849581830.csv
+  Processing: raw_data_5a6eac90d5d4cb0001d6815a_1727405551955.csv
+  Processing: raw_data_5c4a4b329ba9e00001ffc4f3_1727409377760.csv
+  Processing: raw_data_5db2f526666085000a4af66f_1727408925043.csv
+  Processing: raw_data_6110a34807df3d33c4bc0d3e_1728495870253.csv
+  Processing: raw_data_66eb8392a83124c440666fb1_1727405971509.csv
+  Processing: raw_data_611e01b5cbc5c8e6b0e6114d_1728497143779.csv
+  Processing: raw_data_unknown9_1741374879867.csv
+  Processing: raw_data_5dd5a02b4fee995505ee89c2_1728883430450.csv
+  Processing: raw_data_66ec96b136b351df64d13439_1727408237050.csv
+  Processing: raw_data_668845e4bd21418b33877692_1727410127461.csv
+  Processing: raw_data_670c05d1ed07d52a75d474a9_1728878682776.csv
+  Processing: raw_data_5f095db6fc8e5a1e2271dc47_1727410782254.csv
+  Processing: raw_data_65c193ee2725b7aa17d96235_1727406575026.csv
+  Processing: raw_data_63ea5b40dc74af0007b0dd1f_1728483655546.csv
+  Processing: raw_data_6340c232c8974119146b504c_1727406784338.csv
+  Processing: raw_data_5f4fe2d73a8bb611a36a94c4_1727406212454.csv
+  Processing: raw_data_66d8dcb066dee046f2cc0bb0_1727424971450.csv
+  Processing: raw_data_66b3f4f6638d6c04c8736205_1727407775170.csv
+  Processing: raw_data_65fc55f0dd070026d29006a8_1738852886826.csv
+  Processing: raw_data_66c75e8a0e573e7401f0cb90_1728497027612.csv
+  Processing: raw_data_655f8da6abba5f374f3145dc_1728497015791.csv
+  Processing: raw_data_60b9af795939f976cb74232a_1727407999700.csv
+  Processing: raw_data_65a8700c0279e6d71af87a3e_1727414454927.csv
+  Processing: raw_data_666d1b17c23301fd272607ae_1728483641369.csv
+  Processing: raw_data_6680a001ac541835a7e00e4b_1727411641985.csv
+  Processing: raw_data_663ace962b1ea67597b971da_1728881262496.csv
+  Processing: raw_data_unknown29_1742274223315.csv
+  Processing: raw_data_5de7d12c26dd95000b6824c5_1738851249205.csv
+  Processing: raw_data_617612aa86abe09e0c69b7f2_1727407865428.csv
+  Processing: raw_data_67d6f0abf1077573db429378_1742233150540.csv
+  Processing: raw_data_656083eb366411e4a862f58c_1728483183019.csv
+  Processing: raw_data_65cd8c280c8cf5eec31c2872_1728483754177.csv
+  Processing: raw_data_6172b85dcc19bffb22604f1b_1728483592584.csv
+  Processing: raw_data_63ea4730d677f800a8887ad6_1727413362143.csv
+  Processing: raw_data_5f048fdc0aea5b0ae3215fc9_1727411443628.csv
+  Processing: raw_data_639b9ab341f4429b1b3c06a2_1727420624510.csv
+  Processing: raw_data_unknown60_1745615224802.csv
+  Processing: raw_data_6056962634a5230dacdb63fc_1727408506017.csv
+  Processing: raw_data_66e04bcf859d1e60bfa67bfe_1727408377220.csv
+  Processing: raw_data_unknown12_1741626061688.csv
+  Processing: raw_data_unknown54_1745505779697.csv
+  Processing: raw_data_622a4cc50412091154bae7f0_1727411617186.csv
+  Processing: raw_data_65d7560322f73f770ddf489b_1727420507484.csv
+  Processing: raw_data_unknown3_1741136528568.csv
+  Processing: raw_data_unknown52_1745457745726.csv
+  Processing: raw_data_66b7a568dc840de90fbedccf_1727396194472.csv
+  Processing: raw_data_5d824fa9be1eee0016258e42_1728496946066.csv
+  Processing: raw_data_6690be726876d22dba2385e1_1727409321578.csv
+  Processing: raw_data_651c5ad3595db72e6267f29b_1727425367824.csv
+  Processing: raw_data_662af67343d44ad86c6da7f4_1727410598755.csv
+  Processing: raw_data_672a906471cc580fbbba6778_1738847117294.csv
+  Processing: raw_data_653581671571d347299832d7_1727414927081.csv
+  Processing: raw_data_65c6bbe7f9428763522fa244_1727407802772.csv
+  Processing: raw_data_66e46bfe1f78048b57ab10ba_1728496807557.csv
+  Processing: raw_data_604d8f415e948938fd60b536_1727406283353.csv
+  Processing: raw_data_62dc2f45630616c5920dcb75_1742232420203.csv
+  Processing: raw_data_559e82dffdf99b7a9a124180_1727410116128.csv
+  Processing: raw_data_66be0a567f43ec797d61ac6a_1727406904475.csv
+  Processing: raw_data_599de51717c03c000151b1f4_1727409358451.csv
+  Processing: raw_data_5f1d14499de7845fca9fe9cc_1728496481981.csv
+  Processing: raw_data_66f4572e9195fd326ecb20a8_1727406673546.csv
+  Processing: raw_data_663abe859bcc3ea8ef9bbdf3_1727413865077.csv
+  Processing: raw_data_unknown32_1742678708044.csv
+  Processing: raw_data_5efbe3c91cb67519d2f20b7b_1727410368476.csv
+  Processing: raw_data_unknown59_1745607936412.csv
+  Processing: raw_data_66c9c936b895864e51aac8e3_1738848728162.csv
+  Processing: raw_data_66e73520ed8cbd409d3d04e9_1727409088387.csv
+  Processing: raw_data_6727e899c0234a5834ee46e7_1738851608759.csv
+  Processing: raw_data_63f265ed3f8f2a159b5c793b_1727408678553.csv
+  Processing: raw_data_66f3e3aa6ba6f3d2ddf229c1_1728485849088.csv
+  Processing: raw_data_5be4a80e854f100001537863_1727407907377.csv
+  Processing: raw_data_67b90bd2378d1b5a40b1ad60_1742234244702.csv
+  Processing: raw_data_6659485c0acc6e0ea889aa2f_1727419569883.csv
+  Processing: raw_data_66d46261dbacd508795802fd_1727421032547.csv
+  Processing: raw_data_611af7dc150eb89a935edc3c_1727405773674.csv
+  Processing: raw_data_669eabd1fe6f69133cce726a_1728485550908.csv
+  Processing: raw_data_5f0160c161fa112b27e788f6_1728881360455.csv
+  Processing: raw_data_unknown8_1741296094169.csv
+  Processing: raw_data_67c3acf211b153c47651a2ed_1742236355243.csv
+  Processing: raw_data_642e10f11d857b6e6bf20522_1738848562473.csv
+  Processing: raw_data_66ac3dbee15ba2ca0996f1e5_1727415603325.csv
+  Processing: raw_data_5d4c7d1a2a25e5000114cf3b_1727409348695.csv
+  Processing: raw_data_6150b927614a4f154f311f9d_1738850235816.csv
+  Processing: raw_data_5d7cde267ec29c001af05507_1727432376048.csv
+  Processing: raw_data_66c9da41266b99bdbbdad8e8_1727406786727.csv
+  Processing: raw_data_668d32274206c26e679bf65f_1727406646826.csv
+  Processing: raw_data_unknown51_1745438417421.csv
+  Processing: raw_data_6287b7c5ca9c9f4b61f3300c_1727412141620.csv
+  Processing: raw_data_66b68d208b834b6759025408_1727405684397.csv
+  Processing: raw_data_67055b308d449a035ed79578_1728496819126.csv
+  Processing: raw_data_610f326ceebada4236a67080_1727413438348.csv
+  Processing: raw_data_6724ad43bd6f666e18f6c2ef_1738847675723.csv
+  Processing: raw_data_6234a71d1b478a615e51ab69_1728495890453.csv
+  Processing: raw_data_6660b995604968ce1d8ab1c9_1727421333387.csv
+  Processing: raw_data_667ad3a189817cf129ae61e6_1727410238161.csv
+  Processing: raw_data_603c92ad5ed1c29cf04476ca_1738850707663.csv
+  Processing: raw_data_63b5eb0ec316229203f1ddae_1727413471816.csv
+  Processing: raw_data_66f492656cd4d489382b27a8_1728885281981.csv
+  Processing: raw_data_66e1db013b5b9c42283af192_1727421692129.csv
+  Processing: raw_data_unknown39_1743187856985.csv
+  Processing: raw_data_67298904ec53466c42916b59_1742232873112.csv
+  Processing: raw_data_662fae1fd216081565d9e8fd_1727418347054.csv
+  Processing: raw_data_unknown28_1742273373430.csv
+  Processing: raw_data_666c0088634cc2e1573b49ee_1727411323616.csv
+  Processing: raw_data_66549179a1cb5573cc49c790_1727406055857.csv
+  Processing: raw_data_607802b6d705eba12dcc4413_1727408290427.csv
+  Processing: raw_data_5de87c376522177f4f41cbd2_1727408885973.csv
+  Processing: raw_data_unknown10_1741622000450.csv
+  Processing: raw_data_66841beee3179b88f8b4b14e_1727397538390.csv
+  Processing: raw_data_66070f1bd0cd7715c06e606f_1727412514325.csv
+  Processing: raw_data_5f6666e43be0b923d23c8df8_1727409447572.csv
+  Processing: raw_data_5e8aa39f3dabf475987ddaf3_1727409336595.csv
+  Processing: raw_data_6159fe7811a7e1b94401c33f_1728878991329.csv
+  Processing: raw_data_66a66d138294ce022ab541fe_1728497126886.csv
+  Processing: raw_data_65e6ac530ea25196de9143c0_1727411608932.csv
+  Processing: raw_data_unknown34_1742740479806.csv
+  Processing: raw_data_66632c69d2b270f0314a0b16_1728484237215.csv
+  Processing: raw_data_60fdf18884991b2263f75eec_1738845627905.csv
+  Processing: raw_data_66d931362ce64ae2b9c59fce_1727410068761.csv
+  Processing: raw_data_60fecc9d3aa290e0935cb9d7_1727405637556.csv
+Loaded 1186501 total typing data records
+After filtering: 1154765 records
+  ✅ Found 650 unique key-to-key movements
+  📊 Calculating medians from 650 unique movements:
+    - 650 movements with sufficient data (≥3 instances)
+    - 0 movements with insufficient data (<3 instances)
+  ✅ Calculated median timings for 650 movements
+
+🟡 Stage 2: Computing times for all 1024 key-pairs
+  📈 Available empirical data: 650 movements
+    Progress: 0/1024 (0.0%)
+    Progress: 100/1024 (9.8%)
+    Progress: 200/1024 (19.5%)
+    Progress: 300/1024 (29.3%)
+    Progress: 400/1024 (39.1%)
+    Progress: 500/1024 (48.8%)
+    Progress: 600/1024 (58.6%)
+    Progress: 700/1024 (68.4%)
+    Progress: 800/1024 (78.1%)
+    Progress: 900/1024 (87.9%)
+    Progress: 1000/1024 (97.7%)
+  📊 Component analysis:
+    - 1024 pairs have empirical or fallback timing data
+    - 0 pairs need maximum fallback
+  ✅ Maximum total time found: 887.3ms
+  ✅ Time computation complete:
+    - 450 pairs used pure empirical data
+    - 574 pairs used mirror/fallback data
+    - 0 pairs used maximum fallback (887.3ms)
+✅ Saved 1024 key-pair times to: tables/keypair_time_scores.csv
+
+📊 Timing Component Validation Results:
+   Total key-pairs: 1024
+   Expected count: 1024
+   Match: ✅
+   Time score range: 352.6 to 887.3ms
+   Key1 time range: 197.5 to 378.9ms
+   Transition time range: 149.1 to 609.9ms
+   Total time range: 352.6 to 887.3ms
+   Fallback types:
+     any_home_to_key1: 200
+     any_home_to_key1;median_from_key1: 32
+     any_home_to_key1;mirror_transition: 24
+     empirical: 450
+     median_from_key1: 83
+     mirror_key1_movement;median_to_key2: 18
+     mirror_key1_movement;mirror_transition: 40
+     mirror_key1_movement;overall_median_transition: 6
+     mirror_transition: 43
+     overall_median_key1;median_to_key2: 71
+     overall_median_key1;mirror_transition: 39
+     overall_median_key1;overall_median_transition: 18
+
+🔍 Zero Value Analysis:
+   Zero key1_time values: 0 ✅
+   Zero transition_time values: 0 ✅
+   Zero both components: 0 ✅
+   Unexpected zeros (not maximum fallback): 0 ✅
+
+🔍 Timing Component Math Validation:
+   Math consistency errors: 0 ✅
+
+🔧 Data Consistency Validation:
+   Negative or zero time scores: 0 ✅
+   Negative component times: 0 ✅
+
+📋 Sample timing breakdowns:
+     Key-Pair | Time Score | Key1 Time | Transition | Total | Fallback Type
+     ---------|------------|-----------|------------|-------|---------------
+     AS       |      362.2 |     201.5 |      160.7 | 362.2 | any_home_to_key1
+     SD       |      430.3 |     237.9 |      192.4 | 430.3 | any_home_to_key1
+     DF       |      420.0 |     214.0 |      206.0 | 420.0 | any_home_to_key1
+     ER       |      352.6 |     197.5 |      155.1 | 352.6 | empirical
+     QP       |      630.2 |     277.4 |      352.8 | 630.2 | empirical
+     ZX       |      553.5 |     264.6 |      288.9 | 553.5 | empirical
+
+✅ Timing component validation complete!
+
+🎯 Overall Validation: ✅ PASSED
+
+✅ Timing-component time generation complete: tables/keypair_time_scores.csv

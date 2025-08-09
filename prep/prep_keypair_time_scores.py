@@ -29,7 +29,7 @@ Usage:
     python prep_keypair_time_scores.py --input-dir /path/to/csv/files/
 
 Output:
-    output/keypair_time_scores.csv - CSV with columns: 
+    tables/keypair_time_scores.csv - CSV with columns: 
     key_pair, time_score, key1_time, key1_to_key2_time, total_time, fallback_type
 """
 
@@ -473,7 +473,7 @@ def compute_all_keypair_times(input_dir: str):
     
     return results
 
-def save_key_pair_times(results, output_file="output/keypair_time_scores.csv"):
+def save_key_pair_times(results, output_file="tables/keypair_time_scores.csv"):
     """Save key-pair times to CSV file."""
     
     # Create output directory if it doesn't exist
@@ -489,7 +489,7 @@ def save_key_pair_times(results, output_file="output/keypair_time_scores.csv"):
     
     print(f"✅ Saved {len(results)} key-pair times to: {output_file}")
 
-def validate_output(output_file="output/keypair_time_scores.csv"):
+def validate_output(output_file="tables/keypair_time_scores.csv"):
     """Perform validation of the generated output file with timing component analysis."""
     
     if not os.path.exists(output_file):
@@ -613,7 +613,7 @@ def main():
     parser = argparse.ArgumentParser(description='Generate timing-component time scores for QWERTY key-pairs')
     parser.add_argument('--input-dir', required=True,
                         help='Directory containing CSV files with typing data')
-    parser.add_argument('--output', default='output/keypair_time_scores.csv',
+    parser.add_argument('--output', default='tables/keypair_time_scores.csv',
                         help='Output CSV file path')
     
     args = parser.parse_args()

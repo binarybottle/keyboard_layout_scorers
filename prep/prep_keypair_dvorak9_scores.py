@@ -11,16 +11,16 @@ The output files contain all possible key-pairs (e.g., "QW", "QE", "AS") with
 their corresponding scores.
 
 Main output files:
-- output/keypair_dvorak9_scores.csv - Overall average score
-- output/keypair_dvorak9_hands_scores.csv - Hands criterion  
-- output/keypair_dvorak9_fingers_scores.csv - Fingers criterion
-- output/keypair_dvorak9_skip_fingers_scores.csv - Skip fingers criterion
-- output/keypair_dvorak9_dont_cross_home_scores.csv - Don't cross home criterion
-- output/keypair_dvorak9_same_row_scores.csv - Same row criterion
-- output/keypair_dvorak9_home_row_scores.csv - Home row criterion
-- output/keypair_dvorak9_columns_scores.csv - Columns criterion
-- output/keypair_dvorak9_strum_scores.csv - Strum criterion
-- output/keypair_dvorak9_strong_fingers_scores.csv - Strong fingers criterion
+- tables/keypair_dvorak9_scores.csv - Overall average score
+- tables/keypair_dvorak9_hands_scores.csv - Hands criterion  
+- tables/keypair_dvorak9_fingers_scores.csv - Fingers criterion
+- tables/keypair_dvorak9_skip_fingers_scores.csv - Skip fingers criterion
+- tables/keypair_dvorak9_dont_cross_home_scores.csv - Don't cross home criterion
+- tables/keypair_dvorak9_same_row_scores.csv - Same row criterion
+- tables/keypair_dvorak9_home_row_scores.csv - Home row criterion
+- tables/keypair_dvorak9_columns_scores.csv - Columns criterion
+- tables/keypair_dvorak9_strum_scores.csv - Strum criterion
+- tables/keypair_dvorak9_strong_fingers_scores.csv - Strong fingers criterion
 
 This precomputation allows the main scorer to simply look up scores rather
 than computing them on-demand, making layout scoring much faster.
@@ -41,8 +41,8 @@ Usage:
     python prep_keypair_dvorak9_scores.py
 
 Output:
-    output/keypair_dvorak9_scores.csv - CSV with columns: key_pair, dvorak9_score
-    output/keypair_dvorak9_*_scores.csv - Individual criterion scores
+    tables/keypair_dvorak9_scores.csv - CSV with columns: key_pair, dvorak9_score
+    tables/keypair_dvorak9_*_scores.csv - Individual criterion scores
 """
 
 import csv

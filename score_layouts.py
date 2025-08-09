@@ -7,13 +7,13 @@ Scoring methods include engram, comfort, comfort-key, distance, time, and dvorak
 
 Setup:
 1. Generate individual score files (keypair_*_scores.csv) using your scoring scripts
-2. Run: python prep_scoring_tables.py --input-dir output/
-   This creates: output/keypair_scores.csv and output/key_scores.csv
+2. Run: python prep_scoring_tables.py --input-dir tables/
+   This creates: tables/keypair_scores.csv and tables/key_scores.csv
 3. Run this script to score layouts using all available methods
 
 Default behavior:
-- Score table: output/keypair_scores.csv (created by prep_scoring_tables.py)
-- Key scores: output/key_scores.csv (created by prep_scoring_tables.py)  
+- Score table: tables/keypair_scores.csv (created by prep_scoring_tables.py)
+- Key scores: tables/key_scores.csv (created by prep_scoring_tables.py)  
 - Frequency data: input/english-letter-pair-counts-google-ngrams.csv
 - Letter frequencies: input/english-letter-counts-google-ngrams.csv
 - Scoring mode: Frequency-weighted (prioritizes common English letter combinations)
@@ -82,7 +82,7 @@ class LayoutScorer:
         
         # Load additional data for dynamic scoring methods (engram and comfort-key)
         self.letter_frequencies = self._load_letter_frequencies()
-        self.key_comfort_scores = self._load_key_comfort_scores()  # from output/key_scores.csv
+        self.key_comfort_scores = self._load_key_comfort_scores()  # from tables/key_scores.csv
         
         # Add dynamic scorers to available list
         if self.letter_frequencies is not None and self.key_comfort_scores is not None:
@@ -244,13 +244,13 @@ class LayoutScorer:
         return frequencies
     
     def _load_key_comfort_scores(self) -> Optional[Dict[str, float]]:
-        """Load key comfort scores from output/key_scores.csv (created by prep_scoring_tables.py)."""
-        filepath = "output/key_scores.csv"
+        """Load key comfort scores from tables/key_scores.csv (created by prep_scoring_tables.py)."""
+        filepath = "tables/key_scores.csv"
         
         if not Path(filepath).exists():
             if self.verbose:
                 print(f"Key comfort scores file not found: {filepath}")
-                print("Run 'python prep_scoring_tables.py --input-dir output/' to create this file")
+                print("Run 'python prep_scoring_tables.py --input-dir tables/' to create this file")
             return None
         
         try:
@@ -449,11 +449,11 @@ class LayoutScorer:
             if self.letter_frequencies is None:
                 missing_files.append("input/english-letter-counts-google-ngrams.csv")
             if self.key_comfort_scores is None:
-                missing_files.append("output/key_scores.csv")
+                missing_files.append("tables/key_scores.csv")
             raise ValueError(
                 f"Letter frequencies and key comfort scores required for comfort-key scoring. "
                 f"Missing files: {missing_files}. "
-                f"Run 'python prep_scoring_tables.py --input-dir output/' to create key_scores.csv"
+                f"Run 'python prep_scoring_tables.py --input-dir tables/' to create key_scores.csv"
             )
         
         # Generate all letter-pairs for this layout
@@ -530,11 +530,11 @@ class LayoutScorer:
             if self.letter_frequencies is None:
                 missing_files.append("input/english-letter-counts-google-ngrams.csv")
             if self.key_comfort_scores is None:
-                missing_files.append("output/key_scores.csv")
+                missing_files.append("tables/key_scores.csv")
             raise ValueError(
                 f"Letter frequencies and key comfort scores required for engram scoring. "
                 f"Missing files: {missing_files}. "
-                f"Run 'python prep_scoring_tables.py --input-dir output/' to create key_scores.csv"
+                f"Run 'python prep_scoring_tables.py --input-dir tables/' to create key_scores.csv"
             )
         
         # Check if comfort scoring is available
@@ -945,8 +945,8 @@ def create_cli_parser() -> argparse.ArgumentParser:
         epilog="""
 Examples:
 
-  # Basic usage (uses default files: output/keypair_scores.csv and input/english-letter-pair-counts-google-ngrams.csv)
-  # Note: Run 'python prep_scoring_tables.py --input-dir output/' first to create required tables
+  # Basic usage (uses default files: tables/keypair_scores.csv and input/english-letter-pair-counts-google-ngrams.csv)
+  # Note: Run 'python prep_scoring_tables.py --input-dir tables/' first to create required tables
   python score_layouts.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ"
   
   # Raw (unweighted) scoring only
@@ -968,8 +968,8 @@ Examples:
   python score_layouts.py --compare qwerty:"qwerty" dvorak:"',.py" --csv results.csv
 
 Default behavior:
-- Uses output/keypair_scores.csv for key-pair scoring data (created by prep_scoring_tables.py)
-- Uses output/key_scores.csv for individual key comfort scores (created by prep_scoring_tables.py)
+- Uses tables/keypair_scores.csv for key-pair scoring data (created by prep_scoring_tables.py)
+- Uses tables/key_scores.csv for individual key comfort scores (created by prep_scoring_tables.py)
 - Uses input/english-letter-pair-counts-google-ngrams.csv for frequency weighting (if it exists)
 - Uses input/english-letter-counts-google-ngrams.csv for letter frequencies (if it exists)
 - Falls back to raw scoring if frequency file is not found
@@ -986,8 +986,8 @@ Engram and comfort-key scores are computed dynamically and require letter freque
     # Required arguments (now optional with defaults)
     parser.add_argument(
         '--score-table',
-        default="output/keypair_scores.csv",
-        help="Path to unified score table CSV file (default: output/keypair_scores.csv)"
+        default="tables/keypair_scores.csv",
+        help="Path to unified score table CSV file (default: tables/keypair_scores.csv)"
     )
     
     # Optional frequency weighting (with default)

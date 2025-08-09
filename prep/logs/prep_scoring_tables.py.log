@@ -1,0 +1,113 @@
+> poetry run python3 prep_scoring_tables.py --input-dir tables/ --verbose
+Loading score files from: tables/
+Loaded 1024 rows from keypair_comfort_scores.csv
+  Score range: -1.442261 - -0.061130
+  ✓ Loaded comfort_score from keypair_comfort_scores.csv
+Loaded 1024 rows from keypair_distance_scores.csv
+  Score range: 0.000000 - 85.698831
+  ✓ Loaded distance_score from keypair_distance_scores.csv
+Loaded 1024 rows from keypair_time_scores.csv
+  Score range: 352.600000 - 887.250000
+  ✓ Loaded time_score from keypair_time_scores.csv
+Loaded 1024 rows from keypair_dvorak9_scores.csv
+  Score range: 0.055556 - 1.000000
+  ✓ Loaded dvorak9_score from keypair_dvorak9_scores.csv
+Loaded 1024 rows from keypair_dvorak9_hands_scores.csv
+  Score range: 0.000000 - 1.000000
+  ✓ Loaded dvorak9_hands from keypair_dvorak9_hands_scores.csv
+Loaded 1024 rows from keypair_dvorak9_fingers_scores.csv
+  Score range: 0.000000 - 1.000000
+  ✓ Loaded dvorak9_fingers from keypair_dvorak9_fingers_scores.csv
+Loaded 1024 rows from keypair_dvorak9_skip_fingers_scores.csv
+  Score range: 0.000000 - 1.000000
+  ✓ Loaded dvorak9_skip_fingers from keypair_dvorak9_skip_fingers_scores.csv
+Loaded 1024 rows from keypair_dvorak9_dont_cross_home_scores.csv
+  Score range: 0.000000 - 1.000000
+  ✓ Loaded dvorak9_dont_cross_home from keypair_dvorak9_dont_cross_home_scores.csv
+Loaded 1024 rows from keypair_dvorak9_same_row_scores.csv
+  Score range: 0.000000 - 1.000000
+  ✓ Loaded dvorak9_same_row from keypair_dvorak9_same_row_scores.csv
+Loaded 1024 rows from keypair_dvorak9_home_row_scores.csv
+  Score range: 0.000000 - 1.000000
+  ✓ Loaded dvorak9_home_row from keypair_dvorak9_home_row_scores.csv
+Loaded 1024 rows from keypair_dvorak9_columns_scores.csv
+  Score range: 0.000000 - 1.000000
+  ✓ Loaded dvorak9_columns from keypair_dvorak9_columns_scores.csv
+Loaded 1024 rows from keypair_dvorak9_strum_scores.csv
+  Score range: 0.000000 - 1.000000
+  ✓ Loaded dvorak9_strum from keypair_dvorak9_strum_scores.csv
+Loaded 1024 rows from keypair_dvorak9_strong_fingers_scores.csv
+  Score range: 0.000000 - 1.000000
+  ✓ Loaded dvorak9_strong_fingers from keypair_dvorak9_strong_fingers_scores.csv
+
+Unified dataframe has 1024 rows
+Score columns: ['comfort_score', 'distance_score', 'time_score', 'dvorak9_score', 'dvorak9_hands', 'dvorak9_fingers', 'dvorak9_skip_fingers', 'dvorak9_dont_cross_home', 'dvorak9_same_row', 'dvorak9_home_row', 'dvorak9_columns', 'dvorak9_strum', 'dvorak9_strong_fingers']
+
+Applying smart normalization to score columns:
+  comfort_score: Symmetric distribution detected
+    Added comfort_score_normalized (range: 0.000000 - 1.000000)
+  distance_score: Using robust scaling
+    Added distance_score_normalized (range: 0.000000 - 1.000000)
+  time_score: Symmetric distribution detected
+    Added time_score_normalized (range: 0.000000 - 1.000000)
+  dvorak9_score: Symmetric distribution detected
+    Added dvorak9_score_normalized (range: 0.000000 - 1.000000)
+  dvorak9_hands: Sparse distribution detected
+    Added dvorak9_hands_normalized (range: 0.000000 - 1.000000)
+  dvorak9_fingers: Symmetric distribution detected
+    Added dvorak9_fingers_normalized (range: 0.000000 - 1.000000)
+  dvorak9_skip_fingers: Symmetric distribution detected
+    Added dvorak9_skip_fingers_normalized (range: 0.000000 - 1.000000)
+  dvorak9_dont_cross_home: Symmetric distribution detected
+    Added dvorak9_dont_cross_home_normalized (range: 0.000000 - 1.000000)
+  dvorak9_same_row: Sparse distribution detected
+    Added dvorak9_same_row_normalized (range: 0.000000 - 1.000000)
+  dvorak9_home_row: Sparse distribution detected
+    Added dvorak9_home_row_normalized (range: 0.000000 - 1.000000)
+  dvorak9_columns: Using robust scaling
+    Added dvorak9_columns_normalized (range: 0.000000 - 1.000000)
+  dvorak9_strum: Sparse distribution detected
+    Added dvorak9_strum_normalized (range: 0.000000 - 1.000000)
+  dvorak9_strong_fingers: Using robust scaling
+    Added dvorak9_strong_fingers_normalized (range: 0.000000 - 1.000000)
+
+Saved unified scoring table to: tables/keypair_scores.csv
+Table contains 1024 rows and 27 columns
+Columns: ['key_pair', 'comfort_score', 'distance_score', 'time_score', 'dvorak9_score', 'dvorak9_hands', 'dvorak9_fingers', 'dvorak9_skip_fingers', 'dvorak9_dont_cross_home', 'dvorak9_same_row', 'dvorak9_home_row', 'dvorak9_columns', 'dvorak9_strum', 'dvorak9_strong_fingers', 'comfort_score_normalized', 'distance_score_normalized', 'time_score_normalized', 'dvorak9_score_normalized', 'dvorak9_hands_normalized', 'dvorak9_fingers_normalized', 'dvorak9_skip_fingers_normalized', 'dvorak9_dont_cross_home_normalized', 'dvorak9_same_row_normalized', 'dvorak9_home_row_normalized', 'dvorak9_columns_normalized', 'dvorak9_strum_normalized', 'dvorak9_strong_fingers_normalized']
+
+Sample statistics:
+  comfort_score: -1.442261 - -0.061130 (mean: -0.801436)
+  comfort_score_normalized: 0.000000 - 1.000000 (mean: 0.463985)
+  distance_score: 0.000000 - 85.698831 (mean: 33.028702)
+  distance_score_normalized: 0.000000 - 1.000000 (mean: 0.510340)
+  time_score: 352.600000 - 887.250000 (mean: 546.212109)
+  time_score_normalized: 0.000000 - 1.000000 (mean: 0.362129)
+  dvorak9_score: 0.055556 - 1.000000 (mean: 0.619141)
+  dvorak9_score_normalized: 0.000000 - 1.000000 (mean: 0.596737)
+  dvorak9_hands: 0.000000 - 1.000000 (mean: 0.498047)
+  dvorak9_hands_normalized: 0.000000 - 1.000000 (mean: 0.498047)
+  dvorak9_fingers: 0.000000 - 1.000000 (mean: 0.861328)
+  dvorak9_fingers_normalized: 0.000000 - 1.000000 (mean: 0.861328)
+  dvorak9_skip_fingers: 0.000000 - 1.000000 (mean: 0.650391)
+  dvorak9_skip_fingers_normalized: 0.000000 - 1.000000 (mean: 0.650391)
+  dvorak9_dont_cross_home: 0.000000 - 1.000000 (mean: 0.892578)
+  dvorak9_dont_cross_home_normalized: 0.000000 - 1.000000 (mean: 0.892578)
+  dvorak9_same_row: 0.000000 - 1.000000 (mean: 0.333984)
+  dvorak9_same_row_normalized: 0.000000 - 1.000000 (mean: 0.333984)
+  dvorak9_home_row: 0.000000 - 1.000000 (mean: 0.343750)
+  dvorak9_home_row_normalized: 0.000000 - 1.000000 (mean: 0.437191)
+  dvorak9_columns: 0.000000 - 1.000000 (mean: 0.750000)
+  dvorak9_columns_normalized: 0.000000 - 1.000000 (mean: 0.750000)
+  dvorak9_strum: 0.000000 - 1.000000 (mean: 0.679688)
+  dvorak9_strum_normalized: 0.000000 - 1.000000 (mean: 0.679688)
+  dvorak9_strong_fingers: 0.000000 - 1.000000 (mean: 0.562500)
+  dvorak9_strong_fingers_normalized: 0.000000 - 1.000000 (mean: 0.562500)
+  key_comfort: Symmetric distribution detected
+
+Created key comfort scores table: tables/key_scores.csv
+  Keys: 32 individual keys
+  Score range: 0.000000 - 1.000000
+  Mean score: 0.480206
+Successfully created scoring tables:
+  - Keypair scores: tables/keypair_scores.csv
+  - Key scores: tables/key_scores.csv
