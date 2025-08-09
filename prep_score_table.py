@@ -119,12 +119,22 @@ def create_unified_score_table(input_dir: str, output_file: str, verbose: bool =
     
     # Define expected input files and their score columns
     score_files = {
-        'time_score': 'keypair_time_scores.csv',
         'comfort_score': 'keypair_comfort_scores.csv',
         'distance_score': 'keypair_distance_scores.csv',
-        'dvorak9_score': 'keypair_dvorak9_scores.csv'
+        'time_score': 'keypair_time_scores.csv',
+        'dvorak9_score': 'keypair_dvorak9_scores.csv',
+        # Individual dvorak9 criteria
+        'dvorak9_hands': 'keypair_dvorak9_hands_scores.csv',
+        'dvorak9_fingers': 'keypair_dvorak9_fingers_scores.csv', 
+        'dvorak9_skip_fingers': 'keypair_dvorak9_skip_fingers_scores.csv',
+        'dvorak9_dont_cross_home': 'keypair_dvorak9_dont_cross_home_scores.csv',
+        'dvorak9_same_row': 'keypair_dvorak9_same_row_scores.csv',
+        'dvorak9_home_row': 'keypair_dvorak9_home_row_scores.csv',
+        'dvorak9_columns': 'keypair_dvorak9_columns_scores.csv',
+        'dvorak9_strum': 'keypair_dvorak9_strum_scores.csv',
+        'dvorak9_strong_fingers': 'keypair_dvorak9_strong_fingers_scores.csv'
     }
-    
+
     if verbose:
         print(f"Loading score files from: {input_dir}")
     

@@ -4,11 +4,23 @@ Generate precomputed Dvorak-9 scores for all possible QWERTY key-pairs.
 
 (c) Arno Klein (arnoklein.info), MIT License (see LICENSE)
 
-This script computes the unweighted average Dvorak-9 score for every possible
-combination of QWERTY keys and saves them to output/keypair_dvorak9_scores.csv.
+This script computes both the overall Dvorak-9 score and individual criterion scores 
+for every possible combination of QWERTY keys and saves them to separate CSV files.
 
-The output file contains all possible key-pairs (e.g., "QW", "QE", "AS") with
-their corresponding Dvorak-9 scores (average of the 9 individual criteria).
+The output files contain all possible key-pairs (e.g., "QW", "QE", "AS") with
+their corresponding scores.
+
+Main output files:
+- output/keypair_dvorak9_scores.csv - Overall average score
+- output/keypair_dvorak9_hands_scores.csv - Hands criterion  
+- output/keypair_dvorak9_fingers_scores.csv - Fingers criterion
+- output/keypair_dvorak9_skip_fingers_scores.csv - Skip fingers criterion
+- output/keypair_dvorak9_dont_cross_home_scores.csv - Don't cross home criterion
+- output/keypair_dvorak9_same_row_scores.csv - Same row criterion
+- output/keypair_dvorak9_home_row_scores.csv - Home row criterion
+- output/keypair_dvorak9_columns_scores.csv - Columns criterion
+- output/keypair_dvorak9_strum_scores.csv - Strum criterion
+- output/keypair_dvorak9_strong_fingers_scores.csv - Strong fingers criterion
 
 This precomputation allows the main scorer to simply look up scores rather
 than computing them on-demand, making layout scoring much faster.
@@ -30,6 +42,7 @@ Usage:
 
 Output:
     output/keypair_dvorak9_scores.csv - CSV with columns: key_pair, dvorak9_score
+    output/keypair_dvorak9_*_scores.csv - Individual criterion scores
 """
 
 import csv
@@ -210,7 +223,15 @@ def generate_all_key_pairs():
 def compute_key_pair_scores():
     """Compute Dvorak-9 scores for all key-pairs."""
     key_pairs = generate_all_key_pairs()
-    results = []
+    results = {}
+    
+    # Initialize results for overall and individual criteria
+    results['overall'] = []
+    criteria = ['hands', 'fingers', 'skip_fingers', 'dont_cross_home', 
+                'same_row', 'home_row', 'columns', 'strum', 'strong_fingers']
+    
+    for criterion in criteria:
+        results[criterion] = []
     
     print(f"Computing Dvorak-9 scores for {len(key_pairs)} key-pairs...")
     
@@ -224,30 +245,54 @@ def compute_key_pair_scores():
         # Calculate unweighted average (baseline Dvorak-9 score)
         dvorak9_score = sum(bigram_scores.values()) / len(bigram_scores)
         
-        results.append({
+        # Store overall score
+        results['overall'].append({
             'key_pair': key_pair,
             'dvorak9_score': dvorak9_score
         })
+        
+        # Store individual criterion scores
+        for criterion in criteria:
+            results[criterion].append({
+                'key_pair': key_pair,
+                f'dvorak9_{criterion}': bigram_scores[criterion]
+            })
     
     return results
 
-def save_key_pair_scores(results, output_file="output/keypair_dvorak9_scores.csv"):
-    """Save key-pair scores to CSV file."""
+def save_all_score_files(results, output_dir="output"):
+    """Save overall and individual criterion scores to separate CSV files."""
     
     # Create output directory if it doesn't exist
-    Path(output_file).parent.mkdir(parents=True, exist_ok=True)
+    Path(output_dir).mkdir(parents=True, exist_ok=True)
     
-    # Sort by key-pair for consistent ordering
-    results.sort(key=lambda x: x['key_pair'])
+    # Save overall scores
+    overall_file = f"{output_dir}/keypair_dvorak9_scores.csv"
+    overall_results = sorted(results['overall'], key=lambda x: x['key_pair'])
     
-    with open(output_file, 'w', newline='', encoding='utf-8') as f:
+    with open(overall_file, 'w', newline='', encoding='utf-8') as f:
         writer = csv.DictWriter(f, fieldnames=['key_pair', 'dvorak9_score'])
         writer.writeheader()
-        writer.writerows(results)
+        writer.writerows(overall_results)
     
-    print(f"✅ Saved {len(results)} key-pair scores to: {output_file}")
+    print(f"✅ Saved overall scores to: {overall_file}")
+    
+    # Save individual criterion scores
+    criteria = ['hands', 'fingers', 'skip_fingers', 'dont_cross_home', 
+                'same_row', 'home_row', 'columns', 'strum', 'strong_fingers']
+    
+    for criterion in criteria:
+        criterion_file = f"{output_dir}/keypair_dvorak9_{criterion}_scores.csv"
+        criterion_results = sorted(results[criterion], key=lambda x: x['key_pair'])
+        
+        with open(criterion_file, 'w', newline='', encoding='utf-8') as f:
+            writer = csv.DictWriter(f, fieldnames=['key_pair', f'dvorak9_{criterion}'])
+            writer.writeheader()
+            writer.writerows(criterion_results)
+        
+        print(f"✅ Saved {criterion} scores to: {criterion_file}")
 
-def validate_output(output_file="output/keypair_dvorak9_scores.csv"):
+def validate_output(output_dir="output"):
     """
     Validation with comprehensive accuracy checking.
     
@@ -258,12 +303,14 @@ def validate_output(output_file="output/keypair_dvorak9_scores.csv"):
     import random
     from pathlib import Path
     
-    if not Path(output_file).exists():
-        print(f"❌ Output file not found: {output_file}")
+    overall_file = f"{output_dir}/keypair_dvorak9_scores.csv"
+    
+    if not Path(overall_file).exists():
+        print(f"❌ Overall output file not found: {overall_file}")
         return False
     
-    # Load data
-    with open(output_file, 'r', encoding='utf-8') as f:
+    # Load overall data
+    with open(overall_file, 'r', encoding='utf-8') as f:
         reader = csv.DictReader(f)
         rows = list(reader)
     
@@ -297,6 +344,21 @@ def validate_output(output_file="output/keypair_dvorak9_scores.csv"):
             accuracy_errors += 1
     
     print(f"   Accuracy check: {len(random_samples) - accuracy_errors}/{len(random_samples)} samples correct")
+    
+    # Validate individual criterion files
+    print(f"\n📁 Individual Criterion Files:")
+    criteria = ['hands', 'fingers', 'skip_fingers', 'dont_cross_home', 
+                'same_row', 'home_row', 'columns', 'strum', 'strong_fingers']
+    
+    for criterion in criteria:
+        criterion_file = f"{output_dir}/keypair_dvorak9_{criterion}_scores.csv"
+        if Path(criterion_file).exists():
+            with open(criterion_file, 'r', encoding='utf-8') as f:
+                reader = csv.DictReader(f)
+                criterion_rows = list(reader)
+            print(f"   ✅ {criterion}: {len(criterion_rows)} pairs")
+        else:
+            print(f"   ❌ {criterion}: File missing")
     
     # Test specific criteria with known examples
     print(f"\n🔍 Criteria-Specific Validation:")
@@ -332,34 +394,16 @@ def validate_output(output_file="output/keypair_dvorak9_scores.csv"):
     perfect_count = len([s for s in scores if s == 1.0])
     print(f"   Perfect (1.0): {perfect_count} pairs ({perfect_count/len(scores)*100:.1f}%)")
     
-    # Edge case validation
-    print(f"\n⚡ Edge Case Validation:")
-    edge_cases = {
-        'Same finger': ['AA', 'SS', 'DD'],
-        'Hurdling': ['QZ', 'WX', 'EC'], 
-        'Adjacent fingers': ['AS', 'DF', 'JK'],
-        'Strong finger pairs': ['RF', 'ER', 'UI']
-    }
-    
-    for case_name, pairs in edge_cases.items():
-        case_scores = []
-        for pair in pairs:
-            row = next((r for r in rows if r['key_pair'] == pair), None)
-            if row:
-                case_scores.append(float(row['dvorak9_score']))
-        
-        if case_scores:
-            avg_case_score = sum(case_scores) / len(case_scores)
-            print(f"   {case_name}: avg={avg_case_score:.3f} ({len(case_scores)} pairs)")
-    
     print(f"\n✅ Enhanced validation complete!")
     return accuracy_errors == 0
 
-def validate_perfect_scores(output_file="output/keypair_dvorak9_scores.csv"):
+def validate_perfect_scores(output_dir="output"):
     """Specifically validate that perfect scores are mathematically correct."""
     import csv
     
-    with open(output_file, 'r', encoding='utf-8') as f:
+    overall_file = f"{output_dir}/keypair_dvorak9_scores.csv"
+    
+    with open(overall_file, 'r', encoding='utf-8') as f:
         reader = csv.DictReader(f)
         perfect_pairs = [row for row in reader if float(row['dvorak9_score']) == 1.0]
     
@@ -379,27 +423,30 @@ def validate_perfect_scores(output_file="output/keypair_dvorak9_scores.csv"):
 
 def main():
     """Main entry point."""
-    print("Prepare Dvorak-9 key-pair scores")
-    print("=" * 50)
+    print("Prepare Dvorak-9 key-pair scores (overall + individual criteria)")
+    print("=" * 70)
     
     # Load QWERTY keys to show what we're working with
     keys = get_all_qwerty_keys()
     print(f"QWERTY keys ({len(keys)}): {''.join(sorted(keys))}")
     print(f"Total key-pairs to compute: {len(keys)**2}")
+    print(f"Output files: 1 overall + 9 individual criteria = 10 total")
     print()
     
     # Compute scores
     results = compute_key_pair_scores()
     
     # Save results
-    output_file = "output/keypair_dvorak9_scores.csv"
-    save_key_pair_scores(results, output_file)
+    output_dir = "output"
+    save_all_score_files(results, output_dir)
     
     # Validate output
-    validate_output(output_file)
-    validate_perfect_scores()
+    validate_output(output_dir)
+    validate_perfect_scores(output_dir)
 
-    print(f"\n✅ Dvorak-9 key-pair score generation complete: {output_file}")
+    print(f"\n✅ Dvorak-9 key-pair score generation complete!")
+    print(f"   Overall scores: {output_dir}/keypair_dvorak9_scores.csv")
+    print(f"   Individual criteria: {output_dir}/keypair_dvorak9_*_scores.csv")
 
 if __name__ == "__main__":
     main()

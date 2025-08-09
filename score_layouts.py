@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Keyboard Layout Scorer using pre-computed score table.
+Keyboard Layout Scorer using precomputed score table.
 
 A comprehensive tool for evaluating keyboard layouts using frequency-weighted scoring.
 Scoring methods include engram, comfort, distance, time, and dvorak9.
@@ -403,7 +403,7 @@ def print_results(results: Dict[str, float], format_type: str = 'detailed', scor
         #print(f"Frequency-weighted total score: {results['total_score']:.6f}")
         
         # Show raw scores if verbose or if they're significantly different
-        if verbose or 'raw_average_score' in results:
+        if verbose: # or 'raw_average_score' in results:
             print(f"Raw average bigram score: {results['raw_average_score']:.6f}")
             #print(f"Raw total score: {results['raw_total_score']:.6f}")
     
@@ -420,9 +420,39 @@ def print_results(results: Dict[str, float], format_type: str = 'detailed', scor
 def print_comparison_summary(comparison_results: Dict[str, Dict[str, Dict[str, float]]], 
                            format_type: str = 'detailed', quiet: bool = False, use_raw: bool = False, verbose: bool = False):
     """Print summary of layout comparison."""
-    
+    if format_type == 'table':
+        # Compact table format
+        scorers = set()
+        for layout_results in comparison_results.values():
+            scorers.update(layout_results.keys())
+        
+        layout_names = list(comparison_results.keys())
+        
+        # Print header
+        header = f"{'Scorer':<20} " + " ".join(f"{name:>12}" for name in layout_names)
+        print(header)
+        print("-" * len(header))
+        
+        # Print each scorer row
+        for scorer in sorted(scorers):
+            row = f"{scorer:<20}"
+            for layout_name in layout_names:
+                if scorer in comparison_results[layout_name]:
+                    score = comparison_results[layout_name][scorer]['average_score']
+                    row += f" {score:>12.6f}"
+                else:
+                    row += f" {'N/A':>12}"
+            print(row)
+        return
+
     if format_type == 'csv_output':
-        # Minimal CSV output for programmatic use (no headers)
+        # Print header for CSV output
+        if use_raw:
+            print("layout_name,scorer,score")
+        else:
+            print("layout_name,scorer,weighted_score,raw_score")
+        
+        # Minimal CSV output for programmatic use
         for layout_name, layout_results in comparison_results.items():
             for scorer, results in layout_results.items():
                 if use_raw or 'raw_average_score' not in results:
@@ -469,7 +499,7 @@ def print_comparison_summary(comparison_results: Dict[str, Dict[str, Dict[str, f
     
     for scorer in sorted(scorers):
         if not quiet:
-            score_type = "unweighted scores" if use_raw else "frequency-weighted scores"
+            score_type = "unweighted score" if use_raw else "frequency-weighted score"
             print(f"\n{scorer.upper()} {score_type}:")
             print("-" * 50)
         
@@ -483,7 +513,8 @@ def print_comparison_summary(comparison_results: Dict[str, Dict[str, Dict[str, f
         scorer_results.sort(key=lambda x: x[1], reverse=True)
         
         for rank, (layout_name, score) in enumerate(scorer_results, 1):
-            print(f"{rank:2d}. {layout_name:20s} {score:.6f}")
+            #print(f"{rank:2d}. {layout_name:20s} {score:.6f}")
+            print(f"{layout_name:20s} {score:.6f}")
         
         # Show raw scores as secondary if using weighted and verbose
         if not use_raw and verbose and not quiet:
@@ -656,9 +687,9 @@ Distance and time scores are automatically inverted (1-score) since higher value
     output_group = parser.add_argument_group('Output Options')
     output_group.add_argument(
         '--format',
-        choices=['detailed', 'csv', 'score_only'],
-        default='detailed',
-        help="Output format (default: detailed)"
+        choices=['detailed', 'csv', 'score_only', 'table'],
+        default='table',
+        help="Output format (default: table)"
     )
     output_group.add_argument(
         '--csv',
@@ -813,7 +844,7 @@ def main() -> int:
                     
                     if not args.quiet and args.format != 'csv_output':
                         print(f"\nLayout: {layout_name}")
-                        print(f"{scorer_name.upper()} results:")
+                        print(f"\n{scorer_name.upper()} results:")
                         print("=" * 50)
                     print_results(results[scorer_name], args.format, scorer_name, args.raw, args.verbose)
                 else:
