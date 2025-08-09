@@ -27,16 +27,16 @@ This framework unifies several keyboard layout scoring approaches under a common
 ### Single-scorer, single-layout mode
   ```bash
   # Distance scorer (requires text input)
-  python layout_scorer.py --scorer distance --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --text "hello world"
+  python score_layouts.py --scorer distance --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --text "hello world"
 
   # Dvorak9 scorer (shows all 4 approaches automatically)
-  python layout_scorer.py --scorer dvorak9 --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ"
+  python score_layouts.py --scorer dvorak9 --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ"
 
   # Engram scorer (shows both 32-key and 24-key results automatically)
-  python layout_scorer.py --scorer engram --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ"
+  python score_layouts.py --scorer engram --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ"
 
   # With cross-hand filtering (available for all scorers)
-  python layout_scorer.py --scorer distance --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --text "hello" --ignore-cross-hand
+  python score_layouts.py --scorer distance --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --text "hello" --ignore-cross-hand
 
   # Individual scorers
   python distance_scorer.py --letters "abc" --positions "QWE" --text "hello world"
@@ -47,19 +47,19 @@ This framework unifies several keyboard layout scoring approaches under a common
 ### Multiple-scorer, single-layout mode
   ```bash
   # Run all scorers
-  python layout_scorer.py --scorers all --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --text "hello world"
+  python score_layouts.py --scorers all --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --text "hello world"
 
   # Run specific subset
-  python layout_scorer.py --scorers engram,dvorak9 --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ"
+  python score_layouts.py --scorers engram,dvorak9 --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ"
   ```
 
 ### Multiple-scorer, multiple-layout comparison mode
   ```bash
   # Compare layouts
-  python layout_scorer.py --compare qwerty:"qwertyuiop" dvorak:"',.pyfgcrl" colemak:"qwfpgjluy;" --text "hello world"
+  python score_layouts.py --compare qwerty:"qwertyuiop" dvorak:"',.pyfgcrl" colemak:"qwfpgjluy;" --text "hello world"
 
   # Save detailed comparison to CSV
-  python layout_scorer.py --compare qwerty:"qwertyuiopasdfghjkl;zxcvbnm,./" dvorak:"',.pyfgcrlaoeuidhtns;qjkxbmwvz" --csv results.csv --text "hello"
+  python score_layouts.py --compare qwerty:"qwertyuiopasdfghjkl;zxcvbnm,./" dvorak:"',.pyfgcrlaoeuidhtns;qjkxbmwvz" --csv results.csv --text "hello"
   ```
 
 ## Output Formats
@@ -67,22 +67,22 @@ This framework unifies several keyboard layout scoring approaches under a common
 ### Detailed output (default)
 Shows comprehensive results with breakdowns, validation info, and scoring details:
   ```bash
-  python layout_scorer.py --scorer dvorak9 --letters "abc" --positions "ABC" --detailed
+  python score_layouts.py --scorer dvorak9 --letters "abc" --positions "ABC" --detailed
   ```
 
 ### CSV output
   ```bash
   # Single layout to CSV
-  python layout_scorer.py --scorer engram --letters "abc" --positions "ABC" --csv results.csv
+  python score_layouts.py --scorer engram --letters "abc" --positions "ABC" --csv results.csv
 
   # Comparison to CSV
-  python layout_scorer.py --compare qwerty:"qwertyuiop" dvorak:"',.pyfgcrl" --csv compare.csv --text "hello"
+  python score_layouts.py --compare qwerty:"qwertyuiop" dvorak:"',.pyfgcrl" --csv compare.csv --text "hello"
   ```
 
 ### Score-only output
 Outputs just the numeric scores in space-separated format:
   ```bash
-  python layout_scorer.py --scorer distance --letters "abc" --positions "ABC" --text "hello" --score-only
+  python score_layouts.py --scorer distance --letters "abc" --positions "ABC" --text "hello" --score-only
   ```
 
 ## Advanced Features
@@ -91,7 +91,7 @@ Outputs just the numeric scores in space-separated format:
 Filters out bigrams that cross hands (left-to-right or right-to-left transitions). Available for all scorers:
   ```bash
   # Apply to any scorer
-  python layout_scorer.py --scorer [distance|dvorak9|engram] --letters "..." --positions "..." --ignore-cross-hand
+  python score_layouts.py --scorer [distance|dvorak9|engram] --letters "..." --positions "..." --ignore-cross-hand
   ```
 
 ## Configuration
@@ -177,7 +177,7 @@ All data files use CSV format with headers:
   keyboard_layout_scorers/
   ├── config.yaml                    # Central configuration
   ├── README.md                      # This file
-  ├── layout_scorer.py               # Unified manager (main tool)
+  ├── score_layouts.py               # Unified manager (main tool)
   ├── 
   ├── # Individual scorers
   ├── distance_scorer.py             # Physical distance scoring
@@ -292,14 +292,14 @@ Scores:
 The framework includes a comprehensive validation script:
 
 ```bash
-python validate_layout_scorer.py
+python validate_score_layouts.py
 
 # Test specific script location
-python validate_layout_scorer.py --script /path/to/layout_scorer.py
+python validate_score_layouts.py --script /path/to/score_layouts.py
 
 # Save detailed report
-python validate_layout_scorer.py --report validation_report.json
+python validate_score_layouts.py --report validation_report.json
 
 # Run quietly (less verbose output)
-python validate_layout_scorer.py --quiet
+python validate_score_layouts.py --quiet
 ```

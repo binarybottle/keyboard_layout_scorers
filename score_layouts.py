@@ -13,28 +13,28 @@ Default behavior:
 
 Usage:
     # Single layout evaluation (all available scoring methods)
-    python layout_scorer.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ"
+    python score_layouts.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ"
     
     # Force raw (unweighted) scoring
-    python layout_scorer.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --raw
+    python score_layouts.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --raw
     
     # Compare multiple layouts  
-    python layout_scorer.py --compare qwerty:"qwertyuiop" dvorak:"',.pyfgcrl" colemak:"qwfpgjluy;"
+    python score_layouts.py --compare qwerty:"qwertyuiop" dvorak:"',.pyfgcrl" colemak:"qwfpgjluy;"
     
     # Verbose output (shows both weighted and raw scores)
-    python layout_scorer.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --verbose
+    python score_layouts.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --verbose
     
     # Minimal CSV output for scripts/automation
-    python layout_scorer.py --compare qwerty:"qwerty" dvorak:"dvorak" --csv-output
+    python score_layouts.py --compare qwerty:"qwerty" dvorak:"dvorak" --csv-output
     
     # Single scoring method only
-    python layout_scorer.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --scorer distance
+    python score_layouts.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --scorer distance
     
     # Save detailed results to file
-    python layout_scorer.py --compare qwerty:"qwerty" dvorak:"dvorak" --csv results.csv
+    python score_layouts.py --compare qwerty:"qwerty" dvorak:"dvorak" --csv results.csv
     
     # Custom files (when defaults aren't suitable)
-    python layout_scorer.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --score-table custom.csv --frequency-file custom_freq.csv
+    python score_layouts.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --score-table custom.csv --frequency-file custom_freq.csv
 
 Key features:
 - Automatic frequency weighting using English bigram frequencies
@@ -564,25 +564,25 @@ def create_cli_parser() -> argparse.ArgumentParser:
 Examples:
 
   # Basic usage (uses default files: input/score_table.csv and input/english-letter-pair-counts-google-ngrams.csv)
-  python layout_scorer.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ"
+  python score_layouts.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ"
   
   # Raw (unweighted) scoring only
-  python layout_scorer.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --raw
+  python score_layouts.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --raw
   
   # Compare layouts with default frequency weighting
-  python layout_scorer.py --compare qwerty:"qwertyuiop" dvorak:"',.pyfgcrl"
+  python score_layouts.py --compare qwerty:"qwertyuiop" dvorak:"',.pyfgcrl"
   
   # Use custom score table and frequency file
-  python layout_scorer.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --score-table custom_scores.csv --frequency-file custom_freqs.csv
+  python score_layouts.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --score-table custom_scores.csv --frequency-file custom_freqs.csv
   
   # Minimal CSV output for programmatic use (no headers, scores only)
-  python layout_scorer.py --compare qwerty:"qwertyuiop" dvorak:"',.pyfgcrl" --csv-output
+  python score_layouts.py --compare qwerty:"qwertyuiop" dvorak:"',.pyfgcrl" --csv-output
   
   # Verbose output (shows both weighted and raw scores)
-  python layout_scorer.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --verbose
+  python score_layouts.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --verbose
   
   # Save to CSV file with frequency weighting
-  python layout_scorer.py --compare qwerty:"qwerty" dvorak:"',.py" --csv results.csv
+  python score_layouts.py --compare qwerty:"qwerty" dvorak:"',.py" --csv results.csv
 
 Default behavior:
 - Uses input/score_table.csv for scoring data

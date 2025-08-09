@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-Generate layout_scorer.py command for standard keyboard layouts.
+Generate score_layouts.py command for standard keyboard layouts.
 
 This script creates a ready-to-run command file for comparing standard layouts
-using the layout_scorer.py tool.
+using the score_layouts.py tool.
 
 Usage:
     python3 generate_standard_layouts_command.py [--output-dir OUTPUT_DIR]
@@ -15,7 +15,7 @@ from pathlib import Path
 text_file = "/Users/arno/Software/text_data/samples/COCA_corpusdata.org_sample_text_blog_cleaned.txt"
 
 def main():
-    parser = argparse.ArgumentParser(description='Generate layout_scorer.py command for standard layouts')
+    parser = argparse.ArgumentParser(description='Generate score_layouts.py command for standard layouts')
     parser.add_argument('--output-dir', default='output', 
                        help='Directory for output command file')
     
@@ -47,7 +47,7 @@ def main():
     
     # Build the complete command
     command_parts = [
-        "python layout_scorer.py",
+        "python score_layouts.py",
         "--compare",
         " ".join(layout_specs),
         "--csv results.csv",
