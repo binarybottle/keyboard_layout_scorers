@@ -6,7 +6,7 @@ A comprehensive tool for evaluating keyboard layouts using frequency-weighted sc
 Scoring methods include engram, comfort, comfort-key, distance, time, and dvorak9.
 
 Default behavior:
-- Score table: input/score_table.csv
+- Score table: output/keypair_scores.csv
 - Frequency data: input/english-letter-pair-counts-google-ngrams.csv  
 - Scoring mode: Frequency-weighted (prioritizes common English letter combinations)
 - Score mapping: Letter-pair frequencies → Key-pair scores (distance/time inverted)
@@ -228,7 +228,7 @@ class LayoutScorer:
     
     def _load_key_comfort_scores(self) -> Optional[Dict[str, float]]:
         """Load key comfort scores."""
-        filepath = "output/key_comfort_scores.csv"
+        filepath = "output/key_scores.csv"
         
         if not Path(filepath).exists():
             if self.verbose:
@@ -908,7 +908,7 @@ def create_cli_parser() -> argparse.ArgumentParser:
         epilog="""
 Examples:
 
-  # Basic usage (uses default files: input/score_table.csv and input/english-letter-pair-counts-google-ngrams.csv)
+  # Basic usage (uses default files: output/keypair_scores.csv and input/english-letter-pair-counts-google-ngrams.csv)
   python score_layouts.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ"
   
   # Raw (unweighted) scoring only
@@ -930,7 +930,7 @@ Examples:
   python score_layouts.py --compare qwerty:"qwerty" dvorak:"',.py" --csv results.csv
 
 Default behavior:
-- Uses input/score_table.csv for scoring data
+- Uses output/keypair_scores.csv for scoring data
 - Uses input/english-letter-pair-counts-google-ngrams.csv for frequency weighting (if it exists)
 - Falls back to raw scoring if frequency file is not found
 - With --raw: Ignores frequencies and uses raw (unweighted) scoring
@@ -946,8 +946,8 @@ Engram and comfort-key scores are computed dynamically and require letter freque
     # Required arguments (now optional with defaults)
     parser.add_argument(
         '--score-table',
-        default="input/score_table.csv",
-        help="Path to unified score table CSV file (default: input/score_table.csv)"
+        default="output/keypair_scores.csv",
+        help="Path to unified score table CSV file (default: output/keypair_scores.csv)"
     )
     
     # Optional frequency weighting (with default)

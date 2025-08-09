@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """
-create_keypair_score_table.py - Create comprehensive key pair scoring table from individual score files
+prep_scoring_tables.py - Create standardized scoring tables from individual score files
 
-Takes individual score CSV files and prepares a unified table with normalized scores.
+Takes individual score CSV files and prepares unified tables with normalized scores.
+Creates both key-pair scores and individual key scores.
 
 Input files expected:
 - keypair_time_scores.csv (key_pair, time_score)
@@ -11,11 +12,12 @@ Input files expected:
 - keypair_dvorak9_scores.csv (key_pair, dvorak9_score)
 
 Output:
-- Unified CSV with key_pair and normalized versions of all scores (0-1 range)
+- output/keypair_scores.csv: Unified key-pair scores with normalized versions (0-1 range)
+- output/key_scores.csv: Individual key comfort scores extracted from same-key bigrams
 
 Usage:
-    python prep_score_table.py --input-dir output/ --output score_table.csv
-    python prep_score_table.py --input-dir output/ --output score_table.csv --verbose
+    python prep_scoring_tables.py --input-dir output/
+    python prep_scoring_tables.py --input-dir output/ --verbose
 """
 
 import sys
@@ -110,7 +112,72 @@ def load_score_file(filepath: Path, score_column: str, verbose: bool = False) ->
     return result_df
 
 
-def create_unified_score_table(input_dir: str, output_file: str, verbose: bool = False) -> None:
+def create_key_comfort_scores(input_dir: str, verbose: bool = False) -> None:
+    """Create individual key comfort scores table from same-key bigrams."""
+    
+    input_path = Path(input_dir)
+    comfort_file = input_path / 'keypair_comfort_scores.csv'
+    
+    if not comfort_file.exists():
+        if verbose:
+            print(f"Warning: {comfort_file} not found, skipping key comfort scores extraction")
+        return
+    
+    try:
+        df = pd.read_csv(comfort_file, dtype={'key_pair': str})
+    except Exception as e:
+        if verbose:
+            print(f"Error reading comfort scores file: {e}")
+        return
+    
+    if 'key_pair' not in df.columns or 'comfort_score' not in df.columns:
+        if verbose:
+            print("Warning: comfort scores file missing required columns")
+        return
+    
+    # Filter for same-key bigrams (e.g., "AA", ";;", "//")
+    same_key_rows = df[df['key_pair'].str[0] == df['key_pair'].str[1]].copy()
+    
+    if len(same_key_rows) == 0:
+        if verbose:
+            print("Warning: No same-key bigrams found in comfort scores")
+        return
+    
+    # Extract single key from key_pair
+    same_key_rows['key'] = same_key_rows['key_pair'].str[0]
+    
+    # Apply normalization to comfort scores
+    comfort_scores = same_key_rows['comfort_score'].values
+    normalized_scores = detect_and_normalize_distribution(
+        comfort_scores, 
+        'key_comfort', 
+        verbose
+    )
+    
+    # Create output DataFrame
+    key_comfort_df = pd.DataFrame({
+        'key': same_key_rows['key'],
+        'comfort_score': normalized_scores
+    })
+    
+    # Sort by key for consistent output
+    key_comfort_df = key_comfort_df.sort_values('key').reset_index(drop=True)
+    
+    # Round to 6 decimal places
+    key_comfort_df['comfort_score'] = key_comfort_df['comfort_score'].round(6)
+    
+    # Save to output directory
+    output_file = input_path / 'key_scores.csv'
+    key_comfort_df.to_csv(output_file, index=False)
+    
+    if verbose:
+        print(f"\nCreated key comfort scores table: {output_file}")
+        print(f"  Keys: {len(key_comfort_df)} individual keys")
+        print(f"  Score range: {key_comfort_df['comfort_score'].min():.6f} - {key_comfort_df['comfort_score'].max():.6f}")
+        print(f"  Mean score: {key_comfort_df['comfort_score'].mean():.6f}")
+
+
+def create_unified_score_table(input_dir: str, verbose: bool = False) -> None:
     """Create unified key pair scoring table with normalized scores."""
     
     input_path = Path(input_dir)
@@ -217,6 +284,8 @@ def create_unified_score_table(input_dir: str, output_file: str, verbose: bool =
     for col in float_columns:
         output_df[col] = output_df[col].round(6)
     
+    # Fixed output path
+    output_file = input_path / 'keypair_scores.csv'
     output_df.to_csv(output_file, index=False)
     
     if verbose:
@@ -268,12 +337,12 @@ def validate_input_directory(input_dir: str) -> None:
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Create unified key pair scoring table from individual score files",
+        description="Create standardized scoring tables from individual score files",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-    python create_keypair_score_table.py --input-dir output/ --output score_table.csv
-    python create_keypair_score_table.py --input-dir output/ --output score_table.csv --verbose
+    python prep_scoring_tables.py --input-dir output/
+    python prep_scoring_tables.py --input-dir output/ --verbose
 
 Input files expected in input directory:
     - keypair_time_scores.csv (key_pair, time_score)
@@ -281,10 +350,15 @@ Input files expected in input directory:
     - keypair_distance_scores.csv (key_pair, distance_score)  
     - keypair_dvorak9_scores.csv (key_pair, dvorak9_score)
 
-The output CSV will contain:
-    - key_pair: Two-character key pair (e.g., "QW", "AS")
-    - Original score columns (time_score, comfort_score, distance_score, dvorak9_score)
-    - Normalized score columns (*_score_normalized) with smart distribution-aware normalization (0-1 range)
+Creates two standardized output files:
+    - output/keypair_scores.csv: Unified key-pair scores
+        - key_pair: Two-character key pair (e.g., "QW", "AS")
+        - Original score columns (time_score, comfort_score, distance_score, dvorak9_score)
+        - Normalized score columns (*_score_normalized) with smart distribution-aware normalization (0-1 range)
+    
+    - output/key_scores.csv: Individual key comfort scores
+        - key: Individual key character
+        - comfort_score: Normalized comfort score for that key (extracted from same-key bigrams like "AA", ";;")
 
 All floating point values are formatted to 6 decimal places.
 Missing input files will be skipped with a warning.
@@ -296,12 +370,6 @@ The script uses smart normalization with automatic distribution detection.
         '--input-dir',
         required=True,
         help="Directory containing the individual score CSV files"
-    )
-    
-    parser.add_argument(
-        '--output',
-        required=True,
-        help="Output CSV file path for the unified scoring table"
     )
     
     parser.add_argument(
@@ -319,11 +387,18 @@ The script uses smart normalization with automatic distribution detection.
         # Create the unified table
         create_unified_score_table(
             args.input_dir,
-            args.output,
             args.verbose
         )
         
-        print(f"Successfully created unified scoring table: {args.output}")
+        # Create individual key comfort scores table
+        create_key_comfort_scores(
+            args.input_dir,
+            args.verbose
+        )
+        
+        print(f"Successfully created scoring tables:")
+        print(f"  - Keypair scores: {Path(args.input_dir) / 'keypair_scores.csv'}")
+        print(f"  - Key scores: {Path(args.input_dir) / 'key_scores.csv'}")
         return 0
         
     except Exception as e:
