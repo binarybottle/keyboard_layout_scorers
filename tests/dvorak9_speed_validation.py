@@ -2273,7 +2273,7 @@ def main():
     
     # Configuration
     bigram_file = "../process_136M_keystrokes/output/bigram_times.csv"
-    freq_file = "input/engram/normalized_letter_pair_frequencies_en.csv"
+    freq_file = "input/prep/normalized_letter_pair_frequencies_en.csv"
     middle_column_keys = {'b', 'g', 'h', 'n', 't', 'y'}
     
     # Print configuration

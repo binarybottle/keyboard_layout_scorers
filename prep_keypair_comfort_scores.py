@@ -26,7 +26,7 @@ Key-pairs that cannot be calculated due to insufficient data are skipped.
 Generated key-pairs have empty uncertainty values.
 
 Input:
-    input/engram/comfort_keypair_scores_24keys.csv - CSV with existing 24-key comfort scores
+    input/prep/comfort_keypair_scores_24keys.csv - CSV with existing 24-key comfort scores
 
 Output:
     output/keypair_comfort_scores.csv - Complete CSV with all calculable key-pair scores
@@ -73,7 +73,7 @@ def is_same_hand(key1: str, key2: str) -> bool:
     hand2 = get_key_hand(key2)
     return hand1 == hand2 and hand1 is not None
 
-def load_existing_scores(input_file: str = "input/engram/comfort_keypair_scores_24keys.csv") -> Dict[str, Tuple[float, float]]:
+def load_existing_scores(input_file: str = "input/prep/comfort_keypair_scores_24keys.csv") -> Dict[str, Tuple[float, float]]:
     """Load existing comfort scores from CSV file."""
     scores = {}
     
@@ -475,7 +475,7 @@ def main():
     
     try:
         # Load and validate existing scores
-        input_file = "input/engram/comfort_keypair_scores_24keys.csv"
+        input_file = "input/prep/comfort_keypair_scores_24keys.csv"
         existing_scores = load_existing_scores(input_file)
         
         # Analyze existing scores

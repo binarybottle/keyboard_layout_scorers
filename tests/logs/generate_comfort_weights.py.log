@@ -1,9 +1,9 @@
 > poetry run python3 generate_comfort_weights.py
 Dvorak-9 Comfort-Based Weight Generation (30-Key Extended)
 ============================================================
-Input file: input/engram/normalized_key_pair_comfort_scores_32keys_LvsRpairs.csv
+Input file: input/prep/normalized_key_pair_comfort_scores_32keys_LvsRpairs.csv
 
-Loading comfort data from input/engram/normalized_key_pair_comfort_scores_32keys_LvsRpairs.csv...
+Loading comfort data from input/prep/normalized_key_pair_comfort_scores_32keys_LvsRpairs.csv...
 ✅ Loaded 612 position-pairs with comfort scores
    Columns: ['key_pair', 'comfort_score', 'uncertainty', 'Unnamed: 3']
    Removed 1 rows with missing key_pair values

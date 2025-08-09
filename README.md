@@ -103,7 +103,7 @@ The framework uses `config.yaml` for centralized configuration:
     letter_filtering: true
     data_directories:
       base: "input/"
-      engram: "input/engram/"
+      engram: "input/prep/"
       dvorak9: "input/dvorak9/"
 
   distance_scorer:
@@ -143,10 +143,10 @@ The framework uses `config.yaml` for centralized configuration:
 
 ### Engram Scorer
 **Required:**
-  - `input/engram/normalized_letter_frequencies_en.csv` - Letter frequencies
-  - `input/engram/normalized_letter_pair_frequencies_en.csv` - Bigram frequencies  
-  - `input/engram/normalized_key_comfort_scores_24keys.csv` - Key comfort scores
-  - `input/engram/normalized_key_pair_comfort_scores_32keys_LvsRpairs.csv` - Key-pair comfort
+  - `input/prep/normalized_letter_frequencies_en.csv` - Letter frequencies
+  - `input/prep/normalized_letter_pair_frequencies_en.csv` - Bigram frequencies  
+  - `input/prep/normalized_key_comfort_scores_24keys.csv` - Key comfort scores
+  - `input/prep/normalized_key_pair_comfort_scores_32keys_LvsRpairs.csv` - Key-pair comfort
 
 ### File Formats
 All data files use CSV format with headers:
@@ -199,7 +199,7 @@ All data files use CSV format with headers:
   ├──
   ├── # Data directories
   ├── input/
-  │   ├── engram/                    # Engram scorer data files
+  │   ├── prep/                    # Engram scorer data files
   │   ├── dvorak9/                   # Dvorak-9 scorer data files  
   │   └── distance/                  # Distance scorer data files (if any)
   └──

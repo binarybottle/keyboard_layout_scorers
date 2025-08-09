@@ -187,7 +187,7 @@ Testing weighted scoring:
   Weights type: speed
   Output file: output/dvorak9_weighted_scores_speed.csv
   Testing with 19 character layout
-Loaded 669 bigram frequencies from input/engram/normalized_letter_pair_frequencies_en.csv
+Loaded 669 bigram frequencies from input/prep/normalized_letter_pair_frequencies_en.csv
 Loaded 1024 precomputed key-pair scores from input/dvorak9/key_pair_scores.csv
 ✅ Weighted scoring test completed:
    Layout score: 0.0987

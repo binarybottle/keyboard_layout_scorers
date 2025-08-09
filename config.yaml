@@ -10,7 +10,7 @@ common:
   # Default data directory structure
   data_directories:
     base: "input/"
-    engram: "input/engram/"
+    engram: "input/prep/"
     dvorak9: "input/dvorak9/"
     distance: "input/distance/"
 

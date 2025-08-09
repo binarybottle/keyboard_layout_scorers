@@ -14,8 +14,8 @@ Output:
 - Unified CSV with key_pair and normalized versions of all scores (0-1 range)
 
 Usage:
-    python prep_score_table.py --input-dir output/ --output unified_scores.csv
-    python prep_score_table.py --input-dir output/ --output unified_scores.csv --verbose
+    python prep_score_table.py --input-dir output/ --output score_table.csv
+    python prep_score_table.py --input-dir output/ --output score_table.csv --verbose
 """
 
 import sys
@@ -262,8 +262,8 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-    python create_keypair_score_table.py --input-dir output/ --output unified_scores.csv
-    python create_keypair_score_table.py --input-dir output/ --output unified_scores.csv --verbose
+    python create_keypair_score_table.py --input-dir output/ --output score_table.csv
+    python create_keypair_score_table.py --input-dir output/ --output score_table.csv --verbose
 
 Input files expected in input directory:
     - keypair_time_scores.csv (key_pair, time_score)
