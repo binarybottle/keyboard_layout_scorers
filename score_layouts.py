@@ -3,7 +3,7 @@
 Keyboard Layout Scorer using precomputed score table.
 
 A comprehensive tool for evaluating keyboard layouts using frequency-weighted scoring.
-Scoring methods include engram, comfort, distance, time, and dvorak9.
+Scoring methods include engram, comfort, comfort-key, distance, time, and dvorak9.
 
 Default behavior:
 - Score table: input/score_table.csv
@@ -43,6 +43,7 @@ Key features:
 - Multiple output formats: detailed, CSV, minimal CSV, score-only
 - Graceful fallback to raw scoring if frequency file missing
 - Support for all scoring methods in the unified score table
+- Dynamic engram and comfort-key scoring
 """
 
 import sys
@@ -71,12 +72,27 @@ class LayoutScorer:
         else:
             self.bigram_frequencies = None
         
+        # Load additional data for dynamic scoring methods
+        self.letter_frequencies = self._load_letter_frequencies()
+        self.key_comfort_scores = self._load_key_comfort_scores()
+        
+        # Add dynamic scorers to available list
+        if self.letter_frequencies is not None and self.key_comfort_scores is not None:
+            if 'comfort-key' not in self.available_scorers:
+                self.available_scorers.append('comfort-key')
+            if 'comfort' in self.available_scorers and 'engram' not in self.available_scorers:
+                self.available_scorers.append('engram')
+        
         if self.verbose:
             print(f"Score table: {score_table_path}")
             if frequency_file:
                 print(f"Frequency file: {frequency_file}")
             print(f"Loaded score table with {len(self.score_table)} key pairs")
             print(f"Available scorers: {', '.join(self.available_scorers)}")
+            if self.letter_frequencies is not None:
+                print(f"Loaded letter frequencies for {len(self.letter_frequencies)} letters")
+            if self.key_comfort_scores is not None:
+                print(f"Loaded key comfort scores for {len(self.key_comfort_scores)} keys")
             if self.use_raw:
                 print("Using raw (unweighted) scoring only")
             elif self.bigram_frequencies is not None:
@@ -158,6 +174,91 @@ class LayoutScorer:
         
         return frequencies
     
+    def _load_letter_frequencies(self) -> Optional[Dict[str, float]]:
+        """Load individual letter frequency data."""
+        filepath = "input/english-letter-counts-google-ngrams.csv"
+        
+        if not Path(filepath).exists():
+            if self.verbose:
+                print(f"Letter frequency file not found: {filepath}")
+            return None
+        
+        try:
+            df = pd.read_csv(filepath)
+        except Exception as e:
+            if self.verbose:
+                print(f"Error reading letter frequency file: {e}")
+            return None
+        
+        # Try to detect column names
+        possible_letter_cols = ['letter', 'char', 'character']
+        possible_freq_cols = ['count', 'frequency', 'freq', 'occurrences']
+        
+        letter_col = None
+        freq_col = None
+        
+        for col in possible_letter_cols:
+            if col in df.columns:
+                letter_col = col
+                break
+        
+        for col in possible_freq_cols:
+            if col in df.columns:
+                freq_col = col
+                break
+        
+        if letter_col is None or freq_col is None:
+            if self.verbose:
+                print(f"Could not find required columns in letter frequency file")
+            return None
+        
+        # Load frequencies
+        frequencies = {}
+        for _, row in df.iterrows():
+            letter = str(row[letter_col]).strip().upper()
+            freq = float(row[freq_col])
+            
+            if len(letter) == 1:
+                frequencies[letter] = freq
+        
+        if self.verbose:
+            print(f"Loaded letter frequencies for {len(frequencies)} letters")
+        
+        return frequencies
+    
+    def _load_key_comfort_scores(self) -> Optional[Dict[str, float]]:
+        """Load key comfort scores."""
+        filepath = "output/key_comfort_scores.csv"
+        
+        if not Path(filepath).exists():
+            if self.verbose:
+                print(f"Key comfort scores file not found: {filepath}")
+            return None
+        
+        try:
+            df = pd.read_csv(filepath)
+        except Exception as e:
+            if self.verbose:
+                print(f"Error reading key comfort scores file: {e}")
+            return None
+        
+        if 'key' not in df.columns or 'comfort_score' not in df.columns:
+            if self.verbose:
+                print("Key comfort scores file must have 'key' and 'comfort_score' columns")
+            return None
+        
+        # Load comfort scores
+        scores = {}
+        for _, row in df.iterrows():
+            key = str(row['key']).strip().upper()
+            score = float(row['comfort_score'])
+            scores[key] = score
+        
+        if self.verbose:
+            print(f"Loaded key comfort scores for {len(scores)} keys")
+        
+        return scores
+    
     def _detect_available_scorers(self) -> List[str]:
         """Detect available scoring methods from table columns."""
         scorers = []
@@ -181,9 +282,50 @@ class LayoutScorer:
         
         return letter_pairs
     
+    def _compute_comfort_key_score(self, letter_pair: str, layout_mapping: Dict[str, str]) -> Optional[float]:
+        """Compute comfort-key score for a letter pair."""
+        if len(letter_pair) != 2:
+            return None
+        
+        if self.letter_frequencies is None or self.key_comfort_scores is None:
+            return None
+        
+        letter1, letter2 = letter_pair[0], letter_pair[1]
+        
+        # Get keys for these letters
+        if letter1 not in layout_mapping or letter2 not in layout_mapping:
+            return None
+        
+        key1 = layout_mapping[letter1]
+        key2 = layout_mapping[letter2]
+        
+        # Get letter frequencies
+        freq1 = self.letter_frequencies.get(letter1, 0.0)
+        freq2 = self.letter_frequencies.get(letter2, 0.0)
+        
+        # Get key comfort scores
+        comfort1 = self.key_comfort_scores.get(key1, 0.0)
+        comfort2 = self.key_comfort_scores.get(key2, 0.0)
+        
+        # Compute weighted comfort scores
+        weighted_comfort1 = comfort1 * freq1
+        weighted_comfort2 = comfort2 * freq2
+        
+        # Average the two weighted comfort scores
+        comfort_key_score = (weighted_comfort1 + weighted_comfort2) / 2.0
+        
+        return comfort_key_score
+    
     def _score_layout_with_method(self, layout_mapping: Dict[str, str], scorer: str) -> Dict[str, float]:
         """Score a layout using a specific scoring method."""
         
+        # Handle dynamic scoring methods
+        if scorer == 'comfort-key':
+            return self._score_layout_comfort_key(layout_mapping)
+        elif scorer == 'engram':
+            return self._score_layout_engram(layout_mapping)
+        
+        # Handle table-based scoring methods
         # Get column name for this scorer
         score_col = f"{scorer}_score_normalized"
         if score_col not in self.score_table.columns:
@@ -276,6 +418,178 @@ class LayoutScorer:
         
         if self.verbose and missing_pairs:
             print(f"  Warning: {len(missing_pairs)} missing pairs for {scorer}")
+            if len(missing_pairs) <= 5:
+                print(f"    Missing: {missing_pairs}")
+        
+        return results
+    
+    def _score_layout_comfort_key(self, layout_mapping: Dict[str, str]) -> Dict[str, float]:
+        """Score a layout using comfort-key method."""
+        if self.letter_frequencies is None or self.key_comfort_scores is None:
+            raise ValueError("Letter frequencies and key comfort scores required for comfort-key scoring")
+        
+        # Generate all letter-pairs for this layout
+        letter_pairs = self._generate_letter_pairs(layout_mapping)
+        
+        # Initialize scoring variables
+        raw_total_score = 0.0
+        raw_count = 0
+        missing_pairs = []
+        
+        # Frequency-weighted scoring (if not using raw mode)
+        weighted_total_score = 0.0
+        total_frequency = 0.0
+        frequency_coverage = 0.0
+        use_frequency = self.bigram_frequencies is not None and not self.use_raw
+        
+        for letter_pair in letter_pairs:
+            comfort_key_score = self._compute_comfort_key_score(letter_pair, layout_mapping)
+            
+            if comfort_key_score is not None:
+                # Raw scoring (treat all letter-pairs equally)
+                raw_total_score += comfort_key_score
+                raw_count += 1
+                
+                # Frequency-weighted scoring (if enabled)
+                if use_frequency:
+                    frequency = self.bigram_frequencies.get(letter_pair, 0.0)
+                    weighted_total_score += comfort_key_score * frequency
+                    total_frequency += frequency
+                    if frequency > 0:
+                        frequency_coverage += frequency
+            else:
+                missing_pairs.append(letter_pair)
+        
+        # Calculate results
+        raw_average = raw_total_score / raw_count if raw_count > 0 else 0.0
+        
+        # Determine primary score based on mode
+        if use_frequency:
+            # Frequency weighting is primary
+            primary_score = weighted_total_score / total_frequency if total_frequency > 0 else 0.0
+            results = {
+                'average_score': primary_score,  # Primary score
+                'total_score': weighted_total_score,
+                'raw_average_score': raw_average,  # Secondary 
+                'raw_total_score': raw_total_score,
+                'pair_count': raw_count,
+                'missing_pairs': len(missing_pairs),
+                'coverage': raw_count / len(letter_pairs) if letter_pairs else 0.0,
+                'total_frequency': total_frequency,
+                'frequency_coverage': frequency_coverage / sum(self.bigram_frequencies.values()) if self.bigram_frequencies else 0.0
+            }
+        else:
+            # Raw scoring is primary
+            results = {
+                'average_score': raw_average,  # Primary score
+                'total_score': raw_total_score,
+                'pair_count': raw_count,
+                'missing_pairs': len(missing_pairs),
+                'coverage': raw_count / len(letter_pairs) if letter_pairs else 0.0
+            }
+        
+        if self.verbose and missing_pairs:
+            print(f"  Warning: {len(missing_pairs)} missing pairs for comfort-key")
+            if len(missing_pairs) <= 5:
+                print(f"    Missing: {missing_pairs}")
+        
+        return results
+    
+    def _score_layout_engram(self, layout_mapping: Dict[str, str]) -> Dict[str, float]:
+        """Score a layout using engram method (comfort * comfort-key)."""
+        if self.letter_frequencies is None or self.key_comfort_scores is None:
+            raise ValueError("Letter frequencies and key comfort scores required for engram scoring")
+        
+        # Check if comfort scoring is available
+        comfort_col = "comfort_score_normalized"
+        if comfort_col not in self.score_table.columns:
+            comfort_col = "comfort_normalized"
+            if comfort_col not in self.score_table.columns:
+                raise ValueError("Comfort scores not found in score table - required for engram scoring")
+        
+        # Generate all letter-pairs for this layout
+        letter_pairs = self._generate_letter_pairs(layout_mapping)
+        
+        # Initialize scoring variables
+        raw_total_score = 0.0
+        raw_count = 0
+        missing_pairs = []
+        
+        # Frequency-weighted scoring (if not using raw mode)
+        weighted_total_score = 0.0
+        total_frequency = 0.0
+        frequency_coverage = 0.0
+        use_frequency = self.bigram_frequencies is not None and not self.use_raw
+        
+        for letter_pair in letter_pairs:
+            if len(letter_pair) == 2:
+                letter1, letter2 = letter_pair[0], letter_pair[1]
+                
+                if letter1 in layout_mapping and letter2 in layout_mapping:
+                    key1 = layout_mapping[letter1]
+                    key2 = layout_mapping[letter2]
+                    key_pair = key1 + key2
+                    
+                    # Get comfort score from table
+                    if key_pair in self.score_table.index:
+                        comfort_score = self.score_table.loc[key_pair, comfort_col]
+                        
+                        # Get comfort-key score
+                        comfort_key_score = self._compute_comfort_key_score(letter_pair, layout_mapping)
+                        
+                        if comfort_key_score is not None:
+                            # Compute engram score
+                            engram_score = comfort_score * comfort_key_score
+                            
+                            # Raw scoring (treat all letter-pairs equally)
+                            raw_total_score += engram_score
+                            raw_count += 1
+                            
+                            # Frequency-weighted scoring (if enabled)
+                            if use_frequency:
+                                frequency = self.bigram_frequencies.get(letter_pair, 0.0)
+                                weighted_total_score += engram_score * frequency
+                                total_frequency += frequency
+                                if frequency > 0:
+                                    frequency_coverage += frequency
+                        else:
+                            missing_pairs.append(f"{letter_pair}→{key_pair} (comfort-key)")
+                    else:
+                        missing_pairs.append(f"{letter_pair}→{key_pair} (comfort)")
+                else:
+                    # Letter not in layout mapping
+                    missing_pairs.append(f"{letter_pair}→??")
+        
+        # Calculate results
+        raw_average = raw_total_score / raw_count if raw_count > 0 else 0.0
+        
+        # Determine primary score based on mode
+        if use_frequency:
+            # Frequency weighting is primary
+            primary_score = weighted_total_score / total_frequency if total_frequency > 0 else 0.0
+            results = {
+                'average_score': primary_score,  # Primary score
+                'total_score': weighted_total_score,
+                'raw_average_score': raw_average,  # Secondary 
+                'raw_total_score': raw_total_score,
+                'pair_count': raw_count,
+                'missing_pairs': len(missing_pairs),
+                'coverage': raw_count / len(letter_pairs) if letter_pairs else 0.0,
+                'total_frequency': total_frequency,
+                'frequency_coverage': frequency_coverage / sum(self.bigram_frequencies.values()) if self.bigram_frequencies else 0.0
+            }
+        else:
+            # Raw scoring is primary
+            results = {
+                'average_score': raw_average,  # Primary score
+                'total_score': raw_total_score,
+                'pair_count': raw_count,
+                'missing_pairs': len(missing_pairs),
+                'coverage': raw_count / len(letter_pairs) if letter_pairs else 0.0
+            }
+        
+        if self.verbose and missing_pairs:
+            print(f"  Warning: {len(missing_pairs)} missing pairs for engram")
             if len(missing_pairs) <= 5:
                 print(f"    Missing: {missing_pairs}")
         
@@ -625,6 +939,7 @@ Default behavior:
 
 Available scoring methods depend on the score table contents (e.g., distance, comfort, dvorak9, time).
 Distance and time scores are automatically inverted (1-score) since higher values are worse.
+Engram and comfort-key scores are computed dynamically and require letter frequencies and key comfort scores.
         """
     )
     

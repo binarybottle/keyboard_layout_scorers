@@ -1,25 +1,35 @@
 #!/usr/bin/env python3
 """
-compare_layouts.py - Parallel Coordinates Layout Comparison
+Keyboard layout comparison
 
-Creates parallel coordinates plots comparing keyboard layouts across performance metrics.
-Each layout is represented as a line connecting its normalized scores across available metrics.
+Creates parallel coordinates and heatmap plots comparing keyboard layouts across performance metrics.
 
-This version is more robust and handles missing columns gracefully.
+This version expects CSV files in the format:
+layout_name,scorer,weighted_score,raw_score
 
-
+Usage:
 # Single table - sorts all layouts by performance
-python compare_layouts.py --tables moo_69_layouts_e_in_J.csv
+python compare_layouts.py --tables layout_scores.csv
 
 # Multiple tables - sorts within each table, maintains grouping  
-python compare_layouts.py --tables score_13_layouts.csv moo_69_layouts_e_in_J.csv
+python compare_layouts.py --tables scores1.csv scores2.csv
 
-# With filtering and output
-python compare_layouts.py --tables data1.csv data2.csv --variant full --output comparison
+# With output file
+python compare_layouts.py --tables scores.csv --output comparison
+
+# Use raw scores instead of weighted scores
+python compare_layouts.py --tables scores.csv --use-raw
 
 # Verbose mode
-python compare_layouts.py --tables layouts.csv --verbose
+python compare_layouts.py --tables scores.csv --verbose
 
+Example input format (from score_layouts.py --csv-output):
+layout_name,scorer,weighted_score,raw_score
+qwerty,distance,0.756234,0.742156
+qwerty,comfort,0.623451,0.618923
+dvorak,distance,0.834567,0.821234
+dvorak,comfort,0.712345,0.708912
+...
 
 For reference:
 - Halmak 2.2	     wlrbz;qudjshnt,.aeoifmvc/gpxky['
@@ -47,144 +57,87 @@ from pathlib import Path
 import sys
 from typing import List, Dict, Tuple, Optional
 
-# Define the metrics in the specified order (matching your actual CSV columns)
-IDEAL_METRICS = [
-    'engram_total_score_32key', 
-    'engram_item_component_32key', 
-    'engram_item_pair_component_32key',
-    'distance_total_travel',
-    'distance_left_finger1',
-    'distance_left_finger2',
-    'distance_left_finger3',
-    'distance_left_finger4',
-    'distance_right_finger1',
-    'distance_right_finger2',
-    'distance_right_finger3',
-    'distance_right_finger4',
-    'dvorak9_pure_dvorak_score',
-    'dvorak9_speed_weighted_score',
-    'dvorak9_comfort_weighted_score',
-    'dvorak9_frequency_weighted_score',
-    'dvorak9_hands',
-    'dvorak9_fingers',
-    'dvorak9_skip_fingers',
-    'dvorak9_dont_cross_home',
-    'dvorak9_same_row',
-    'dvorak9_home_row',
-    'dvorak9_columns',
-    'dvorak9_strum',
-    'dvorak9_strong_fingers'
-]
-
-# Short names for display
-METRIC_LABELS = {
-    'engram_total_score_32key': 'Engram\ntotal',
-    'engram_item_component_32key': '- items',
-    'engram_item_pair_component_32key': '- pairs',
-    'distance_total_travel': 'Distance',
-    'distance_left_finger1': '- finger L1',
-    'distance_left_finger2': '- finger L2',
-    'distance_left_finger3': '- finger L3',
-    'distance_left_finger4': '- finger L4',
-    'distance_right_finger1': '- finger R1',
-    'distance_right_finger2': '- finger R2',
-    'distance_right_finger3': '- finger R3',
-    'distance_right_finger4': '- finger R4',
-    'dvorak9_pure_dvorak_score': 'Dvorak-9',
-    'dvorak9_speed_weighted_score': 'D-9 speed\nweighted',
-    'dvorak9_comfort_weighted_score': 'D-9 comfort\nweighted',
-    'dvorak9_frequency_weighted_score': 'D-9 frequency\nweighted',
-    'dvorak9_hands': '1. different\nhands',
-    'dvorak9_fingers': '2. different\nfingers',
-    'dvorak9_skip_fingers': '3. skip\nfingers',
-    'dvorak9_dont_cross_home': '4. don\'t cross\nhome row',
-    'dvorak9_same_row': '5. same\nrow',
-    'dvorak9_home_row': '6. home\nrow',
-    'dvorak9_columns': '7. within\ncolumns',
-    'dvorak9_strum': '8. inward\nroll',
-    'dvorak9_strong_fingers': '9. strong\nfingers'
-}
-
-def find_available_metrics(dfs: List[pd.DataFrame], verbose: bool = False) -> List[str]:
-    """Find which metrics from IDEAL_METRICS are actually available in the data."""
-    # Get all columns that appear to be numeric metrics
-    all_columns = set()
-    for df in dfs:
-        all_columns.update(df.columns)
-    
-    # Find numeric columns that might be metrics
-    numeric_metrics = []
-    for df in dfs:
-        for col in df.columns:
-            if col != 'layout' and pd.api.types.is_numeric_dtype(df[col]):
-                if col not in numeric_metrics:
-                    numeric_metrics.append(col)
-    
-    # Only use metrics from IDEAL_METRICS that are available in the data
-    available_metrics = []
-    for metric in IDEAL_METRICS:
-        if metric in numeric_metrics:
-            available_metrics.append(metric)
-    
-    if verbose:
-        print(f"\nFound {len(available_metrics)} metrics from IDEAL_METRICS to plot:")
-        for i, metric in enumerate(available_metrics):
-            print(f"  {i+1:2d}. {metric}")
-        
-        missing_ideal = [m for m in IDEAL_METRICS if m not in available_metrics]
-        if missing_ideal:
-            print(f"\nMissing ideal metrics ({len(missing_ideal)}):")
-            for metric in missing_ideal:
-                print(f"     {metric}")
-    
-    return available_metrics
-
-def load_and_filter_data(file_path: str, variant: Optional[str] = None, verbose: bool = False) -> pd.DataFrame:
-    """Load CSV data and optionally filter by variant."""
+def load_and_pivot_data(file_path: str, use_raw: bool = False, verbose: bool = False) -> pd.DataFrame:
+    """Load CSV data from score_layouts.py output and pivot to layout x scorer format."""
     try:
         df = pd.read_csv(file_path)
         if verbose:
             print(f"\nLoaded {len(df)} rows from {file_path}")
             print(f"Columns: {list(df.columns)}")
         
-        if variant:
-            # Filter by variant 
-            if variant == 'no_crosshand':
-                filtered_df = df[df['layout'].str.contains('no_crosshand_', na=False)]
-            elif variant == 'full':
-                filtered_df = df[df['layout'].str.contains('full_', na=False)]
+        # Check required columns
+        required_cols = ['layout_name', 'scorer']
+        if use_raw:
+            score_col = 'raw_score'
+        else:
+            # Try weighted_score first, fall back to raw_score if not available
+            if 'weighted_score' in df.columns:
+                score_col = 'weighted_score'
+            elif 'raw_score' in df.columns:
+                score_col = 'raw_score'
+                if verbose:
+                    print("Warning: No weighted_score column found, using raw_score")
             else:
-                print(f"Warning: Unknown variant '{variant}', using all data")
-                filtered_df = df
-                
-            if verbose:
-                print(f"Filtered to {len(filtered_df)} rows for variant '{variant}'")
-            return filtered_df
+                raise ValueError("No score column found (expected 'weighted_score' or 'raw_score')")
         
-        return df
+        required_cols.append(score_col)
+        
+        missing_cols = [col for col in required_cols if col not in df.columns]
+        if missing_cols:
+            raise ValueError(f"Missing required columns: {missing_cols}")
+        
+        if verbose:
+            print(f"Using score column: '{score_col}'")
+            print(f"Found {len(df['layout_name'].unique())} unique layouts")
+            print(f"Found {len(df['scorer'].unique())} unique scorers")
+            print(f"Scorers: {', '.join(sorted(df['scorer'].unique()))}")
+        
+        # Pivot the data: layouts as rows, scorers as columns
+        try:
+            pivoted = df.pivot(index='layout_name', columns='scorer', values=score_col)
+            pivoted = pivoted.reset_index()
+            pivoted = pivoted.rename(columns={'layout_name': 'layout'})
+            
+            if verbose:
+                print(f"Pivoted data shape: {pivoted.shape}")
+                print(f"Layouts: {len(pivoted)}")
+                print(f"Metrics (scorers): {len(pivoted.columns) - 1}")
+            
+            return pivoted
+            
+        except Exception as e:
+            raise ValueError(f"Error pivoting data - possible duplicate layout+scorer combinations: {e}")
+    
     except Exception as e:
         print(f"Error loading {file_path}: {e}")
         sys.exit(1)
 
+def find_available_metrics(dfs: List[pd.DataFrame], verbose: bool = False) -> List[str]:
+    """Find which scorer metrics are available in the data."""
+    # Get all columns that appear to be numeric metrics (excluding 'layout')
+    all_metrics = set()
+    for df in dfs:
+        for col in df.columns:
+            if col != 'layout' and pd.api.types.is_numeric_dtype(df[col]):
+                all_metrics.add(col)
+    
+    # Convert to sorted list
+    available_metrics = sorted(list(all_metrics))
+    
+    if verbose:
+        print(f"\nFound {len(available_metrics)} scorer metrics to plot:")
+        for i, metric in enumerate(available_metrics):
+            print(f"  {i+1:2d}. {metric}")
+    
+    return available_metrics
+
 def normalize_data(dfs: List[pd.DataFrame], metrics: List[str]) -> List[pd.DataFrame]:
     """Normalize all data across tables for fair comparison."""
-
     # Combine all data to get global min/max for each metric
     all_data = pd.concat(dfs, ignore_index=True)
     
-    # Define metrics where lower values are better (should be inverted)
-    invert_metrics = {
-        'distance_total_travel',
-        'distance_average_travel',
-        'distance_left_finger1',
-        'distance_left_finger2', 
-        'distance_left_finger3',
-        'distance_left_finger4',
-        'distance_right_finger1',
-        'distance_right_finger2',
-        'distance_right_finger3', 
-        'distance_right_finger4'
-    }
+    # For scorer outputs, higher scores are generally better
+    # No need to invert since score_layouts.py already handles this
     
     normalized_dfs = []
     
@@ -197,15 +150,8 @@ def normalize_data(dfs: List[pd.DataFrame], metrics: List[str]) -> List[pd.DataF
                 global_max = all_data[metric].max()
                 
                 if pd.notna(global_min) and pd.notna(global_max) and global_max != global_min:
-                    # Standard normalization first
-                    standard_norm = (df[metric] - global_min) / (global_max - global_min)
-                    
-                    if metric in invert_metrics:
-                        # For distance metrics: lower raw value = better performance = higher score
-                        normalized_df[metric] = 1 - standard_norm
-                    else:
-                        # For other metrics: higher raw value = better performance = higher score
-                        normalized_df[metric] = standard_norm
+                    # Standard normalization: higher score = better performance
+                    normalized_df[metric] = (df[metric] - global_min) / (global_max - global_min)
                 else:
                     normalized_df[metric] = 0.5  # Default to middle if no variation
             else:
@@ -230,9 +176,8 @@ def get_colors(num_tables: int) -> List[str]:
         cmap = plt.cm.Set3
         return [cmap(i / num_tables) for i in range(num_tables)]
 
-
 def create_heatmap_plot(dfs: List[pd.DataFrame], table_names: List[str], 
-                       metrics: List[str], variant: str, output_path: Optional[str] = None) -> None:
+                       metrics: List[str], use_raw: str, output_path: Optional[str] = None) -> None:
     """Create heatmap visualization with layouts on y-axis and metrics on x-axis."""
     
     # Normalize data across all tables
@@ -264,11 +209,7 @@ def create_heatmap_plot(dfs: List[pd.DataFrame], table_names: List[str],
                 continue
             
             table_data.append(metric_values)
-            
-            # Create layout name and remove variant prefixes
-            raw_layout_name = row.get('layout', f'Layout_{len(table_layout_names)+1}')
-            layout_name = raw_layout_name.replace('full_', '').replace('no_crosshand_', '')
-
+            layout_name = row.get('layout', f'Layout_{len(table_layout_names)+1}')
             table_layout_names.append(layout_name)
         
         if not table_data:
@@ -306,14 +247,11 @@ def create_heatmap_plot(dfs: List[pd.DataFrame], table_names: List[str],
     ax.set_xticks(range(len(metrics)))
     ax.set_yticks(range(len(layout_names)))
     
-    # Prepare metric labels
+    # Format metric labels
     metric_display_names = []
     for metric in metrics:
-        if metric in METRIC_LABELS:
-            # Remove newlines for heatmap labels
-            display_name = METRIC_LABELS[metric].replace('\n', ' ')
-        else:
-            display_name = metric.replace('_', ' ').title()
+        # Clean up scorer names for display
+        display_name = metric.replace('_', ' ').title()
         metric_display_names.append(display_name)
     
     ax.set_xticklabels(metric_display_names, rotation=45, ha='right', fontsize=9)
@@ -338,15 +276,13 @@ def create_heatmap_plot(dfs: List[pd.DataFrame], table_names: List[str],
     if len(dfs) > 1:
         sort_info = " (sorted within each table)"
     
-    if variant and variant != "all":
-        title = f'Keyboard Layout Comparison Heatmap ({variant}){sort_info}\n{len(layout_names)} layouts across {len(metrics)} metrics'
-    else:
-        title = f'Keyboard Layout Comparison Heatmap{sort_info}\n{len(layout_names)} layouts across {len(metrics)} metrics'
+    score_type = "raw scores" if use_raw else "weighted scores"
+    title = f'Keyboard Layout Comparison Heatmap ({score_type}){sort_info}\n{len(layout_names)} layouts across {len(metrics)} metrics'
     
     ax.set_title(title, fontsize=14, fontweight='bold', pad=20)
     
     # Labels
-    ax.set_xlabel('Metrics', fontsize=12)
+    ax.set_xlabel('Scoring Methods', fontsize=12)
     ax.set_ylabel('Keyboard Layouts', fontsize=12)
     
     # Adjust layout
@@ -365,9 +301,8 @@ def create_heatmap_plot(dfs: List[pd.DataFrame], table_names: List[str],
     else:
         plt.show()
 
-
 def create_parallel_plot(dfs: List[pd.DataFrame], table_names: List[str], 
-                        metrics: List[str], variant: str, output_path: Optional[str] = None) -> None:
+                        metrics: List[str], use_raw: str, output_path: Optional[str] = None) -> None:
     """Create parallel coordinates plot."""
     # Normalize data across all tables
     normalized_dfs = normalize_data(dfs, metrics)
@@ -408,18 +343,15 @@ def create_parallel_plot(dfs: List[pd.DataFrame], table_names: List[str],
     # Set x-axis labels
     metric_display_names = []
     for metric in metrics:
-        if metric in METRIC_LABELS:
-            metric_display_names.append(METRIC_LABELS[metric])
-        else:
-            # Create a reasonable display name from the column name
-            display_name = metric.replace('_', ' ').title()
-            if len(display_name) > 15:
-                # Split long names
-                words = display_name.split()
-                if len(words) > 1:
-                    mid = len(words) // 2
-                    display_name = ' '.join(words[:mid]) + '\n' + ' '.join(words[mid:])
-            metric_display_names.append(display_name)
+        # Clean up scorer names for display
+        display_name = metric.replace('_', ' ').title()
+        # Split long names
+        if len(display_name) > 12:
+            words = display_name.split()
+            if len(words) > 1:
+                mid = len(words) // 2
+                display_name = ' '.join(words[:mid]) + '\n' + ' '.join(words[mid:])
+        metric_display_names.append(display_name)
     
     ax.set_xticks(x_positions)
     ax.set_xticklabels(metric_display_names, rotation=45, ha='right', fontsize=10)
@@ -434,14 +366,10 @@ def create_parallel_plot(dfs: List[pd.DataFrame], table_names: List[str],
     ax.grid(True, alpha=0.3)
     
     # Title and legend
-    if variant and variant != "all":
-        ax.set_title(f'Keyboard Layout Comparison ({variant})\n'
-                    f'Parallel coordinates across {len(metrics)} metrics', 
-                    fontsize=16, fontweight='bold', pad=20)
-    else:
-        ax.set_title(f'Keyboard Layout Comparison\n'
-                    f'Parallel coordinates across {len(metrics)} metrics', 
-                    fontsize=16, fontweight='bold', pad=20)
+    score_type = "raw scores" if use_raw else "weighted scores"
+    ax.set_title(f'Keyboard Layout Comparison ({score_type})\n'
+                f'Parallel coordinates across {len(metrics)} scoring methods', 
+                fontsize=16, fontweight='bold', pad=20)
 
     if len(dfs) > 1 or len(dfs[0]) <= 10:
         ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left', fontsize=10)
@@ -484,27 +412,31 @@ def print_summary_stats(dfs: List[pd.DataFrame], table_names: List[str], metrics
             print(f"  Sample layouts: {', '.join(sample_layouts)}")
         else:
             print("  Warning: No 'layout' column found")
-            
+
 def main():
     parser = argparse.ArgumentParser(
-        description='Create parallel coordinates plots comparing keyboard layouts',
+        description='Create parallel coordinates plots and heatmaps comparing keyboard layouts from score_layouts.py output',
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  python compare_layouts.py --tables layouts.csv
-  python compare_layouts.py --tables standard.csv experimental.csv
-  python compare_layouts.py --tables *.csv --variant full
-  python compare_layouts.py --tables data1.csv data2.csv --output comparison.png
-  python compare_layouts.py --tables layouts.csv --variant filtered --verbose
+  python compare_layouts.py --tables layout_scores.csv
+  python compare_layouts.py --tables scores1.csv scores2.csv
+  python compare_layouts.py --tables scores.csv --use-raw
+  python compare_layouts.py --tables scores.csv --output comparison.png
+  python compare_layouts.py --tables scores.csv --verbose
+
+Input format:
+  CSV files should be output from: score_layouts.py --csv-output
+  Expected columns: layout_name,scorer,weighted_score,raw_score
         """
     )
     
     parser.add_argument('--tables', nargs='+', required=True,
-                       help='One or more CSV files containing layout data')
-    parser.add_argument('--variant', choices=['full', 'no_crosshand'], 
-                       help='Filter layouts by variant (full/no_crosshand)')
+                       help='One or more CSV files containing layout scoring data from score_layouts.py')
+    parser.add_argument('--use-raw', action='store_true',
+                       help='Use raw scores instead of weighted scores (if available)')
     parser.add_argument('--output', '-o', 
-                       help='Output file path (if not specified, plot is shown)')
+                       help='Output file path (if not specified, plots are shown)')
     parser.add_argument('--verbose', '-v', action='store_true',
                        help='Print detailed information')
     
@@ -521,11 +453,11 @@ Examples:
     table_names = []
     
     for table_path in args.tables:
-        df = load_and_filter_data(table_path, args.variant, args.verbose)
+        df = load_and_pivot_data(table_path, args.use_raw, args.verbose)
         
         if len(df) == 0:
             if args.verbose:
-                print(f"Warning: No data found in {table_path} for variant '{args.variant}'")
+                print(f"Warning: No data found in {table_path}")
             continue
             
         dfs.append(df)
@@ -535,29 +467,31 @@ Examples:
         print("Error: No valid data found in any table")
         sys.exit(1)
     
-    # Find available metrics
+    # Find available metrics (scorers)
     metrics = find_available_metrics(dfs, args.verbose)
     
     if not metrics:
-        print("Error: No numeric metrics found in the data")
+        print("Error: No scorer metrics found in the data")
         sys.exit(1)
     
     # Print summary
     if args.verbose:
         print_summary_stats(dfs, table_names, metrics)
     
-    # Create plot
+    # Create plots
     if args.verbose:
-        print(f"\nCreating parallel coordinates plot...")
+        print(f"\nCreating visualization plots...")
         print(f"Tables: {len(dfs)}")
         print(f"Total layouts: {sum(len(df) for df in dfs)}")
-        print(f"Metrics to plot: {len(metrics)}")
+        print(f"Scorer metrics to plot: {len(metrics)}")
+        score_type = "raw" if args.use_raw else "weighted"
+        print(f"Using {score_type} scores")
     
     # Generate parallel coordinates plot
-    create_parallel_plot(dfs, table_names, metrics, args.variant or "all", args.output)
+    create_parallel_plot(dfs, table_names, metrics, args.use_raw, args.output)
 
     # Generate heatmap plot  
-    create_heatmap_plot(dfs, table_names, metrics, args.variant or "all", args.output)
+    create_heatmap_plot(dfs, table_names, metrics, args.use_raw, args.output)
 
 if __name__ == "__main__":
     main()
