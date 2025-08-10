@@ -362,140 +362,155 @@ class LayoutScorer:
     
     def _score_layout_with_method(self, layout_mapping: Dict[str, str], scorer: str) -> Dict[str, float]:
         """Score a layout using a specific scoring method with NA validation."""
-        
-        # Validate layout mapping for NA values
-        for letter, key_pos in layout_mapping.items():
-            if str(letter) in ['NA', 'NAN', 'nan'] or str(key_pos) in ['NA', 'NAN', 'nan']:
-                raise ValueError(f"Invalid mapping detected: '{letter}' -> '{key_pos}'")
-        
-        # Handle dynamic scoring methods
-        if scorer == 'comfort-key':
-            return self._score_layout_comfort_key(layout_mapping)
-        elif scorer == 'engram':
-            return self._score_layout_engram(layout_mapping)
-        
-        # Handle table-based scoring methods
-        score_col = f"{scorer}_score_normalized"
-        if score_col not in self.score_table.columns:
-            score_col = f"{scorer}_normalized"
-            if score_col not in self.score_table.columns:
-                raise ValueError(f"Scorer '{scorer}' not found in score table")
-        
-        # Determine if this scorer should be inverted
-        invert_scores = scorer in ['distance', 'time']
-        
-        # Generate all letter-pairs for this layout
-        letter_pairs = self._generate_letter_pairs(layout_mapping)
-        
-        # Initialize scoring variables
-        raw_total_score = 0.0
-        raw_count = 0
-        weighted_total_score = 0.0
-        total_frequency = 0.0
-        frequency_coverage = 0.0
-        use_frequency = self.bigram_frequencies is not None and not self.use_raw
-        
-        for letter_pair in letter_pairs:
-            if len(letter_pair) == 2:
-                letter1, letter2 = letter_pair[0], letter_pair[1]
-                
-                # Validate letters
-                if str(letter1) in ['NA', 'NAN', 'nan'] or str(letter2) in ['NA', 'NAN', 'nan']:
-                    raise ValueError(f"Invalid letter in pair: '{letter_pair}' ('{letter1}', '{letter2}')")
-                
-                if letter1 in layout_mapping and letter2 in layout_mapping:
-                    key1 = layout_mapping[letter1]
-                    key2 = layout_mapping[letter2]
-                    
-                    # Validate keys individually (not the combined key_pair)
-                    if str(key1) in ['NA', 'NAN', 'nan'] or str(key2) in ['NA', 'NAN', 'nan']:
-                        raise ValueError(f"Invalid key in mapping: '{letter1}' -> '{key1}', '{letter2}' -> '{key2}'")
-
-                    key_pair = str(key1) + str(key2)  # Force string concatenation
-
-                    # Additional length validation
-                    if len(key_pair) != 2:
-                        raise ValueError(f"Invalid key pair length: '{key_pair}' from '{letter1}' -> '{key1}', '{letter2}' -> '{key2}'")                    
-
-                    # Look up key-pair score in table
-                    if key_pair in self.score_table.index:
-                        raw_score = self.score_table.loc[key_pair, score_col]
-                    else:
-                        raise ValueError(f"Missing score for key pair: '{key_pair}' (from letters '{letter1}{letter2}' -> keys '{key1}{key2}')")
-
-                    # Rest of scoring logic continues...
-                    if invert_scores:
-                        score = 1.0 - raw_score
-                    else:
-                        score = raw_score
-
-                    raw_total_score += score
-                    raw_count += 1
-
-                    if use_frequency:
-                        frequency = self.bigram_frequencies.get(letter_pair, 0.0)
-                        weighted_total_score += score * frequency
-                        total_frequency += frequency
-                        if frequency > 0:
-                            frequency_coverage += frequency
-                else:
-                    raise ValueError(f"Letter pair '{letter_pair}' contains letters not in layout mapping")
-        
-        # Calculate results
-        raw_average = raw_total_score / raw_count if raw_count > 0 else 0.0
-        frequency_weighted_score = weighted_total_score / total_frequency if total_frequency > 0 else 0.0
-
-        # Calculate arithmetic average separately (include ALL pairs like optimize_layout.py)
-        arithmetic_total = 0.0
-        arithmetic_count = 0
-
-        letters = list(layout_mapping.keys())
-        for letter1 in letters:
-            for letter2 in letters:
-                if letter1 != letter2:  # Skip self-pairs
-                    letter_pair = letter1 + letter2
-                    key1 = layout_mapping[letter1]
-                    key2 = layout_mapping[letter2]
-                    key_pair = key1 + key2
-                    
-                    # Get comfort score
-                    if key_pair in self.score_table.index:
-                        comfort_score = self.score_table.loc[key_pair, score_col]
-                    else:
-                        comfort_score = 1.0
-                        raise ValueError(f"Missing comfort score for key pair: {key_pair}")
-                    
-                    # Invert if needed
-                    if invert_scores:
-                        comfort_score = 1.0 - comfort_score
-                    
-                    frequency = self.bigram_frequencies.get(letter_pair)
-                    
-                    # Add to arithmetic total
-                    arithmetic_total += frequency * comfort_score
-                    arithmetic_count += 1
+        try:
+            # Validate layout mapping for NA values
+            for letter, key_pos in layout_mapping.items():
+                if str(letter) in ['NA', 'NAN', 'nan'] or str(key_pos) in ['NA', 'NAN', 'nan']:
+                    raise ValueError(f"Invalid mapping detected: '{letter}' -> '{key_pos}'")
             
-        arithmetic_average_score = arithmetic_total / arithmetic_count if arithmetic_count > 0 else 0.0
+            # Handle dynamic scoring methods
+            if scorer == 'comfort-key':
+                return self._score_layout_comfort_key(layout_mapping)
+            elif scorer == 'engram':
+                return self._score_layout_engram(layout_mapping)
+            
+            # Handle table-based scoring methods
+            score_col = f"{scorer}_score_normalized"
+            if score_col not in self.score_table.columns:
+                score_col = f"{scorer}_normalized"
+                if score_col not in self.score_table.columns:
+                    raise ValueError(f"Scorer '{scorer}' not found in score table")
+            
+            # Determine if this scorer should be inverted
+            invert_scores = scorer in ['distance', 'time']
+            
+            # Generate all letter-pairs for this layout
+            letter_pairs = self._generate_letter_pairs(layout_mapping)
+            
+            # Initialize scoring variables
+            raw_total_score = 0.0
+            raw_count = 0
+            weighted_total_score = 0.0
+            total_frequency = 0.0
+            frequency_coverage = 0.0
+            use_frequency = self.bigram_frequencies is not None and not self.use_raw
+            
+            for letter_pair in letter_pairs:
+                if len(letter_pair) == 2:
+                    letter1, letter2 = letter_pair[0], letter_pair[1]
+                    
+                    # Validate letters
+                    if str(letter1) in ['NA', 'NAN', 'nan'] or str(letter2) in ['NA', 'NAN', 'nan']:
+                        raise ValueError(f"Invalid letter in pair: '{letter_pair}' ('{letter1}', '{letter2}')")
+                    
+                    if letter1 in layout_mapping and letter2 in layout_mapping:
+                        key1 = layout_mapping[letter1]
+                        key2 = layout_mapping[letter2]
+                        
+                        # Validate keys individually (not the combined key_pair)
+                        if str(key1) in ['NA', 'NAN', 'nan'] or str(key2) in ['NA', 'NAN', 'nan']:
+                            raise ValueError(f"Invalid key in mapping: '{letter1}' -> '{key1}', '{letter2}' -> '{key2}'")
 
-        # Determine primary score based on mode  
-        primary_score = frequency_weighted_score
-        results = {
-            'average_score': frequency_weighted_score if use_frequency else raw_average,
-            'raw_average_score': raw_average,
-            'total_score': weighted_total_score if use_frequency else raw_total_score,
-            'raw_total_score': raw_total_score,
-            'pair_count': raw_count,
-            'coverage': raw_count / len(letter_pairs) if letter_pairs else 0.0,
-        }
-        
-        if use_frequency:
-            results.update({
-                'total_frequency': total_frequency,
-                'frequency_coverage': frequency_coverage / sum(self.bigram_frequencies.values()) if self.bigram_frequencies else 0.0
-            })
-        
-        return results
+                        key_pair = str(key1) + str(key2)  # Force string concatenation
 
+                        # Additional length validation
+                        if len(key_pair) != 2:
+                            raise ValueError(f"Invalid key pair length: '{key_pair}' from '{letter1}' -> '{key1}', '{letter2}' -> '{key2}'")                    
+
+                        # Look up key-pair score in table
+                        if key_pair in self.score_table.index:
+                            raw_score = self.score_table.loc[key_pair, score_col]
+                        else:
+                            raise ValueError(f"Missing score for key pair: '{key_pair}' (from letters '{letter1}{letter2}' -> keys '{key1}{key2}')")
+
+                        # Rest of scoring logic continues...
+                        if invert_scores:
+                            score = 1.0 - raw_score
+                        else:
+                            score = raw_score
+
+                        raw_total_score += score
+                        raw_count += 1
+
+                        if use_frequency:
+                            frequency = self.bigram_frequencies.get(letter_pair, 0.0)
+                            weighted_total_score += score * frequency
+                            total_frequency += frequency
+                            if frequency > 0:
+                                frequency_coverage += frequency
+                    else:
+                        raise ValueError(f"Letter pair '{letter_pair}' contains letters not in layout mapping")
+            
+            # Calculate results
+            raw_average = raw_total_score / raw_count if raw_count > 0 else 0.0
+            frequency_weighted_score = weighted_total_score / total_frequency if total_frequency > 0 else 0.0
+
+            # Calculate arithmetic average separately (include ALL pairs like optimize_layout.py)
+            arithmetic_total = 0.0
+            arithmetic_count = 0
+
+            letters = list(layout_mapping.keys())
+            for letter1 in letters:
+                for letter2 in letters:
+                    if letter1 != letter2:  # Skip self-pairs
+                        letter_pair = letter1 + letter2
+                        key1 = layout_mapping[letter1]
+                        key2 = layout_mapping[letter2]
+                        key_pair = key1 + key2
+                        
+                        # Get comfort score
+                        if key_pair in self.score_table.index:
+                            comfort_score = self.score_table.loc[key_pair, score_col]
+                        else:
+                            comfort_score = 1.0
+                            raise ValueError(f"Missing comfort score for key pair: {key_pair}")
+                        
+                        # Invert if needed
+                        if invert_scores:
+                            comfort_score = 1.0 - comfort_score
+                        
+                        # Check if bigram_frequencies is None before calling .get()
+                        if self.bigram_frequencies is not None:
+                            frequency = self.bigram_frequencies.get(letter_pair, 0.0)
+                        else:
+                            frequency = 1.0  # Default frequency for raw mode
+                        
+                        # Add to arithmetic total
+                        arithmetic_total += frequency * comfort_score
+                        arithmetic_count += 1
+                
+            arithmetic_average_score = arithmetic_total / arithmetic_count if arithmetic_count > 0 else 0.0
+
+            # Determine primary score based on mode  
+            primary_score = frequency_weighted_score
+            results = {
+                'average_score': frequency_weighted_score if use_frequency else raw_average,
+                'raw_average_score': raw_average,
+                'total_score': weighted_total_score if use_frequency else raw_total_score,
+                'raw_total_score': raw_total_score,
+                'pair_count': raw_count,
+                'coverage': raw_count / len(letter_pairs) if letter_pairs else 0.0,
+            }
+            
+            if use_frequency:
+                results.update({
+                    'total_frequency': total_frequency,
+                    'frequency_coverage': frequency_coverage / sum(self.bigram_frequencies.values()) if self.bigram_frequencies else 0.0
+                })
+            
+            return results
+        
+        except AttributeError as e:
+            if "'NoneType' object has no attribute 'get'" in str(e):
+                print(f"\n=== FOUND THE BUG in scorer '{scorer}' ===")
+                print(f"self.bigram_frequencies is None: {self.bigram_frequencies is None}")
+                print(f"self.use_raw: {self.use_raw}")
+                
+                # Print exact line that failed
+                import traceback
+                traceback.print_exc()
+                print("=== END BUG DETAILS ===\n")
+            raise e
 
     def _score_layout_comfort_key(self, layout_mapping: Dict[str, str]) -> Dict[str, float]:
         """Score a layout using comfort-key method."""
