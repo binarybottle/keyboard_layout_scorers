@@ -164,6 +164,10 @@ def find_available_metrics(dfs: List[pd.DataFrame], verbose: bool = False) -> Li
 
 def normalize_data(dfs: List[pd.DataFrame], metrics: List[str]) -> List[pd.DataFrame]:
     """Normalize all data across tables for fair comparison."""
+    """Return data as-is since scores are already normalized."""
+    return dfs  # No normalization needed!
+
+    """
     # Combine all data to get global min/max for each metric
     all_data = pd.concat(dfs, ignore_index=True)
     
@@ -191,6 +195,7 @@ def normalize_data(dfs: List[pd.DataFrame], metrics: List[str]) -> List[pd.DataF
         normalized_dfs.append(normalized_df)
     
     return normalized_dfs
+    """
 
 def get_colors(num_tables: int) -> List[str]:
     """Get color scheme based on number of tables."""
