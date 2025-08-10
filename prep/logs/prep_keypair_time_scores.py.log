@@ -1,11 +1,14 @@
-> poetry run python3 prep_keypair_time_scores.py --input-dir /Users/arno/Downloads/x/typing/raws_prolific_nonprolific
-Generate timing-component key-pair time scores from CSV data
+> poetry run python3 prep_keypair_time_scores.py --input-dir /Users/arno/Downloads/x/typing/raws_prolific_nonprolific --frequency-file ../input/english-letter-pair-frequencies-google-ngrams.csv
+Generate time scores with built-in QWERTY debiasing
 ============================================================
 QWERTY keys (32): ',./;ABCDEFGHIJKLMNOPQRSTUVWXYZ[
 Total key-pairs to compute: 1024
 Input directory: /Users/arno/Downloads/x/typing/raws_prolific_nonprolific
 CSV files found: 515
+Frequency file: ../input/english-letter-pair-frequencies-google-ngrams.csv
+🎯 Automatic QWERTY debiasing: ENABLED
 Computing key-pair times using timing components from CSV data...
+🎯 Built-in QWERTY debiasing: ENABLED
 
 🔵 Loading and processing CSV files from directory: /Users/arno/Downloads/x/typing/raws_prolific_nonprolific
 Found 515 CSV files
@@ -553,55 +556,37 @@ After filtering: 1154765 records
     - 450 pairs used pure empirical data
     - 574 pairs used mirror/fallback data
     - 0 pairs used maximum fallback (887.3ms)
-✅ Saved 1024 key-pair times to: tables/keypair_time_scores.csv
+✅ Loaded 669 English bigram frequencies for debiasing
 
-📊 Timing Component Validation Results:
+🔧 Applying frequency-based debiasing...
+   📝 Mapped 625 letter-pairs to key-pairs
+   📊 Frequency-time correlation: -0.523
+   📊 Regression bias factor: 24363.2ms per frequency unit
+      (R²=0.274, p=0.000)
+   ⚠️  Regression bias factor seems unreasonable, using conservative estimate
+   🎯 Using bias factor: 1000.0ms per frequency unit
+   ✅ Applied corrections to 620/1024 key-pairs
+      Average correction: 1.6ms
+
+🔍 Validating debiasing effectiveness...
+   📊 High frequency pairs:
+      Original: 465.1ms
+      Debiased: 469.8ms
+   📊 Low frequency pairs:
+      Original: 613.3ms
+      Debiased: 613.3ms
+   🎯 Bias reduction: 148.2ms → 143.5ms
+   Status: ✅ Bias reduced
+✅ Saved 1024 debiased key-pair times to: ../tables/keypair_time_scores.csv
+
+📊 Output Validation Results:
    Total key-pairs: 1024
    Expected count: 1024
    Match: ✅
-   Time score range: 352.6 to 887.3ms
-   Key1 time range: 197.5 to 378.9ms
-   Transition time range: 149.1 to 609.9ms
-   Total time range: 352.6 to 887.3ms
-   Fallback types:
-     any_home_to_key1: 200
-     any_home_to_key1;median_from_key1: 32
-     any_home_to_key1;mirror_transition: 24
-     empirical: 450
-     median_from_key1: 83
-     mirror_key1_movement;median_to_key2: 18
-     mirror_key1_movement;mirror_transition: 40
-     mirror_key1_movement;overall_median_transition: 6
-     mirror_transition: 43
-     overall_median_key1;median_to_key2: 71
-     overall_median_key1;mirror_transition: 39
-     overall_median_key1;overall_median_transition: 18
-
-🔍 Zero Value Analysis:
-   Zero key1_time values: 0 ✅
-   Zero transition_time values: 0 ✅
-   Zero both components: 0 ✅
-   Unexpected zeros (not maximum fallback): 0 ✅
-
-🔍 Timing Component Math Validation:
-   Math consistency errors: 0 ✅
-
-🔧 Data Consistency Validation:
+   Time score range: 361.6 to 887.3ms
+   Average time: 547.2ms
    Negative or zero time scores: 0 ✅
-   Negative component times: 0 ✅
 
-📋 Sample timing breakdowns:
-     Key-Pair | Time Score | Key1 Time | Transition | Total | Fallback Type
-     ---------|------------|-----------|------------|-------|---------------
-     AS       |      362.2 |     201.5 |      160.7 | 362.2 | any_home_to_key1
-     SD       |      430.3 |     237.9 |      192.4 | 430.3 | any_home_to_key1
-     DF       |      420.0 |     214.0 |      206.0 | 420.0 | any_home_to_key1
-     ER       |      352.6 |     197.5 |      155.1 | 352.6 | empirical
-     QP       |      630.2 |     277.4 |      352.8 | 630.2 | empirical
-     ZX       |      553.5 |     264.6 |      288.9 | 553.5 | empirical
+✅ Output validation complete!
 
-✅ Timing component validation complete!
-
-🎯 Overall Validation: ✅ PASSED
-
-✅ Timing-component time generation complete: tables/keypair_time_scores.csv
+✅ Time generation with integrated debiasing complete: ../tables/keypair_time_scores.csv

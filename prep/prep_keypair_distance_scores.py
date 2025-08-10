@@ -1,27 +1,21 @@
 #!/usr/bin/env python3
 """
 Generate precomputed distance scores for all possible QWERTY key-pairs.
-FREQUENCY-INDEPENDENT VERSION - No text processing or frequency bias.
 
 (c) Arno Klein (arnoklein.info), MIT License (see LICENSE)
 
-This script computes PURE THEORETICAL distance scores for every possible 
-combination of QWERTY keys using only biomechanical factors:
-
-1. Compute theoretical distances for ALL 1024 key-pairs (fingers start from home)
-2. Apply consistent finger movement rules
-3. No text processing or frequency weighting
-
+This script computes theoretical distance scores for every possible 
+combination of QWERTY keys using only keyboard interkey distances.
 This version provides truly layout-agnostic distance scores based only on:
-- Physical key positions
-- Finger anatomy and assignments  
-- Biomechanical movement patterns
+1. Compute theoretical distances for ALL 1024 key-pairs 
+2. Fingers start from home except when using the same finger
+4. No text processing or frequency weighting
 
 Usage:
     python prep_keypair_distance_scores.py --output ../tables/keypair_distance_scores.csv
     
 Output:
-    tables/keypair_distance_scores.csv - CSV with columns: key_pair, distance_score
+    ../tables/keypair_distance_scores.csv - CSV with columns: key_pair, distance_score
 """
 
 import argparse
@@ -260,7 +254,7 @@ def compute_all_key_pair_scores():
     
     return results
 
-def save_key_pair_scores(results, output_file="tables/keypair_distance_scores.csv"):
+def save_key_pair_scores(results, output_file="../tables/keypair_distance_scores.csv"):
     """Save key-pair scores to CSV file with distance_score column."""
     
     # Create output directory if it doesn't exist
@@ -345,7 +339,7 @@ def verify_distance_calculation_model():
     print(f"\n🎯 Model verification complete!")
     return True
 
-def validate_frequency_independence(output_file="tables/keypair_distance_scores.csv"):
+def validate_frequency_independence(output_file="../tables/keypair_distance_scores.csv"):
     """Validate that the scores are truly frequency-independent."""
     
     if not os.path.exists(output_file):
@@ -422,7 +416,7 @@ Perfect for dual framework analysis where you want to separate
 design quality from language-specific optimization.
         """
     )
-    parser.add_argument('--output', default='tables/keypair_distance_scores.csv',
+    parser.add_argument('--output', default='../tables/keypair_distance_scores.csv',
                         help='Output CSV file path')
     
     args = parser.parse_args()
