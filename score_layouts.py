@@ -73,8 +73,8 @@ class LayoutScorer:
         self.score_table = self._load_score_table(score_table_path)
         self.available_scorers = self._detect_available_scorers()
         
-        # Load frequency data unless raw scoring is requested
-        if frequency_file and not use_raw:
+        # Always load frequency data for letter-pairs (needed for consistent scoring)
+        if frequency_file:
             self.bigram_frequencies = self._load_frequency_data(frequency_file)
         else:
             self.bigram_frequencies = None
@@ -1025,16 +1025,15 @@ def main() -> int:
         args.format = 'csv_output'
     
     try:
-        # Check if frequency file exists (only required if not using --raw)
+        # Always load frequency file for letter-pairs (weighting controlled by --raw flag)
         frequency_file = None
-        if not args.raw:
-            if Path(args.frequency_file).exists():
-                frequency_file = args.frequency_file
-            elif args.frequency_file != "input/english-letter-pair-frequencies-google-ngrams.csv":
-                # User explicitly provided a frequency file that doesn't exist
-                print(f"Error: Frequency file not found: {args.frequency_file}")
-                return 1
-            # If using default frequency file and it doesn't exist, just use raw scoring
+        if Path(args.frequency_file).exists():
+            frequency_file = args.frequency_file
+        elif args.frequency_file != "input/english-letter-pair-frequencies-google-ngrams.csv":
+            # User explicitly provided a frequency file that doesn't exist
+            print(f"Error: Frequency file not found: {args.frequency_file}")
+            return 1
+        # If using default frequency file and it doesn't exist, just use raw scoring
         
         # Initialize scorer (suppress verbose output if using csv-output)
         suppress_verbose = args.format == 'csv_output'
