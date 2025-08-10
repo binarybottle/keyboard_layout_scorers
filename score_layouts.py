@@ -111,22 +111,47 @@ class LayoutScorer:
                 print("No frequency file found - using raw scoring")
     
     def _load_score_table(self, filepath: str) -> pd.DataFrame:
-        """Load the unified score table."""
-        if not Path(filepath).exists():
-            raise FileNotFoundError(f"Score table not found: {filepath}")
-        
-        try:
-            df = pd.read_csv(filepath)
-        except Exception as e:
-            raise ValueError(f"Error reading score table: {e}")
-        
-        if 'key_pair' not in df.columns:
-            raise ValueError("Score table must have 'key_pair' column")
-        
-        # Set key_pair as index for fast lookup
-        df = df.set_index('key_pair')
-        return df
-    
+            """Load the unified score table."""
+            if not Path(filepath).exists():
+                raise FileNotFoundError(f"Score table not found: {filepath}")
+            
+            try:
+                # CRITICAL: Prevent pandas from converting 'NA' to NaN by preserving literal 'NA' strings
+                df = pd.read_csv(filepath, 
+                            dtype={'key_pair': 'str'},
+                            keep_default_na=False,
+                            na_values=['', 'NULL', 'null', 'NaN', 'nan'])
+            except Exception as e:
+                raise ValueError(f"Error reading score table: {e}")
+            
+            if 'key_pair' not in df.columns:
+                raise ValueError("Score table must have 'key_pair' column")
+            
+            # Check for any truly missing values in key_pair column after loading
+            # (but don't treat 'NA' as missing)
+            na_count = df['key_pair'].isna().sum()
+            if na_count > 0:
+                print(f"Warning: Found {na_count} truly missing values in key_pair column")
+                # Remove rows with truly missing key_pairs
+                df = df.dropna(subset=['key_pair'])
+                print(f"Removed missing rows, remaining: {len(df)} rows")
+            
+            # Check for empty string values
+            empty_count = (df['key_pair'].astype(str).str.strip() == '').sum()
+            if empty_count > 0:
+                print(f"Warning: Found {empty_count} empty string values in key_pair column")
+                # Remove these rows
+                df = df[df['key_pair'].astype(str).str.strip() != '']
+                print(f"Removed empty rows, remaining: {len(df)} rows")
+            
+            # Debug: Confirm 'NA' is preserved
+            if self.verbose and 'NA' in df['key_pair'].values:
+                print(f"✓ 'NA' key pair preserved in score table")
+            
+            # Set key_pair as index for fast lookup
+            df = df.set_index('key_pair')
+            return df
+
     def _load_frequency_data(self, filepath: str) -> Dict[str, float]:
         """Load bigram frequency data from CSV file."""
         if not Path(filepath).exists():
@@ -336,7 +361,12 @@ class LayoutScorer:
         return comfort_key_score
     
     def _score_layout_with_method(self, layout_mapping: Dict[str, str], scorer: str) -> Dict[str, float]:
-        """Score a layout using a specific scoring method."""
+        """Score a layout using a specific scoring method with NA validation."""
+        
+        # Validate layout mapping for NA values
+        for letter, key_pos in layout_mapping.items():
+            if str(letter) in ['NA', 'NAN', 'nan'] or str(key_pos) in ['NA', 'NAN', 'nan']:
+                raise ValueError(f"Invalid mapping detected: '{letter}' -> '{key_pos}'")
         
         # Handle dynamic scoring methods
         if scorer == 'comfort-key':
@@ -345,15 +375,13 @@ class LayoutScorer:
             return self._score_layout_engram(layout_mapping)
         
         # Handle table-based scoring methods
-        # Get column name for this scorer
         score_col = f"{scorer}_score_normalized"
         if score_col not in self.score_table.columns:
-            # Try without _score suffix
             score_col = f"{scorer}_normalized"
             if score_col not in self.score_table.columns:
                 raise ValueError(f"Scorer '{scorer}' not found in score table")
         
-        # Determine if this scorer should be inverted (higher is worse)
+        # Determine if this scorer should be inverted
         invert_scores = scorer in ['distance', 'time']
         
         # Generate all letter-pairs for this layout
@@ -362,40 +390,48 @@ class LayoutScorer:
         # Initialize scoring variables
         raw_total_score = 0.0
         raw_count = 0
-        
-        # Frequency-weighted scoring (if not using raw mode)
         weighted_total_score = 0.0
         total_frequency = 0.0
         frequency_coverage = 0.0
         use_frequency = self.bigram_frequencies is not None and not self.use_raw
         
         for letter_pair in letter_pairs:
-            # Convert letter-pair to key-pair via layout mapping
             if len(letter_pair) == 2:
                 letter1, letter2 = letter_pair[0], letter_pair[1]
+                
+                # Validate letters
+                if str(letter1) in ['NA', 'NAN', 'nan'] or str(letter2) in ['NA', 'NAN', 'nan']:
+                    raise ValueError(f"Invalid letter in pair: '{letter_pair}' ('{letter1}', '{letter2}')")
                 
                 if letter1 in layout_mapping and letter2 in layout_mapping:
                     key1 = layout_mapping[letter1]
                     key2 = layout_mapping[letter2]
-                    key_pair = key1 + key2
                     
-                    # Look up key-pair score in table (with default fallback)
+                    # Validate keys individually (not the combined key_pair)
+                    if str(key1) in ['NA', 'NAN', 'nan'] or str(key2) in ['NA', 'NAN', 'nan']:
+                        raise ValueError(f"Invalid key in mapping: '{letter1}' -> '{key1}', '{letter2}' -> '{key2}'")
+
+                    key_pair = str(key1) + str(key2)  # Force string concatenation
+
+                    # Additional length validation
+                    if len(key_pair) != 2:
+                        raise ValueError(f"Invalid key pair length: '{key_pair}' from '{letter1}' -> '{key1}', '{letter2}' -> '{key2}'")                    
+
+                    # Look up key-pair score in table
                     if key_pair in self.score_table.index:
                         raw_score = self.score_table.loc[key_pair, score_col]
                     else:
-                        raise ValueError(f"Missing score for key pair: {key_pair}")
+                        raise ValueError(f"Missing score for key pair: '{key_pair}' (from letters '{letter1}{letter2}' -> keys '{key1}{key2}')")
 
-                    # Invert score if needed (distance, time: higher is worse)
+                    # Rest of scoring logic continues...
                     if invert_scores:
                         score = 1.0 - raw_score
                     else:
                         score = raw_score
 
-                    # Raw scoring (treat all letter-pairs equally)
                     raw_total_score += score
                     raw_count += 1
 
-                    # Frequency-weighted scoring (if enabled)
                     if use_frequency:
                         frequency = self.bigram_frequencies.get(letter_pair, 0.0)
                         weighted_total_score += score * frequency
@@ -403,13 +439,10 @@ class LayoutScorer:
                         if frequency > 0:
                             frequency_coverage += frequency
                 else:
-                    # Letter not in layout mapping
-                    raise ValueError(f"Letter pair '{letter_pair}' contains letters not in layout mapping: {letter1}, {letter2}")
+                    raise ValueError(f"Letter pair '{letter_pair}' contains letters not in layout mapping")
         
         # Calculate results
         raw_average = raw_total_score / raw_count if raw_count > 0 else 0.0
-        
-        # Calculate both scoring methods
         frequency_weighted_score = weighted_total_score / total_frequency if total_frequency > 0 else 0.0
 
         # Calculate arithmetic average separately (include ALL pairs like optimize_layout.py)
@@ -447,20 +480,23 @@ class LayoutScorer:
         # Determine primary score based on mode  
         primary_score = frequency_weighted_score
         results = {
-            'average_score': primary_score,  # Primary score (frequency-weighted)
-            'arithmetic_score': arithmetic_average_score,  # arithmetic average like optimize_layout.py
-            'frequency_weighted_score': frequency_weighted_score,  # explicit frequency-weighted
-            'total_score': weighted_total_score,
-            'raw_average_score': raw_average,  # Secondary 
+            'average_score': frequency_weighted_score if use_frequency else raw_average,
+            'raw_average_score': raw_average,
+            'total_score': weighted_total_score if use_frequency else raw_total_score,
             'raw_total_score': raw_total_score,
             'pair_count': raw_count,
             'coverage': raw_count / len(letter_pairs) if letter_pairs else 0.0,
-            'total_frequency': total_frequency,
-            'frequency_coverage': frequency_coverage / sum(self.bigram_frequencies.values()) if self.bigram_frequencies else 0.0
         }
         
+        if use_frequency:
+            results.update({
+                'total_frequency': total_frequency,
+                'frequency_coverage': frequency_coverage / sum(self.bigram_frequencies.values()) if self.bigram_frequencies else 0.0
+            })
+        
         return results
-    
+
+
     def _score_layout_comfort_key(self, layout_mapping: Dict[str, str]) -> Dict[str, float]:
         """Score a layout using comfort-key method."""
         if self.letter_frequencies is None or self.key_comfort_scores is None:
@@ -676,18 +712,6 @@ def parse_layout_string(layout_str: str) -> Dict[str, str]:
         return layout_str.strip()
 
 
-def create_layout_mapping(letters: str, positions: str) -> Dict[str, str]:
-    """Create mapping from letters to QWERTY positions."""
-    if len(letters) != len(positions):
-        raise ValueError(f"Letters ({len(letters)}) and positions ({len(positions)}) must have same length")
-    
-    mapping = {}
-    for letter, position in zip(letters, positions):
-        mapping[letter.upper()] = position.upper()
-    
-    return mapping
-
-
 def parse_layout_compare(compare_args: List[str]) -> Dict[str, Dict[str, str]]:
     """Parse layout comparison arguments."""
     layouts = {}
@@ -697,11 +721,10 @@ def parse_layout_compare(compare_args: List[str]) -> Dict[str, Dict[str, str]]:
             raise ValueError(f"Layout comparison format should be 'name:layout'. Got: {arg}")
         
         name, layout_str = arg.split(':', 1)
-        name = name.strip()
-        layout_str = layout_str.strip()
+        name = str(name).strip()  # Force to string
+        layout_str = str(layout_str).strip()  # Force to string
         
         # Create mapping from layout string to QWERTY positions
-        # Assume layout string maps to standard QWERTY positions in order
         qwerty_positions = "QWERTYUIOPASDFGHJKL;ZXCVBNM,./['"
         
         if len(layout_str) > len(qwerty_positions):
@@ -709,11 +732,44 @@ def parse_layout_compare(compare_args: List[str]) -> Dict[str, Dict[str, str]]:
         
         mapping = {}
         for i, char in enumerate(layout_str):
-            mapping[char.upper()] = qwerty_positions[i]
+            # CRITICAL: Force everything to string and handle apostrophe specially
+            char_str = str(char)
+            char_upper = char_str.upper()
+            pos_str = str(qwerty_positions[i])
+            
+            # Special handling for apostrophe to prevent NaN conversion
+            if char_str == "'":
+                char_upper = "'"  # Keep as literal apostrophe
+            
+            # Debug suspicious conversions
+            if char_upper in ['NAN', 'NA', 'nan'] or pos_str in ['NAN', 'NA', 'nan']:
+                raise ValueError(f"Suspicious character conversion detected: '{char}' -> '{char_upper}' -> '{pos_str}'")
+            
+            mapping[char_upper] = pos_str
         
         layouts[name] = mapping
     
     return layouts
+
+
+def create_layout_mapping(letters: str, positions: str) -> Dict[str, str]:
+    """Create mapping from letters to QWERTY positions."""
+    if len(letters) != len(positions):
+        raise ValueError(f"Letters ({len(letters)}) and positions ({len(positions)}) must have same length")
+    
+    mapping = {}
+    for letter, position in zip(letters, positions):
+        # CRITICAL: Ensure both stay as strings
+        letter_key = str(letter).upper()
+        pos_value = str(position).upper()
+        
+        # Debug: Check for problematic characters
+        if letter_key in ['NAN', 'NA', ''] or pos_value in ['NAN', 'NA', '']:
+            print(f"Warning: Problematic character mapping: '{letter}' -> '{letter_key}' -> '{pos_value}'")
+        
+        mapping[letter_key] = pos_value
+    
+    return mapping
 
 
 def print_results(results: Dict[str, float], format_type: str = 'detailed', scorer_name: str = '', use_raw: bool = False, verbose: bool = False):
@@ -770,122 +826,24 @@ def print_results(results: Dict[str, float], format_type: str = 'detailed', scor
         print(f"Frequency coverage (% English frequency that layout covers): {results['frequency_coverage']:.1%}")
     
 
-def print_comparison_summary(comparison_results: Dict[str, Dict[str, Dict[str, float]]], 
-                           format_type: str = 'detailed', quiet: bool = False, use_raw: bool = False, verbose: bool = False):
-    """Print summary of layout comparison."""
-    if format_type == 'table':
-        # Compact table format
-        scorers = set()
-        for layout_results in comparison_results.values():
-            scorers.update(layout_results.keys())
-        
-        layout_names = list(comparison_results.keys())
-        
-        # Print header
-        header = f"{'Scorer':<20} " + " ".join(f"{name:>12}" for name in layout_names)
-        print(header)
-        print("-" * len(header))
-        
-        # Print each scorer row
-        for scorer in sorted(scorers):
-            row = f"{scorer:<20}"
-            for layout_name in layout_names:
-                if scorer in comparison_results[layout_name]:
-                    score = comparison_results[layout_name][scorer]['average_score']
-                    row += f" {score:>12.6f}"
-                else:
-                    row += f" {'N/A':>12}"
-            print(row)
-        return
-
+def print_comparison_summary(comparison_results, format_type='detailed', quiet=False, use_raw=False, verbose=False):
+    """Print summary with apostrophe-safe CSV output."""
     if format_type == 'csv_output':
-        # Print header for CSV output
-        if use_raw:
-            print("layout_name,scorer,score")
-        else:
-            print("layout_name,scorer,weighted_score,raw_score")
-        
-        # Minimal CSV output for programmatic use
-        for layout_name, layout_results in comparison_results.items():
-            for scorer, results in layout_results.items():
-                if use_raw or 'raw_average_score' not in results:
-                    print(f"{layout_name},{scorer},{results['average_score']:.6f}")
-                else:
-                    print(f"{layout_name},{scorer},{results['average_score']:.6f},{results['raw_average_score']:.6f}")
-        return
-    
-    if format_type == 'score_only':
-        for layout_name, layout_results in comparison_results.items():
-            for scorer, results in layout_results.items():
-                print(f"{layout_name},{scorer},{results['average_score']:.6f}")
-        return
-    
-    if format_type == 'csv':
-        if use_raw:
-            print("layout,scorer,average_score,total_score,pair_count,coverage")
-        else:
-            print("layout,scorer,average_score,total_score,raw_average_score,raw_total_score,pair_count,coverage,frequency_coverage")
+        print("layout_name,scorer,weighted_score,raw_score")
         
         for layout_name, layout_results in comparison_results.items():
             for scorer, results in layout_results.items():
-                if use_raw:
-                    print(f"{layout_name},{scorer},{results['average_score']:.6f},{results['total_score']:.6f},"
-                          f"{results['pair_count']},{results['coverage']:.6f}")
-                else:
-                    freq_cov = results.get('frequency_coverage', 0.0)
-                    raw_avg = results.get('raw_average_score', results['average_score'])
-                    raw_total = results.get('raw_total_score', results['total_score'])
-                    print(f"{layout_name},{scorer},{results['average_score']:.6f},{results['total_score']:.6f},"
-                          f"{raw_avg:.6f},{raw_total:.6f},"
-                          f"{results['pair_count']},{results['coverage']:.6f},{freq_cov:.6f}")
-        return
-    
-    # Detailed format
-    if not quiet:
-        print("\nComparison Summary:")
-        print("=" * 70)
-    
-    # Group by scorer for easier comparison
-    scorers = set()
-    for layout_results in comparison_results.values():
-        scorers.update(layout_results.keys())
-    
-    for scorer in sorted(scorers):
-        if not quiet:
-            score_type = "unweighted score" if use_raw else "frequency-weighted score"
-            print(f"\n{scorer.upper()} {score_type}:")
-            print("-" * 50)
-        
-        scorer_results = []
-        for layout_name, layout_results in comparison_results.items():
-            if scorer in layout_results:
-                score = layout_results[scorer]['average_score']
-                scorer_results.append((layout_name, score))
-        
-        # Sort by score (descending for better is higher)
-        scorer_results.sort(key=lambda x: x[1], reverse=True)
-        
-        for rank, (layout_name, score) in enumerate(scorer_results, 1):
-            #print(f"{rank:2d}. {layout_name:20s} {score:.6f}")
-            print(f"{layout_name:20s} {score:.6f}")
-        
-        # Show raw scores as secondary if using weighted and verbose
-        if not use_raw and verbose and not quiet:
-            raw_results = []
-            for layout_name, layout_results in comparison_results.items():
-                if scorer in layout_results and 'raw_average_score' in layout_results[scorer]:
-                    raw_score = layout_results[scorer]['raw_average_score']
-                    raw_results.append((layout_name, raw_score))
-            
-            if raw_results:
-                print(f"\n{scorer.upper()} unweighted scores (for reference):")
-                print("-" * 40)
-                raw_results.sort(key=lambda x: x[1], reverse=True)
+                # Ensure strings are properly escaped
+                safe_layout_name = str(layout_name).replace('"', '""')  # Escape quotes
+                safe_scorer = str(scorer).replace('"', '""')
                 
-                for rank, (layout_name, score) in enumerate(raw_results, 1):
-                    print(f"{rank:2d}. {layout_name:20s} {score:.6f}")
-
-
+                weighted_score = results['average_score']
+                raw_score = results.get('raw_average_score', results['average_score'])
+                
+                # Use quoted strings to preserve special characters
+                print(f'"{safe_layout_name}","{safe_scorer}",{weighted_score:.6f},{raw_score:.6f}')
+        return
+    
 def save_detailed_comparison_csv(comparison_results: Dict[str, Dict[str, Dict[str, float]]], 
                                filename: str, layout_mappings: Dict[str, Dict[str, str]] = None, 
                                use_raw: bool = False):

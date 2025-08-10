@@ -89,7 +89,12 @@ def load_score_file(filepath: Path, score_column: str, verbose: bool = False) ->
         raise FileNotFoundError(f"Score file not found: {filepath}")
     
     try:
-        df = pd.read_csv(filepath, dtype={'key_pair': str})
+        # CRITICAL: Prevent pandas from converting 'NA' to NaN by specifying keep_default_na=False
+        # and setting na_values to only handle truly empty values
+        df = pd.read_csv(filepath, 
+                        dtype={'key_pair': str}, 
+                        keep_default_na=False,
+                        na_values=['', 'NULL', 'null', 'NaN', 'nan'])
     except Exception as e:
         raise ValueError(f"Error reading CSV file {filepath}: {e}")
     
@@ -105,12 +110,34 @@ def load_score_file(filepath: Path, score_column: str, verbose: bool = False) ->
     # Keep only key_pair and score columns
     result_df = df[['key_pair', score_column]].copy()
     
+    # Clean the data: remove rows with empty, null, or whitespace-only key_pair values
+    # BUT preserve literal 'NA' strings
+    initial_rows = len(result_df)
+    
+    # Remove rows where key_pair is actually null/empty (but keep 'NA' strings)
+    result_df = result_df[result_df['key_pair'].notna()]
+    result_df = result_df[result_df['key_pair'].astype(str).str.strip() != '']
+    
+    # Remove rows where key_pair length is not exactly 2 (assuming all key pairs should be 2 characters)
+    result_df = result_df[result_df['key_pair'].astype(str).str.len() == 2]
+    
+    cleaned_rows = len(result_df)
+    
+    if verbose and initial_rows != cleaned_rows:
+        print(f"  Cleaned {initial_rows - cleaned_rows} invalid rows from {filepath.name}")
+    
+    if result_df.empty:
+        raise ValueError(f"No valid data remaining after cleaning: {filepath}")
+    
+    # Debug: Check if 'NA' survived
+    if verbose and 'NA' in result_df['key_pair'].values:
+        print(f"  ✓ 'NA' key pair preserved in {filepath.name}")
+    
     if verbose:
         print(f"Loaded {len(result_df)} rows from {filepath.name}")
         print(f"  Score range: {result_df[score_column].min():.6f} - {result_df[score_column].max():.6f}")
     
     return result_df
-
 
 def create_key_comfort_scores(input_dir: str, verbose: bool = False) -> None:
     """Create individual key comfort scores table from same-key bigrams."""
@@ -124,7 +151,11 @@ def create_key_comfort_scores(input_dir: str, verbose: bool = False) -> None:
         return
     
     try:
-        df = pd.read_csv(comfort_file, dtype={'key_pair': str})
+        # CRITICAL: Prevent pandas from converting 'NA' to NaN
+        df = pd.read_csv(comfort_file, 
+                        dtype={'key_pair': str},
+                        keep_default_na=False,
+                        na_values=['', 'NULL', 'null', 'NaN', 'nan'])
     except Exception as e:
         if verbose:
             print(f"Error reading comfort scores file: {e}")
@@ -134,6 +165,31 @@ def create_key_comfort_scores(input_dir: str, verbose: bool = False) -> None:
         if verbose:
             print("Warning: comfort scores file missing required columns")
         return
+    
+    # Clean the data first: remove rows with empty, null, or invalid key_pair values
+    # BUT preserve literal 'NA' strings
+    initial_rows = len(df)
+    
+    # Remove rows where key_pair is actually null/empty (but keep 'NA' strings)
+    df = df[df['key_pair'].notna()]
+    df = df[df['key_pair'].astype(str).str.strip() != '']
+    
+    # Remove rows where key_pair length is not exactly 2
+    df = df[df['key_pair'].astype(str).str.len() == 2]
+    
+    cleaned_rows = len(df)
+    
+    if verbose and initial_rows != cleaned_rows:
+        print(f"Cleaned {initial_rows - cleaned_rows} invalid rows from comfort scores")
+    
+    if df.empty:
+        if verbose:
+            print("Warning: No valid data remaining after cleaning comfort scores")
+        return
+    
+    # Debug: Check if 'NA' survived
+    if verbose and 'NA' in df['key_pair'].values:
+        print(f"  ✓ 'NA' key pair preserved in comfort scores")
     
     # Filter for same-key bigrams (e.g., "AA", ";;", "//")
     same_key_rows = df[df['key_pair'].str[0] == df['key_pair'].str[1]].copy()
@@ -176,7 +232,7 @@ def create_key_comfort_scores(input_dir: str, verbose: bool = False) -> None:
         print(f"  Score range: {key_comfort_df['comfort_score'].min():.6f} - {key_comfort_df['comfort_score'].max():.6f}")
         print(f"  Mean score: {key_comfort_df['comfort_score'].mean():.6f}")
 
-
+        
 def create_unified_score_table(input_dir: str, verbose: bool = False) -> None:
     """Create unified key pair scoring table with normalized scores."""
     

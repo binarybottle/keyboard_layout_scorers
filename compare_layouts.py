@@ -67,19 +67,50 @@ def load_and_pivot_data(file_path: str, use_raw: bool = False, verbose: bool = F
         
         # Check required columns
         required_cols = ['layout_name', 'scorer']
-        if use_raw:
-            score_col = 'raw_score'
-        else:
-            # Try weighted_score first, fall back to raw_score if not available
-            if 'weighted_score' in df.columns:
-                score_col = 'weighted_score'
-            elif 'raw_score' in df.columns:
-                score_col = 'raw_score'
-                if verbose:
-                    print("Warning: No weighted_score column found, using raw_score")
-            else:
-                raise ValueError("No score column found (expected 'weighted_score' or 'raw_score')")
         
+        # Handle different score column formats from score_layouts.py
+        if use_raw:
+            # For raw scoring, accept: 'raw_score', 'score', or any other numeric column
+            possible_cols = ['raw_score', 'score']
+            score_col = None
+            for col in possible_cols:
+                if col in df.columns:
+                    score_col = col
+                    break
+            
+            if score_col is None:
+                # Fallback: find any numeric column that's not layout_name/scorer
+                numeric_cols = [col for col in df.columns 
+                              if col not in ['layout_name', 'scorer'] and pd.api.types.is_numeric_dtype(df[col])]
+                if numeric_cols:
+                    score_col = numeric_cols[0]
+                    if verbose:
+                        print(f"Warning: Using '{score_col}' column for raw scores")
+                else:
+                    raise ValueError("No suitable score column found for raw scoring")
+        else:
+            # For weighted scoring, try in order of preference
+            possible_cols = ['weighted_score', 'average_score', 'raw_score', 'score']
+            score_col = None
+            for col in possible_cols:
+                if col in df.columns:
+                    score_col = col
+                    break
+            
+            if score_col is None:
+                # Fallback: find any numeric column
+                numeric_cols = [col for col in df.columns 
+                              if col not in ['layout_name', 'scorer'] and pd.api.types.is_numeric_dtype(df[col])]
+                if numeric_cols:
+                    score_col = numeric_cols[0]
+                    if verbose:
+                        print(f"Warning: Using '{score_col}' column for scoring")
+                else:
+                    raise ValueError("No suitable score column found")
+            
+            if score_col in ['raw_score', 'score'] and verbose:
+                print("Warning: No weighted_score column found, using raw scores")        
+
         required_cols.append(score_col)
         
         missing_cols = [col for col in required_cols if col not in df.columns]
