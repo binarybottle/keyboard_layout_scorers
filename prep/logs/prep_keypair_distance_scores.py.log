@@ -1,19 +1,17 @@
-> poetry run python3 prep_keypair_distance_scores.py --text-files /Users/arno/Software/text_data/samples/COCA_corpusdata.org_sample_text_blog_cleaned.txt,/Users/arno/Software/text_data/samples/gender-classifier-20000tweets.txt,/Users/arno/Software/text_data/samples/google.com_accessed_20202010.txt,/Users/arno/Software/text_data/samples/iweb-corpus-cleaned-150000-lines.txt,/Users/arno/Software/text_data/samples/MASC_spoken_transcripts_of_phone_face2face.txt,/Users/arno/Software/text_data/samples/MASC_tweets_cleaned.txt,/Users/arno/Software/text_data/samples/training.1600000.processed.noemoticon_1st100000tweets.txt
-Prepare distance-based key-pair scores
-==================================================
+> poetry run python3 prep_keypair_distance_scores.py --output ../tables/keypair_distance_scores.csv
+Generate FREQUENCY-INDEPENDENT distance-based key-pair scores
+======================================================================
 QWERTY keys (32): ',./;ABCDEFGHIJKLMNOPQRSTUVWXYZ[
 Total key-pairs to compute: 1024
-Text files to analyze: 7
-  - /Users/arno/Software/text_data/samples/COCA_corpusdata.org_sample_text_blog_cleaned.txt
-  - /Users/arno/Software/text_data/samples/gender-classifier-20000tweets.txt
-  - /Users/arno/Software/text_data/samples/google.com_accessed_20202010.txt
-  - /Users/arno/Software/text_data/samples/iweb-corpus-cleaned-150000-lines.txt
-  - /Users/arno/Software/text_data/samples/MASC_spoken_transcripts_of_phone_face2face.txt
-  - /Users/arno/Software/text_data/samples/MASC_tweets_cleaned.txt
-  - /Users/arno/Software/text_data/samples/training.1600000.processed.noemoticon_1st100000tweets.txt
-Computing distance scores using theoretical + text approach...
+🎯 Using PURE THEORETICAL approach (no frequency bias)
+Computing distance scores using PURE THEORETICAL approach...
+🎯 This version is FREQUENCY-INDEPENDENT
+   - No text processing
+   - No frequency weighting
+   - Pure biomechanical evaluation
 
-🔵 Stage 1: Computing theoretical distances for all key-pairs
+🔵 Computing PURE THEORETICAL distances for all key-pairs
+   (No text processing, no frequency bias)
   Computing distances for 1024 key-pairs...
     Progress: 0/1024 (0.0%)
     Progress: 100/1024 (9.8%)
@@ -27,364 +25,55 @@ Computing distance scores using theoretical + text approach...
     Progress: 900/1024 (87.9%)
     Progress: 1000/1024 (97.7%)
   ✅ Computed theoretical distances for all 1024 key-pairs
-  Statistics: 64 zero distances, avg=33.04mm, max=85.66mm
-
-🟡 Stage 2: Processing text files for real-world key-pair usage
-  Processing: /Users/arno/Software/text_data/samples/COCA_corpusdata.org_sample_text_blog_cleaned.txt
-    Text length: 7649207 characters
-    Processing 1483214 words from text
-    Sample words: 5108141 SATURDAY , 17 NOVEMBER 2012 EMERGING FROM THE FOG
-    Cleaning example: '5108141' -> '       '
-    Valid sub-word: 'SATURDAY'
-    Bigram #1: 'SA' distance=0.00mm (word start)
-    Bigram #2: 'AT' distance=23.60mm (after 'S')
-    Bigram #3: 'TU' distance=43.25mm (after 'A')
-    Bigram #4: 'UR' distance=39.29mm (after 'T')
-    Bigram #5: 'RD' distance=19.65mm (after 'U')
-    Bigram #6: 'DA' distance=0.00mm (after 'R')
-    Bigram #7: 'AY' distance=30.61mm (after 'D')
-    Cleaning example: '17' -> '  '
-    Bigram #8: 'NO' distance=40.67mm (word start)
-    Bigram #9: 'OV' distance=41.12mm (after 'N')
-    Bigram #10: 'VE' distance=41.12mm (after 'O')
-    Progress: 100000/1483214 words, 299685 bigrams found
-    Progress: 200000/1483214 words, 598909 bigrams found
-    Progress: 300000/1483214 words, 906719 bigrams found
-    Progress: 400000/1483214 words, 1208825 bigrams found
-    Progress: 500000/1483214 words, 1511647 bigrams found
-    Progress: 600000/1483214 words, 1820981 bigrams found
-    Progress: 700000/1483214 words, 2126424 bigrams found
-    Progress: 800000/1483214 words, 2428155 bigrams found
-    Progress: 900000/1483214 words, 2722699 bigrams found
-    Progress: 1000000/1483214 words, 3027137 bigrams found
-    Progress: 1100000/1483214 words, 3322421 bigrams found
-    Progress: 1200000/1483214 words, 3640048 bigrams found
-    Progress: 1300000/1483214 words, 3948411 bigrams found
-    Progress: 1400000/1483214 words, 4257032 bigrams found
-    ✅ Found 4509014 total bigram instances
-    Found 4509014 total bigram instances
-    Unique bigrams: 832
-  Processing: /Users/arno/Software/text_data/samples/gender-classifier-20000tweets.txt
-    Text length: 1974802 characters
-    Processing 310789 words from text
-    Sample words: TEXT ROBBIE E RESPONDS TO CRITICS AFTER WIN AGAINST EDDIE
-    Valid sub-word: 'TEXT'
-    Bigram #1: 'TE' distance=43.25mm (word start)
-    Bigram #2: 'EX' distance=41.12mm (after 'T')
-    Bigram #3: 'XT' distance=45.07mm (after 'E')
-    Valid sub-word: 'ROBBIE'
-    Bigram #4: 'RO' distance=39.29mm (word start)
-    Bigram #5: 'OB' distance=54.32mm (after 'R')
-    Bigram #6: 'BB' distance=34.67mm (after 'O')
-    Bigram #7: 'BI' distance=19.65mm (after 'B')
-    Bigram #8: 'IE' distance=39.29mm (after 'B')
-    Bigram #9: 'RE' distance=39.29mm (word start)
-    Bigram #10: 'ES' distance=19.65mm (after 'R')
-    Progress: 100000/310789 words, 402128 bigrams found
-    Progress: 200000/310789 words, 796926 bigrams found
-    Progress: 300000/310789 words, 1185638 bigrams found
-    ✅ Found 1228020 total bigram instances
-    Found 1228020 total bigram instances
-    Unique bigrams: 957
-  Processing: /Users/arno/Software/text_data/samples/google.com_accessed_20202010.txt
-    Text length: 222521 characters
-    Processing 5344 words from text
-    Sample words: <!DOCTYPE HTML><HTML ITEMSCOPE="" ITEMTYPE="HTTP://SCHEMA.ORG/WEBPAGE" LANG="EN"><HEAD><META CHARSET="UTF-8"><META CONTENT="ORIGIN" NAME="REFERRER"><META CONTENT="SEARCH THE
-    Cleaning example: '<!DOCTYPE' -> '  DOCTYPE'
-    Valid sub-word: 'DOCTYPE'
-    Bigram #1: 'DO' distance=19.65mm (word start)
-    Bigram #2: 'OC' distance=41.12mm (after 'D')
-    Bigram #3: 'CT' distance=45.07mm (after 'O')
-    Bigram #4: 'TY' distance=54.21mm (after 'C')
-    Bigram #5: 'YP' distance=50.26mm (after 'T')
-    Bigram #6: 'PE' distance=39.29mm (after 'Y')
-    Cleaning example: 'HTML><HTML' -> 'HTML  HTML'
-    Bigram #7: 'HT' distance=42.60mm (word start)
-    Bigram #8: 'TM' distance=45.07mm (after 'H')
-    Bigram #9: 'ML' distance=21.47mm (after 'T')
-    Bigram #10: 'HT' distance=42.60mm (word start)
-    Cleaning example: 'ITEMSCOPE=""' -> 'ITEMSCOPE   '
-    Cleaning example: 'ITEMTYPE="HTTP://SCHEMA.ORG/WEBPAGE"' -> 'ITEMTYPE  HTTP //SCHEMA.ORG/WEBPAGE '
-    Cleaning example: 'LANG="EN"><HEAD><META' -> 'LANG  EN   HEAD  META'
-    ✅ Found 125116 total bigram instances
-    Found 125116 total bigram instances
-    Unique bigrams: 988
-  Processing: /Users/arno/Software/text_data/samples/iweb-corpus-cleaned-150000-lines.txt
-    Text length: 42050866 characters
-    Processing 7277886 words from text
-    Sample words: THE ABILITY TO ADJUST TO DIFFERENT ENVIRONMENTS, UNEXPECTED CHANGES, PEOPLE
-    Valid sub-word: 'THE'
-    Bigram #1: 'TH' distance=42.60mm (word start)
-    Bigram #2: 'HE' distance=38.65mm (after 'T')
-    Valid sub-word: 'ABILITY'
-    Bigram #3: 'AB' distance=34.67mm (word start)
-    Bigram #4: 'BI' distance=54.32mm (after 'A')
-    Bigram #5: 'IL' distance=19.65mm (after 'B')
-    Bigram #6: 'LI' distance=19.65mm (after 'I')
-    Bigram #7: 'IT' distance=43.25mm (after 'L')
-    Bigram #8: 'TY' distance=54.21mm (after 'I')
-    Bigram #9: 'TO' distance=43.25mm (word start)
-    Bigram #10: 'AD' distance=0.00mm (word start)
-    Progress: 100000/7277886 words, 357751 bigrams found
-    Progress: 200000/7277886 words, 704175 bigrams found
-    Progress: 300000/7277886 words, 1050047 bigrams found
-    Progress: 400000/7277886 words, 1392076 bigrams found
-    Progress: 500000/7277886 words, 1725861 bigrams found
-    Progress: 600000/7277886 words, 2070912 bigrams found
-    Progress: 700000/7277886 words, 2423132 bigrams found
-    Progress: 800000/7277886 words, 2767588 bigrams found
-    Progress: 900000/7277886 words, 3127682 bigrams found
-    Progress: 1000000/7277886 words, 3531676 bigrams found
-    Progress: 1100000/7277886 words, 3929457 bigrams found
-    Progress: 1200000/7277886 words, 4283761 bigrams found
-    Progress: 1300000/7277886 words, 4711010 bigrams found
-    Progress: 1400000/7277886 words, 5146007 bigrams found
-    Progress: 1500000/7277886 words, 5543671 bigrams found
-    Progress: 1600000/7277886 words, 5908046 bigrams found
-    Progress: 1700000/7277886 words, 6271360 bigrams found
-    Progress: 1800000/7277886 words, 6654330 bigrams found
-    Progress: 1900000/7277886 words, 7050771 bigrams found
-    Progress: 2000000/7277886 words, 7470653 bigrams found
-    Progress: 2100000/7277886 words, 7830451 bigrams found
-    Progress: 2200000/7277886 words, 8174486 bigrams found
-    Progress: 2300000/7277886 words, 8595780 bigrams found
-    Progress: 2400000/7277886 words, 8979642 bigrams found
-    Progress: 2500000/7277886 words, 9352204 bigrams found
-    Progress: 2600000/7277886 words, 9718810 bigrams found
-    Progress: 2700000/7277886 words, 10076812 bigrams found
-    Progress: 2800000/7277886 words, 10427635 bigrams found
-    Progress: 2900000/7277886 words, 10765223 bigrams found
-    Progress: 3000000/7277886 words, 11115296 bigrams found
-    Progress: 3100000/7277886 words, 11469471 bigrams found
-    Progress: 3200000/7277886 words, 11865140 bigrams found
-    Progress: 3300000/7277886 words, 12258127 bigrams found
-    Progress: 3400000/7277886 words, 12642225 bigrams found
-    Progress: 3500000/7277886 words, 13018978 bigrams found
-    Progress: 3600000/7277886 words, 13373037 bigrams found
-    Progress: 3700000/7277886 words, 13726062 bigrams found
-    Progress: 3800000/7277886 words, 14111563 bigrams found
-    Progress: 3900000/7277886 words, 14494989 bigrams found
-    Progress: 4000000/7277886 words, 14899516 bigrams found
-    Progress: 4100000/7277886 words, 15265773 bigrams found
-    Progress: 4200000/7277886 words, 15604435 bigrams found
-    Progress: 4300000/7277886 words, 15959751 bigrams found
-    Progress: 4400000/7277886 words, 16327324 bigrams found
-    Progress: 4500000/7277886 words, 16709000 bigrams found
-    Progress: 4600000/7277886 words, 17095040 bigrams found
-    Progress: 4700000/7277886 words, 17466626 bigrams found
-    Progress: 4800000/7277886 words, 17860210 bigrams found
-    Progress: 4900000/7277886 words, 18273819 bigrams found
-    Progress: 5000000/7277886 words, 18669586 bigrams found
-    Progress: 5100000/7277886 words, 19050474 bigrams found
-    Progress: 5200000/7277886 words, 19423923 bigrams found
-    Progress: 5300000/7277886 words, 19798038 bigrams found
-    Progress: 5400000/7277886 words, 20136365 bigrams found
-    Progress: 5500000/7277886 words, 20468873 bigrams found
-    Progress: 5600000/7277886 words, 20800095 bigrams found
-    Progress: 5700000/7277886 words, 21169597 bigrams found
-    Progress: 5800000/7277886 words, 21553306 bigrams found
-    Progress: 5900000/7277886 words, 21956928 bigrams found
-    Progress: 6000000/7277886 words, 22316382 bigrams found
-    Progress: 6100000/7277886 words, 22687376 bigrams found
-    Progress: 6200000/7277886 words, 23020692 bigrams found
-    Progress: 6300000/7277886 words, 23337264 bigrams found
-    Progress: 6400000/7277886 words, 23702821 bigrams found
-    Progress: 6500000/7277886 words, 24057943 bigrams found
-    Progress: 6600000/7277886 words, 24419495 bigrams found
-    Progress: 6700000/7277886 words, 24758449 bigrams found
-    Progress: 6800000/7277886 words, 25121845 bigrams found
-    Progress: 6900000/7277886 words, 25508764 bigrams found
-    Progress: 7000000/7277886 words, 25892183 bigrams found
-    Progress: 7100000/7277886 words, 26274705 bigrams found
-    Progress: 7200000/7277886 words, 26658245 bigrams found
-    ✅ Found 26935448 total bigram instances
-    Found 26935448 total bigram instances
-    Unique bigrams: 932
-  Processing: /Users/arno/Software/text_data/samples/MASC_spoken_transcripts_of_phone_face2face.txt
-    Text length: 175427 characters
-    Processing 25770 words from text
-    Sample words: UH HOW DO YOU FEEL ABOUT GUN CONTROL UH ON
-    Valid sub-word: 'UH'
-    Bigram #1: 'UH' distance=43.25mm (word start)
-    Valid sub-word: 'HOW'
-    Bigram #2: 'HO' distance=38.65mm (word start)
-    Bigram #3: 'OW' distance=39.29mm (after 'H')
-    Valid sub-word: 'DO'
-    Bigram #4: 'DO' distance=19.65mm (word start)
-    Valid sub-word: 'YOU'
-    Bigram #5: 'YO' distance=50.26mm (word start)
-    Bigram #6: 'OU' distance=39.29mm (after 'Y')
-    Bigram #7: 'FE' distance=19.65mm (word start)
-    Bigram #8: 'EE' distance=19.65mm (after 'F')
-    Bigram #9: 'EL' distance=0.00mm (after 'E')
-    Bigram #10: 'AB' distance=34.67mm (word start)
-    ✅ Found 76630 total bigram instances
-    Found 76630 total bigram instances
-    Unique bigrams: 466
-  Processing: /Users/arno/Software/text_data/samples/MASC_tweets_cleaned.txt
-    Text length: 144968 characters
-    Processing 23356 words from text
-    Sample words: JUST SETTING UP MY TWTTR TM HELP WONDERING IF I
-    Valid sub-word: 'JUST'
-    Bigram #1: 'JU' distance=19.65mm (word start)
-    Bigram #2: 'US' distance=19.65mm (after 'J')
-    Bigram #3: 'ST' distance=23.60mm (after 'U')
-    Valid sub-word: 'SETTING'
-    Bigram #4: 'SE' distance=19.65mm (word start)
-    Bigram #5: 'ET' distance=43.25mm (after 'S')
-    Bigram #6: 'TT' distance=23.60mm (after 'E')
-    Bigram #7: 'TI' distance=19.65mm (after 'T')
-    Bigram #8: 'IN' distance=40.67mm (after 'T')
-    Bigram #9: 'NG' distance=40.02mm (after 'I')
-    Bigram #10: 'UP' distance=39.29mm (word start)
-    ✅ Found 91994 total bigram instances
-    Found 91994 total bigram instances
-    Unique bigrams: 852
-  Processing: /Users/arno/Software/text_data/samples/training.1600000.processed.noemoticon_1st100000tweets.txt
-    Text length: 7478177 characters
-    Processing 1349841 words from text
-    Sample words: @SWITCHFOOT HTTP://TWITPIC.COM/2Y1ZL - AWWW, THAT'S A BUMMER. YOU SHOULDA GOT
-    Cleaning example: '@SWITCHFOOT' -> ' SWITCHFOOT'
-    Valid sub-word: 'SWITCHFOOT'
-    Bigram #1: 'SW' distance=19.65mm (word start)
-    Bigram #2: 'WI' distance=39.29mm (after 'S')
-    Bigram #3: 'IT' distance=43.25mm (after 'W')
-    Bigram #4: 'TC' distance=45.07mm (after 'I')
-    Bigram #5: 'CH' distance=40.47mm (after 'T')
-    Bigram #6: 'HF' distance=19.00mm (after 'C')
-    Bigram #7: 'FO' distance=19.65mm (after 'H')
-    Bigram #8: 'OO' distance=19.65mm (after 'F')
-    Bigram #9: 'OT' distance=23.60mm (after 'O')
-    Cleaning example: 'HTTP://TWITPIC.COM/2Y1ZL' -> 'HTTP //TWITPIC.COM/ Y ZL'
-    Bigram #10: 'HT' distance=42.60mm (word start)
-    Cleaning example: '-' -> ' '
-    Progress: 100000/1349841 words, 334280 bigrams found
-    Progress: 200000/1349841 words, 665820 bigrams found
-    Progress: 300000/1349841 words, 997227 bigrams found
-    Progress: 400000/1349841 words, 1329193 bigrams found
-    Progress: 500000/1349841 words, 1660062 bigrams found
-    Progress: 600000/1349841 words, 1992910 bigrams found
-    Progress: 700000/1349841 words, 2322574 bigrams found
-    Progress: 800000/1349841 words, 2652647 bigrams found
-    Progress: 900000/1349841 words, 2985101 bigrams found
-    Progress: 1000000/1349841 words, 3318255 bigrams found
-    Progress: 1100000/1349841 words, 3648716 bigrams found
-    Progress: 1200000/1349841 words, 3976956 bigrams found
-    Progress: 1300000/1349841 words, 4308059 bigrams found
-    ✅ Found 4472410 total bigram instances
-    Found 4472410 total bigram instances
-    Unique bigrams: 995
-  ✅ Computed averaged distances for 1023 key-pairs from text
-  Sample text-based scores with common preceding characters:
-    SA: 0.01mm (avg of 82323 instances, common preceding: S,I,U)
-    AT: 23.74mm (avg of 497066 instances, common preceding: H,E,R)
-    TU: 42.90mm (avg of 78859 instances, common preceding: S,A,C)
-    UR: 39.53mm (avg of 227347 instances, common preceding: O,T,S)
-    RD: 19.65mm (avg of 62828 instances, common preceding: A,O,I)
-
-🟢 Stage 3: Combining theoretical and text-based scores
-    Example override: AT theoretical=23.601mm -> text=23.743mm (common preceding: H,E,R)
-    Example override: TU theoretical=43.248mm -> text=42.900mm (common preceding: S,A,C)
-    Example override: UR theoretical=39.294mm -> text=39.528mm (common preceding: O,T,S)
-    Example override: DA theoretical=0.000mm -> text=0.220mm (common preceding: N,O,I)
-    Example override: NO theoretical=40.671mm -> text=40.246mm (common preceding: K,A,E)
-  ✅ Overrode 1023 theoretical scores with text-based averages
-  📊 710 pairs have significant differences (>0.1mm)
-  Final scores: 1024 total key-pairs
-    - 1023 pairs have text-based overrides
-    - 1 pairs use theoretical distances only
+  📊 Statistics:
+    Zero distances: 64
+    Min distance: 0.00mm
+    Average distance: 33.04mm
+    Max distance: 85.66mm
 
 ✅ Total key-pairs computed: 1024
-✅ Saved 1024 key-pair scores to: tables/keypair_distance_scores.csv
+🎯 All scores are frequency-independent and layout-agnostic
+✅ Saved 1024 key-pair scores to: ../tables/keypair_distance_scores.csv
 
-📊 Comprehensive Validation Results:
-   Total key-pairs: 1024
-   Expected count: 1024
-   Match: ✅
-   Final distance range: 0.000 to 85.699 mm
-   Raw distance range: 0.000 to 85.660 mm
-   Average final: 33.029 mm
-   Average raw: 33.042 mm
-   Pairs with text-based overrides: 952
-   Pairs with preceding character data: 1017
-   Zero final scores: 2
-   Zero raw scores: 64
-
-🔍 MANUAL VERIFICATION:
+🔍 DISTANCE CALCULATION MODEL VERIFICATION
 ============================================================
+Expected behavior:
+  Different fingers: home→key1 + home→key2
+  Same finger: home→key1 + key1→key2
 
-1️⃣ Theoretical Distance Verification:
-   FF: manual=0.000mm, csv=0.000mm ✅
-   FD: manual=0.000mm, csv=0.000mm ✅
-   FG: manual=19.000mm, csv=19.000mm ✅
-   QP: manual=39.294mm, csv=39.294mm ✅
-   AZ: manual=21.471mm, csv=21.471mm ✅
+📊 Test Results:
+Pair | Finger     | Calculated | Components                | Status
+---------------------------------------------------------------------------
+ER   | diff       | 39.29      | (D→E) + (F→R)             | ✅
+TG   | same       | 43.25      | (F→T) + (T→G)             | ✅
+AS   | diff       | 0.00       | (A→A) + (S→S)             | ✅
+FG   | same       | 19.00      | (F→F) + (F→G)             | ✅
+QW   | diff       | 39.29      | (A→Q) + (S→W)             | ✅
+RT   | same       | 38.65      | (F→R) + (R→T)             | ✅
 
-2️⃣ Text Processing Verification:
+🎯 Model verification complete!
 
-   Word: 'SATURDAY'
-     Step 0: S -> distance=0.00mm (first char)
-     Step 1: A -> distance=0.00mm, bigram='SA' total=0.00mm, after='START'
-     Step 2: T -> distance=23.60mm, bigram='AT' total=23.60mm, after='S'
-     Step 3: U -> distance=19.65mm, bigram='TU' total=43.25mm, after='A'
-     Step 4: R -> distance=19.65mm, bigram='UR' total=39.29mm, after='T'
-     Step 5: D -> distance=0.00mm, bigram='RD' total=19.65mm, after='U'
-     Step 6: A -> distance=0.00mm, bigram='DA' total=0.00mm, after='R'
-     Step 7: Y -> distance=30.61mm, bigram='AY' total=30.61mm, after='D'
+📊 FREQUENCY-INDEPENDENCE VALIDATION
+==================================================
+Expected key-pairs: 1024
+Actual key-pairs: 1024
+Complete coverage: ✅
 
-   Word: 'NOVEMBER'
-     Step 0: N -> distance=21.02mm (first char)
-     Step 1: O -> distance=19.65mm, bigram='NO' total=40.67mm, after='START'
-     Step 2: V -> distance=21.47mm, bigram='OV' total=41.12mm, after='N'
-     Step 3: E -> distance=19.65mm, bigram='VE' total=41.12mm, after='O'
-     Step 4: M -> distance=21.47mm, bigram='EM' total=41.12mm, after='V'
-     Step 5: B -> distance=34.67mm, bigram='MB' total=56.14mm, after='E'
-     Step 6: E -> distance=19.65mm, bigram='BE' total=54.32mm, after='M'
-     Step 7: R -> distance=19.65mm, bigram='ER' total=39.29mm, after='B'
+Distance score statistics:
+  Min: 0.00mm
+  Max: 85.66mm
+  Average: 33.04mm
 
-   Word: 'EMERGING'
-     Step 0: E -> distance=19.65mm (first char)
-     Step 1: M -> distance=21.47mm, bigram='EM' total=41.12mm, after='START'
-     Step 2: E -> distance=19.65mm, bigram='ME' total=41.12mm, after='E'
-     Step 3: R -> distance=19.65mm, bigram='ER' total=39.29mm, after='M'
-     Step 4: G -> distance=30.61mm, bigram='RG' total=50.26mm, after='E'
-     Step 5: I -> distance=19.65mm, bigram='GI' total=50.26mm, after='R'
-     Step 6: N -> distance=21.02mm, bigram='IN' total=40.67mm, after='G'
-     Step 7: G -> distance=19.00mm, bigram='NG' total=40.02mm, after='I'
+🔍 Validation checks:
+  Home row same-key pairs with 0 distance: 8/8 ✅
+  QW (adjacent): 39.29mm
+  QP (distant): 39.29mm
+  Distance ordering correct: ❌
+  Common English avg: 36.45mm
+  Random pairs avg: 37.73mm
+  No English bias: ✅
 
-3️⃣ CSV Data Verification:
-   SA: expected preceding 'S' in 'S,I,U' ✅ (SATURDAY context)
-   AT: expected preceding 'S' in 'H,E,R' 📊 (SATURDAY context (may differ in full corpus))
-   TU: expected preceding 'A' in 'S,A,C' ✅ (SATURDAY context)
-   RD: expected preceding 'U' in 'A,O,I' 📊 (SATURDAY context)
+✅ Frequency-independence validation complete!
 
-4️⃣ Finger Assignment Verification:
-   'F' -> finger L1 (expected L1) ✅
-   'J' -> finger R1 (expected R1) ✅
-   'A' -> finger L4 (expected L4) ✅
-   ';' -> finger R4 (expected R4) ✅
-   'D' -> finger L2 (expected L2) ✅
-   'K' -> finger R2 (expected R2) ✅
-
-5️⃣ Bigram Distance Verification:
-   FJ bigram: expected=0.0mm, csv=0.0mm ✅
-   QP bigram: expected=39.3mm, csv=39.3mm ✅
-   QZ bigram: expected=60.5mm, csv=60.5mm ✅
-
-6️⃣ Context Pattern Validation:
-   TH: expected ['A', 'I', 'E'], got ['I', 'O', 'E'], match rate=66.7% ✅
-   HE: expected ['T', 'W', 'S'], got ['T', 'W', 'C'], match rate=66.7% ✅
-   ER: expected ['T', 'V', 'H'], got ['H', 'T', 'V'], match rate=100.0% ✅
-   AN: expected ['C', 'M', 'H'], got ['C', 'H', 'M'], match rate=100.0% ✅
-
-7️⃣ Data Consistency Checks:
-   Negative raw distances: 0 ✅
-   Negative final distances: 0 ✅
-   Home row same-key pairs with 0 distance: 8/8 ✅
-   Non-home same-key pairs with >0 distance: 24/24 ✅
-   Home position same-key pairs with 0 distance: 8/8 ✅
-   Same-finger different-key home row pairs with >0 distance: 4/4 ✅
-
-✅ Comprehensive validation complete!
-
-✅ Distance key-pair score generation complete: tables/keypair_distance_scores.csv
+✅ Frequency-independent distance generation complete: ../tables/keypair_distance_scores.csv
+🎯 These scores are ready for dual framework analysis!
