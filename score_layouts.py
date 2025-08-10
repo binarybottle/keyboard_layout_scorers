@@ -14,8 +14,8 @@ Setup:
 Default behavior:
 - Score table: tables/keypair_scores.csv (created by prep_scoring_tables.py)
 - Key scores: tables/key_scores.csv (created by prep_scoring_tables.py)  
-- Frequency data: input/english-letter-pair-counts-google-ngrams.csv
-- Letter frequencies: input/english-letter-counts-google-ngrams.csv
+- Frequency data: input/english-letter-pair-frequencies-google-ngrams.csv
+- Letter frequencies: input/english-letter-frequencies-google-ngrams.csv
 - Scoring mode: Frequency-weighted (prioritizes common English letter combinations)
 - Score mapping: Letter-pair frequencies → Key-pair scores (distance/time inverted)
 
@@ -62,7 +62,6 @@ import numpy as np
 from pathlib import Path
 from typing import Dict, List, Tuple, Optional, Set
 from collections import defaultdict
-
 
 class LayoutScorer:
     """Unified layout scorer using pre-computed score table."""
@@ -140,8 +139,8 @@ class LayoutScorer:
         
         # Try to detect column names
         possible_bigram_cols = ['bigram', 'pair', 'key_pair', 'letter_pair']
-        possible_freq_cols = ['count', 'frequency', 'freq', 'occurrences']
-        
+        possible_freq_cols = ['normalized_frequency', 'frequency']
+
         bigram_col = None
         freq_col = None
         
@@ -184,7 +183,7 @@ class LayoutScorer:
     
     def _load_letter_frequencies(self) -> Optional[Dict[str, float]]:
         """Load individual letter frequency data."""
-        filepath = "input/english-letter-counts-google-ngrams.csv"
+        filepath = "input/english-letter-frequencies-google-ngrams.csv"
         
         if not Path(filepath).exists():
             if self.verbose:
@@ -200,8 +199,8 @@ class LayoutScorer:
         
         # Try to detect column names
         possible_letter_cols = ['letter', 'char', 'character']
-        possible_freq_cols = ['count', 'frequency', 'freq', 'occurrences']
-        
+        possible_freq_cols = ['normalized_frequency', 'frequency']
+
         letter_col = None
         freq_col = None
         
@@ -232,10 +231,10 @@ class LayoutScorer:
                 frequencies[letter] = freq
                 total_count += freq
         
-        # Normalize frequencies to proportions (sum to 1.0)
-        if total_count > 0:
-            for letter in frequencies:
-                frequencies[letter] = frequencies[letter] / total_count
+        ## Normalize frequencies to proportions (sum to 1.0)
+        #if total_count > 0:
+        #    for letter in frequencies:
+        #        frequencies[letter] = frequencies[letter] / total_count
         
         if self.verbose:
             print(f"Loaded and normalized letter frequencies for {len(frequencies)} letters")
@@ -296,6 +295,7 @@ class LayoutScorer:
         
         for letter1 in letters:
             for letter2 in letters:
+                #if letter1 != letter2:  # NB: Skip self-pairs like optimize_layout.py
                 letter_pairs.append(letter1 + letter2)
         
         return letter_pairs
@@ -362,7 +362,6 @@ class LayoutScorer:
         # Initialize scoring variables
         raw_total_score = 0.0
         raw_count = 0
-        missing_pairs = []
         
         # Frequency-weighted scoring (if not using raw mode)
         weighted_total_score = 0.0
@@ -380,65 +379,85 @@ class LayoutScorer:
                     key2 = layout_mapping[letter2]
                     key_pair = key1 + key2
                     
-                    # Look up key-pair score in table
+                    # Look up key-pair score in table (with default fallback)
                     if key_pair in self.score_table.index:
                         raw_score = self.score_table.loc[key_pair, score_col]
-                        
-                        # Invert score if needed (distance, time: higher is worse)
-                        if invert_scores:
-                            score = 1.0 - raw_score
-                        else:
-                            score = raw_score
-                        
-                        # Raw scoring (treat all letter-pairs equally)
-                        raw_total_score += score
-                        raw_count += 1
-                        
-                        # Frequency-weighted scoring (if enabled)
-                        if use_frequency:
-                            frequency = self.bigram_frequencies.get(letter_pair, 0.0)
-                            weighted_total_score += score * frequency
-                            total_frequency += frequency
-                            if frequency > 0:
-                                frequency_coverage += frequency
                     else:
-                        missing_pairs.append(f"{letter_pair}→{key_pair}")
+                        raise ValueError(f"Missing score for key pair: {key_pair}")
+
+                    # Invert score if needed (distance, time: higher is worse)
+                    if invert_scores:
+                        score = 1.0 - raw_score
+                    else:
+                        score = raw_score
+
+                    # Raw scoring (treat all letter-pairs equally)
+                    raw_total_score += score
+                    raw_count += 1
+
+                    # Frequency-weighted scoring (if enabled)
+                    if use_frequency:
+                        frequency = self.bigram_frequencies.get(letter_pair, 0.0)
+                        weighted_total_score += score * frequency
+                        total_frequency += frequency
+                        if frequency > 0:
+                            frequency_coverage += frequency
                 else:
                     # Letter not in layout mapping
-                    missing_pairs.append(f"{letter_pair}→??")
+                    raise ValueError(f"Letter pair '{letter_pair}' contains letters not in layout mapping: {letter1}, {letter2}")
         
         # Calculate results
         raw_average = raw_total_score / raw_count if raw_count > 0 else 0.0
         
-        # Determine primary score based on mode
-        if use_frequency:
-            # Frequency weighting is primary
-            primary_score = weighted_total_score / total_frequency if total_frequency > 0 else 0.0
-            results = {
-                'average_score': primary_score,  # Primary score
-                'total_score': weighted_total_score,
-                'raw_average_score': raw_average,  # Secondary 
-                'raw_total_score': raw_total_score,
-                'pair_count': raw_count,
-                'missing_pairs': len(missing_pairs),
-                'coverage': raw_count / len(letter_pairs) if letter_pairs else 0.0,
-                'total_frequency': total_frequency,
-                'frequency_coverage': frequency_coverage / sum(self.bigram_frequencies.values()) if self.bigram_frequencies else 0.0
-            }
-        else:
-            # Raw scoring is primary
-            results = {
-                'average_score': raw_average,  # Primary score
-                'total_score': raw_total_score,
-                'pair_count': raw_count,
-                'missing_pairs': len(missing_pairs),
-                'coverage': raw_count / len(letter_pairs) if letter_pairs else 0.0
-            }
-        
-        if self.verbose and missing_pairs:
-            print(f"  Warning: {len(missing_pairs)} missing pairs for {scorer}")
-            if len(missing_pairs) <= 5:
-                print(f"    Missing: {missing_pairs}")
+        # Calculate both scoring methods
+        frequency_weighted_score = weighted_total_score / total_frequency if total_frequency > 0 else 0.0
+
+        # Calculate arithmetic average separately (include ALL pairs like optimize_layout.py)
+        arithmetic_total = 0.0
+        arithmetic_count = 0
+
+        letters = list(layout_mapping.keys())
+        for letter1 in letters:
+            for letter2 in letters:
+                if letter1 != letter2:  # Skip self-pairs
+                    letter_pair = letter1 + letter2
+                    key1 = layout_mapping[letter1]
+                    key2 = layout_mapping[letter2]
+                    key_pair = key1 + key2
+                    
+                    # Get comfort score
+                    if key_pair in self.score_table.index:
+                        comfort_score = self.score_table.loc[key_pair, score_col]
+                    else:
+                        comfort_score = 1.0
+                        raise ValueError(f"Missing comfort score for key pair: {key_pair}")
+                    
+                    # Invert if needed
+                    if invert_scores:
+                        comfort_score = 1.0 - comfort_score
+                    
+                    frequency = self.bigram_frequencies.get(letter_pair)
+                    
+                    # Add to arithmetic total
+                    arithmetic_total += frequency * comfort_score
+                    arithmetic_count += 1
+            
+        arithmetic_average_score = arithmetic_total / arithmetic_count if arithmetic_count > 0 else 0.0
+
+        # Determine primary score based on mode  
+        primary_score = frequency_weighted_score
+        results = {
+            'average_score': primary_score,  # Primary score (frequency-weighted)
+            'arithmetic_score': arithmetic_average_score,  # arithmetic average like optimize_layout.py
+            'frequency_weighted_score': frequency_weighted_score,  # explicit frequency-weighted
+            'total_score': weighted_total_score,
+            'raw_average_score': raw_average,  # Secondary 
+            'raw_total_score': raw_total_score,
+            'pair_count': raw_count,
+            'coverage': raw_count / len(letter_pairs) if letter_pairs else 0.0,
+            'total_frequency': total_frequency,
+            'frequency_coverage': frequency_coverage / sum(self.bigram_frequencies.values()) if self.bigram_frequencies else 0.0
+        }
         
         return results
     
@@ -447,7 +466,7 @@ class LayoutScorer:
         if self.letter_frequencies is None or self.key_comfort_scores is None:
             missing_files = []
             if self.letter_frequencies is None:
-                missing_files.append("input/english-letter-counts-google-ngrams.csv")
+                missing_files.append("input/english-letter-frequencies-google-ngrams.csv")
             if self.key_comfort_scores is None:
                 missing_files.append("tables/key_scores.csv")
             raise ValueError(
@@ -462,7 +481,6 @@ class LayoutScorer:
         # Initialize scoring variables
         raw_total_score = 0.0
         raw_count = 0
-        missing_pairs = []
         
         # Frequency-weighted scoring (if not using raw mode)
         weighted_total_score = 0.0
@@ -486,7 +504,7 @@ class LayoutScorer:
                     if frequency > 0:
                         frequency_coverage += frequency
             else:
-                missing_pairs.append(letter_pair)
+                raise ValueError(f"Comfort-key score not available for letter pair: {letter_pair}")
         
         # Calculate results
         raw_average = raw_total_score / raw_count if raw_count > 0 else 0.0
@@ -501,7 +519,6 @@ class LayoutScorer:
                 'raw_average_score': raw_average,  # Secondary 
                 'raw_total_score': raw_total_score,
                 'pair_count': raw_count,
-                'missing_pairs': len(missing_pairs),
                 'coverage': raw_count / len(letter_pairs) if letter_pairs else 0.0,
                 'total_frequency': total_frequency,
                 'frequency_coverage': frequency_coverage / sum(self.bigram_frequencies.values()) if self.bigram_frequencies else 0.0
@@ -512,14 +529,8 @@ class LayoutScorer:
                 'average_score': raw_average,  # Primary score
                 'total_score': raw_total_score,
                 'pair_count': raw_count,
-                'missing_pairs': len(missing_pairs),
                 'coverage': raw_count / len(letter_pairs) if letter_pairs else 0.0
             }
-        
-        if self.verbose and missing_pairs:
-            print(f"  Warning: {len(missing_pairs)} missing pairs for comfort-key")
-            if len(missing_pairs) <= 5:
-                print(f"    Missing: {missing_pairs}")
         
         return results
     
@@ -528,7 +539,7 @@ class LayoutScorer:
         if self.letter_frequencies is None or self.key_comfort_scores is None:
             missing_files = []
             if self.letter_frequencies is None:
-                missing_files.append("input/english-letter-counts-google-ngrams.csv")
+                missing_files.append("input/english-letter-frequencies-google-ngrams.csv")
             if self.key_comfort_scores is None:
                 missing_files.append("tables/key_scores.csv")
             raise ValueError(
@@ -550,7 +561,6 @@ class LayoutScorer:
         # Initialize scoring variables
         raw_total_score = 0.0
         raw_count = 0
-        missing_pairs = []
         
         # Frequency-weighted scoring (if not using raw mode)
         weighted_total_score = 0.0
@@ -590,13 +600,13 @@ class LayoutScorer:
                                 if frequency > 0:
                                     frequency_coverage += frequency
                         else:
-                            missing_pairs.append(f"{letter_pair}→{key_pair} (comfort-key)")
+                            raise ValueError(f"Comfort-key score not available for letter pair: {letter_pair}")
                     else:
-                        missing_pairs.append(f"{letter_pair}→{key_pair} (comfort)")
+                        raise ValueError(f"Comfort score not available for key pair: {key_pair}")
                 else:
                     # Letter not in layout mapping
-                    missing_pairs.append(f"{letter_pair}→??")
-        
+                    raise ValueError(f"Letter pair '{letter_pair}' contains letters not in layout mapping: {letter1}, {letter2}")
+
         # Calculate results
         raw_average = raw_total_score / raw_count if raw_count > 0 else 0.0
         
@@ -610,7 +620,6 @@ class LayoutScorer:
                 'raw_average_score': raw_average,  # Secondary 
                 'raw_total_score': raw_total_score,
                 'pair_count': raw_count,
-                'missing_pairs': len(missing_pairs),
                 'coverage': raw_count / len(letter_pairs) if letter_pairs else 0.0,
                 'total_frequency': total_frequency,
                 'frequency_coverage': frequency_coverage / sum(self.bigram_frequencies.values()) if self.bigram_frequencies else 0.0
@@ -621,14 +630,8 @@ class LayoutScorer:
                 'average_score': raw_average,  # Primary score
                 'total_score': raw_total_score,
                 'pair_count': raw_count,
-                'missing_pairs': len(missing_pairs),
                 'coverage': raw_count / len(letter_pairs) if letter_pairs else 0.0
             }
-        
-        if self.verbose and missing_pairs:
-            print(f"  Warning: {len(missing_pairs)} missing pairs for engram")
-            if len(missing_pairs) <= 5:
-                print(f"    Missing: {missing_pairs}")
         
         return results
     
@@ -721,7 +724,9 @@ def print_results(results: Dict[str, float], format_type: str = 'detailed', scor
         if use_raw or 'raw_average_score' not in results:
             print(f"{results['average_score']:.6f}")
         else:
-            print(f"{results['average_score']:.6f},{results['raw_average_score']:.6f}")
+            # Include both frequency-weighted and arithmetic scores
+            arithmetic = results.get('arithmetic_score', results['average_score'])
+            print(f"{results['average_score']:.6f},{arithmetic:.6f}")
         return
     
     if format_type == 'score_only':
@@ -734,15 +739,16 @@ def print_results(results: Dict[str, float], format_type: str = 'detailed', scor
             if use_raw:
                 print("scorer,average_score,total_score,pair_count,coverage")
             else:
-                print("scorer,average_score,total_score,raw_average_score,raw_total_score,pair_count,coverage,frequency_coverage")
-        
+                print("scorer,average_score,arithmetic_score,total_score,raw_average_score,raw_total_score,pair_count,coverage,frequency_coverage")
+
         if use_raw:
             print(f"{scorer_name},{results['average_score']:.6f},{results['total_score']:.6f},"
                   f"{results['pair_count']},{results['coverage']:.6f}")
         else:
-            print(f"{scorer_name},{results['average_score']:.6f},{results['total_score']:.6f},"
-                  f"{results['raw_average_score']:.6f},{results['raw_total_score']:.6f},"
-                  f"{results['pair_count']},{results['coverage']:.6f},{results['frequency_coverage']:.6f}")
+            arithmetic = results.get('arithmetic_score', results['average_score'])
+            print(f"{scorer_name},{results['average_score']:.6f},{arithmetic:.6f},{results['total_score']:.6f},"
+                f"{results['raw_average_score']:.6f},{results['raw_total_score']:.6f},"
+                f"{results['pair_count']},{results['coverage']:.6f},{results['frequency_coverage']:.6f}")
         return
     
     # Detailed format
@@ -751,12 +757,11 @@ def print_results(results: Dict[str, float], format_type: str = 'detailed', scor
         print(f"Total score: {results['total_score']:.6f}")
     else:
         print(f"Frequency-weighted average bigram score: {results['average_score']:.6f}")
-        #print(f"Frequency-weighted total score: {results['total_score']:.6f}")
         
-        # Show raw scores if verbose or if they're significantly different
-        if verbose: # or 'raw_average_score' in results:
+        # Show raw scores if verbose
+        if verbose:
             print(f"Raw average bigram score: {results['raw_average_score']:.6f}")
-            #print(f"Raw total score: {results['raw_total_score']:.6f}")
+            print(f"Arithmetic average bigram score: {results['arithmetic_score']:.6f}")
     
     print(f"Pair count: {results['pair_count']}")
     print(f"Coverage (% letter-pairs with precomputed scores): {results['coverage']:.1%}")
@@ -764,9 +769,6 @@ def print_results(results: Dict[str, float], format_type: str = 'detailed', scor
     if not use_raw and 'frequency_coverage' in results:
         print(f"Frequency coverage (% English frequency that layout covers): {results['frequency_coverage']:.1%}")
     
-    if results['missing_pairs'] > 0:
-        print(f"Missing pairs: {results['missing_pairs']}")
-
 
 def print_comparison_summary(comparison_results: Dict[str, Dict[str, Dict[str, float]]], 
                            format_type: str = 'detailed', quiet: bool = False, use_raw: bool = False, verbose: bool = False):
@@ -898,8 +900,7 @@ def save_detailed_comparison_csv(comparison_results: Dict[str, Dict[str, Dict[st
                 'average_score': results['average_score'],
                 'total_score': results['total_score'],
                 'pair_count': results['pair_count'],
-                'coverage': results['coverage'],
-                'missing_pairs': results.get('missing_pairs', 0)
+                'coverage': results['coverage']
             }
             
             # Add frequency-weighted vs raw details
@@ -945,7 +946,7 @@ def create_cli_parser() -> argparse.ArgumentParser:
         epilog="""
 Examples:
 
-  # Basic usage (uses default files: tables/keypair_scores.csv and input/english-letter-pair-counts-google-ngrams.csv)
+  # Basic usage (uses default files: tables/keypair_scores.csv and input/english-letter-pair-frequencies-google-ngrams.csv)
   # Note: Run 'python prep_scoring_tables.py --input-dir tables/' first to create required tables
   python score_layouts.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ"
   
@@ -970,8 +971,8 @@ Examples:
 Default behavior:
 - Uses tables/keypair_scores.csv for key-pair scoring data (created by prep_scoring_tables.py)
 - Uses tables/key_scores.csv for individual key comfort scores (created by prep_scoring_tables.py)
-- Uses input/english-letter-pair-counts-google-ngrams.csv for frequency weighting (if it exists)
-- Uses input/english-letter-counts-google-ngrams.csv for letter frequencies (if it exists)
+- Uses input/english-letter-pair-frequencies-google-ngrams.csv for frequency weighting (if it exists)
+- Uses input/english-letter-frequencies-google-ngrams.csv for letter frequencies (if it exists)
 - Falls back to raw scoring if frequency file is not found
 - With --raw: Ignores frequencies and uses raw (unweighted) scoring
 - With --verbose: Shows both weighted and raw scores for comparison
@@ -993,8 +994,8 @@ Engram and comfort-key scores are computed dynamically and require letter freque
     # Optional frequency weighting (with default)
     parser.add_argument(
         '--frequency-file',
-        default="input/english-letter-pair-counts-google-ngrams.csv",
-        help="Path to bigram frequency CSV file (default: input/english-letter-pair-counts-google-ngrams.csv)"
+        default="input/english-letter-pair-frequencies-google-ngrams.csv",
+        help="Path to bigram frequency CSV file (default: input/english-letter-pair-frequencies-google-ngrams.csv)"
     )
     
     # Raw scoring option
@@ -1087,7 +1088,7 @@ def main() -> int:
         if not args.raw:
             if Path(args.frequency_file).exists():
                 frequency_file = args.frequency_file
-            elif args.frequency_file != "input/english-letter-pair-counts-google-ngrams.csv":
+            elif args.frequency_file != "input/english-letter-pair-frequencies-google-ngrams.csv":
                 # User explicitly provided a frequency file that doesn't exist
                 print(f"Error: Frequency file not found: {args.frequency_file}")
                 return 1
