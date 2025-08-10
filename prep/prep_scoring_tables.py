@@ -16,8 +16,8 @@ Output:
 - tables/key_scores.csv: Individual key comfort scores extracted from same-key bigrams
 
 Usage:
-    python prep_scoring_tables.py --input-dir tables/
-    python prep_scoring_tables.py --input-dir tables/ --verbose
+    python prep_scoring_tables.py --input-dir ../tables/
+    python prep_scoring_tables.py --input-dir ../tables/ --verbose
 """
 
 import sys

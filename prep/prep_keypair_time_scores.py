@@ -58,7 +58,7 @@ HOME_KEY_MAP = {
 }
 
 # ============================================================================
-# NEW: FREQUENCY-BASED DEBIASING FUNCTIONS
+# FREQUENCY-BASED DEBIASING FUNCTIONS
 # ============================================================================
 
 def load_english_frequencies(frequency_file: str) -> Dict[str, float]:
@@ -182,11 +182,12 @@ def estimate_bias_factor(key_pair_times: Dict[str, float],
         print(f"   📊 Regression bias factor: {regression_bias_factor:.1f}ms per frequency unit")
         print(f"      (R²={r_value**2:.3f}, p={p_value:.3f})")
         
-        # Validate that bias factor is reasonable
-        if 100 <= abs(regression_bias_factor) <= 5000:
+        # Accept regression result if statistically significant
+        if p_value < 0.05 and r_value**2 > 0.1:  # Significant & explains >10% variance
+            print(f"   ✅ Using regression bias factor (statistically significant)")
             return abs(regression_bias_factor)
         else:
-            print(f"   ⚠️  Regression bias factor seems unreasonable, using conservative estimate")
+            print(f"   ⚠️  Regression not significant, using conservative estimate")
     
     # Fallback: Conservative estimate based on typing research
     return 1000.0  # 1000ms per unit frequency
@@ -253,6 +254,98 @@ def apply_frequency_debiasing(key_pair_times: Dict[str, float],
     
     return debiased_times
 
+def apply_mirror_conservative_debiasing(debiased_times: Dict[str, float], 
+                                      mirror_map: Dict[str, str],
+                                      verbose: bool = False) -> Dict[str, float]:
+    """
+    Apply mirror-based conservative debiasing: take the slower time of each mirror pair.
+    This removes any remaining hand/side advantages that survived frequency debiasing.
+    """
+    if verbose:
+        print(f"\n🔄 Applying mirror-based conservative debiasing...")
+    
+    mirror_corrected_times = debiased_times.copy()
+    corrections_applied = 0
+    total_adjustment = 0
+    
+    # Process each key-pair
+    for key_pair, original_time in debiased_times.items():
+        if len(key_pair) == 2:
+            key1, key2 = key_pair[0].lower(), key_pair[1].lower()
+            
+            # Get mirror keys
+            mirror_key1 = mirror_map.get(key1)
+            mirror_key2 = mirror_map.get(key2)
+            
+            if mirror_key1 and mirror_key2:
+                mirror_pair = (mirror_key1 + mirror_key2).upper()
+                
+                # If mirror pair exists in our data
+                if mirror_pair in debiased_times:
+                    mirror_time = debiased_times[mirror_pair]
+                    
+                    # Take the slower (conservative) time for both pairs
+                    conservative_time = max(original_time, mirror_time)
+                    
+                    # Apply to both original and mirror pair
+                    if conservative_time > original_time:
+                        adjustment = conservative_time - original_time
+                        total_adjustment += adjustment
+                        corrections_applied += 1
+                        
+                        if verbose and adjustment > 10:  # Show significant adjustments
+                            print(f"      {key_pair}: {original_time:.1f}ms → {conservative_time:.1f}ms (+{adjustment:.1f}ms, mirror: {mirror_pair})")
+                    
+                    mirror_corrected_times[key_pair] = conservative_time
+                    mirror_corrected_times[mirror_pair] = conservative_time
+    
+    print(f"   ✅ Applied mirror corrections to {corrections_applied} key-pairs")
+    if corrections_applied > 0:
+        print(f"      Average adjustment: {total_adjustment/corrections_applied:.1f}ms")
+    
+    return mirror_corrected_times
+
+def validate_mirror_debiasing(original_times: Dict[str, float],
+                             mirror_debiased_times: Dict[str, float],
+                             mirror_map: Dict[str, str]) -> bool:
+    """Validate that mirror debiasing removed hand-side advantages."""
+    
+    print(f"\n🔍 Validating mirror debiasing effectiveness...")
+    
+    # Check that mirror pairs now have identical times
+    identical_pairs = 0
+    total_pairs = 0
+    
+    for key_pair in original_times.keys():
+        if len(key_pair) == 2:
+            key1, key2 = key_pair[0].lower(), key_pair[1].lower()
+            mirror_key1 = mirror_map.get(key1)
+            mirror_key2 = mirror_map.get(key2)
+            
+            if mirror_key1 and mirror_key2:
+                mirror_pair = (mirror_key1 + mirror_key2).upper()
+                if mirror_pair in mirror_debiased_times:
+                    total_pairs += 1
+                    time1 = mirror_debiased_times[key_pair]
+                    time2 = mirror_debiased_times[mirror_pair]
+                    
+                    if abs(time1 - time2) < 0.001:  # Effectively identical
+                        identical_pairs += 1
+    
+    if total_pairs > 0:
+        consistency_rate = identical_pairs / total_pairs
+        print(f"   📊 Mirror pair consistency: {consistency_rate:.1%} ({identical_pairs}/{total_pairs})")
+        
+        if consistency_rate > 0.95:
+            print(f"   Status: ✅ Mirror pairs highly consistent")
+            return True
+        else:
+            print(f"   Status: ⚠️ Some mirror pairs still inconsistent")
+            return False
+    else:
+        print(f"   ⚠️  No mirror pairs found for validation")
+        return True
+
 def validate_debiasing(original_times: Dict[str, float],
                       debiased_times: Dict[str, float],
                       english_frequencies: Dict[str, float]) -> bool:
@@ -313,7 +406,7 @@ def validate_debiasing(original_times: Dict[str, float],
         return True
 
 # ============================================================================
-# ORIGINAL FUNCTIONS (UNCHANGED)
+# OTHER FUNCTIONS
 # ============================================================================
 
 def get_all_qwerty_keys():
@@ -711,20 +804,24 @@ def compute_all_keypair_times(input_dir: str, frequency_file: str = None, verbos
     print(f"    - {fallback_used_count} pairs used mirror/fallback data") 
     print(f"    - {no_data_count} pairs used maximum fallback ({maximum_total_time:.1f}ms)")
     
-    # NEW: Apply frequency-based debiasing
+    # Apply frequency-based debiasing
     english_frequencies = load_english_frequencies(frequency_file)
     debiased_times = apply_frequency_debiasing(raw_empirical_times, english_frequencies, verbose)
     
-    # Validate debiasing effectiveness
+    # Apply mirror-based conservative debiasing
+    mirror_debiased_times = apply_mirror_conservative_debiasing(debiased_times, mirror_map, verbose)
+    
+    # Validate both debiasing steps
     validate_debiasing(raw_empirical_times, debiased_times, english_frequencies)
+    validate_mirror_debiasing(raw_empirical_times, mirror_debiased_times, mirror_map)
     
     # Convert to results format
     results = []
-    for key_pair, time_score in sorted(debiased_times.items()):
+    for key_pair, time_score in sorted(mirror_debiased_times.items()):
         results.append({
             'key_pair': key_pair,
             'time_score': time_score,
-            'fallback_type': 'debiased'  # Mark all as debiased
+            'fallback_type': 'mirror_debiased'  # Mark as mirror debiased
         })
     
     return results
@@ -838,7 +935,8 @@ No separate debiasing step needed - output is ready for use.
     
     # Check if frequency file exists
     if args.frequency_file and Path(args.frequency_file).exists():
-        print("🎯 Automatic QWERTY debiasing: ENABLED")
+        print("🎯 Frequency-based QWERTY debiasing: ENABLED")
+        print("🔄 Mirror-based conservative debiasing: ENABLED")
     else:
         print("⚠️  Automatic QWERTY debiasing: DISABLED (no frequency file)")
     

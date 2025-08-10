@@ -10,7 +10,7 @@ Loaded 1024 rows from keypair_distance_scores.csv
   ✓ Loaded distance_score from keypair_distance_scores.csv
   ✓ 'NA' key pair preserved in keypair_time_scores.csv
 Loaded 1024 rows from keypair_time_scores.csv
-  Score range: 361.560988 - 887.250000
+  Score range: 421.693039 - 887.250000
   ✓ Loaded time_score from keypair_time_scores.csv
   ✓ 'NA' key pair preserved in keypair_dvorak9_scores.csv
 Loaded 1024 rows from keypair_dvorak9_scores.csv
@@ -93,8 +93,8 @@ Sample statistics:
   comfort_score_normalized: 0.000000 - 1.000000 (mean: 0.463985)
   distance_score: 0.000000 - 85.660067 (mean: 33.041511)
   distance_score_normalized: 0.000000 - 1.000000 (mean: 0.528612)
-  time_score: 361.560988 - 887.250000 (mean: 547.178075)
-  time_score_normalized: 0.000000 - 1.000000 (mean: 0.353093)
+  time_score: 421.693039 - 887.250000 (mean: 592.719768)
+  time_score_normalized: 0.000000 - 1.000000 (mean: 0.367359)
   dvorak9_score: 0.055556 - 1.000000 (mean: 0.619141)
   dvorak9_score_normalized: 0.000000 - 1.000000 (mean: 0.596737)
   dvorak9_hands: 0.000000 - 1.000000 (mean: 0.498047)

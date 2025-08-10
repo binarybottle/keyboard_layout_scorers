@@ -832,7 +832,7 @@ def print_results(results: Dict[str, float], format_type: str = 'detailed', scor
         # Show raw scores if verbose
         if verbose:
             print(f"Raw average bigram score: {results['raw_average_score']:.6f}")
-            print(f"Arithmetic average bigram score: {results['arithmetic_score']:.6f}")
+            #print(f"Arithmetic average bigram score: {results['arithmetic_score']:.6f}")
     
     print(f"Pair count: {results['pair_count']}")
     print(f"Coverage (% letter-pairs with precomputed scores): {results['coverage']:.1%}")
