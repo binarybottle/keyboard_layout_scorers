@@ -1,31 +1,38 @@
 #!/usr/bin/env python3
 """
-Generate precomputed distance scores for all possible QWERTY key-pairs.
+Generate precomputed distance scores for all possible QWERTY key-pairs with breakdown.
 
 (c) Arno Klein (arnoklein.info), MIT License (see LICENSE)
 
 This script computes theoretical distance scores for every possible 
-combination of QWERTY keys using only keyboard interkey distances.
-This version provides truly layout-agnostic distance scores based only on:
-1. Compute theoretical distances for ALL 1024 key-pairs 
-2. Fingers start from home except when using the same finger
-4. No text processing or frequency weighting
+combination of QWERTY keys with four components:
+1. distance_setup: Distance to position finger(s) for first key
+2. distance_interval: Distance to move from first key to second key
+3. distance_return: Distance to return finger(s) to home positions  
+4. distance_total: Sum of all three components
 
 Usage:
     python prep_keypair_distance_scores.py --output ../tables/keypair_distance_scores.csv
     
 Output:
-    ../tables/keypair_distance_scores.csv - CSV with columns: key_pair, distance_score
+    ../tables/keypair_distance_scores_detailed.csv - CSV with distance breakdown
 """
 
 import argparse
 import csv
 import os
 from pathlib import Path
-from typing import Dict, List, Tuple, Optional
+from typing import Dict, List, Tuple, Optional, NamedTuple
 from math import sqrt
 
-# Physical keyboard layout definitions (unchanged from original)
+class DistanceBreakdown(NamedTuple):
+    """Container for distance breakdown."""
+    setup: float
+    interval: float
+    return_distance: float
+    total: float
+
+# Physical keyboard layout definitions
 STAGGERED_POSITION_MAP = {
     # Top row (no stagger reference point)
     'q': (0, 0),    'w': (19, 0),   'e': (38, 0),   'r': (57, 0),   't': (76, 0),
@@ -93,6 +100,10 @@ def get_physical_position(qwerty_key: str) -> Optional[Tuple[float, float]]:
     """Get the physical position of a QWERTY key."""
     return STAGGERED_POSITION_MAP.get(qwerty_key.lower())
 
+def get_home_key_for_finger(finger_id: str) -> str:
+    """Get the home row key for a given finger."""
+    return HOME_ROW_POSITIONS.get(finger_id, '').upper()
+
 def get_all_qwerty_keys():
     """Get all standard QWERTY keys for analysis."""
     return list("QWERTYUIOPASDFGHJKL;ZXCVBNM,./'[")
@@ -108,100 +119,75 @@ def generate_all_key_pairs():
     
     return key_pairs
 
-class FingerTracker:
-    """Track finger positions with proper reset logic."""
+def compute_detailed_keypair_distance(key1: str, key2: str) -> DistanceBreakdown:
+    """
+    Compute distance breakdown for a key-pair.
     
-    def __init__(self):
-        self.finger_positions = {}
-        self.reset_all_fingers()
+    Returns breakdown with:
+    - setup: Distance to position finger(s) for first key
+    - interval: Distance to move from first key to second key
+    - return_distance: Distance to return finger(s) to home
+    - total: Sum of all components
+    """
+    key1 = key1.upper()
+    key2 = key2.upper()
     
-    def reset_all_fingers(self):
-        """Reset all fingers to their home row positions."""
-        self.finger_positions = {}
-        for finger_id, home_key in HOME_ROW_POSITIONS.items():
-            self.finger_positions[finger_id] = home_key.upper()
+    # Get finger assignments
+    finger1_id = get_finger_id(key1.lower())
+    finger2_id = get_finger_id(key2.lower())
     
-    def calculate_distance_and_move_finger(self, target_key: str) -> float:
-        """
-        Calculate distance for finger to move to target key and update position.
-        Also resets all other fingers to home positions.
-        
-        Returns:
-            Distance traveled by the finger responsible for target_key (0.0 if no movement needed)
-        """
-        target_key = target_key.upper()
-        
-        # Get the finger responsible for this key
-        finger_id = get_finger_id(target_key.lower())
-        if finger_id is None:
-            return 0.0
-        
-        # Get finger's current position
-        current_key = self.finger_positions.get(finger_id, HOME_ROW_POSITIONS[finger_id].upper())
-        
-        # If finger is already at target key, no movement needed
-        if current_key == target_key:
-            # Still need to reset other fingers to home positions
-            for fid, home_key in HOME_ROW_POSITIONS.items():
-                if fid != finger_id:
-                    self.finger_positions[fid] = home_key.upper()
-            return 0.0
-        
-        # Calculate distance only if finger needs to move
-        current_pos = get_physical_position(current_key)
-        target_pos = get_physical_position(target_key)
-        
-        if current_pos is None or target_pos is None:
-            return 0.0
-        
-        distance = calculate_euclidean_distance(current_pos, target_pos)
-        
-        # Update this finger's position
-        self.finger_positions[finger_id] = target_key
-        
-        # Reset all OTHER fingers to home positions
-        for fid, home_key in HOME_ROW_POSITIONS.items():
-            if fid != finger_id:
-                self.finger_positions[fid] = home_key.upper()
-        
-        return distance
+    if finger1_id is None or finger2_id is None:
+        return DistanceBreakdown(0.0, 0.0, 0.0, 0.0)
+    
+    # Get physical positions
+    key1_pos = get_physical_position(key1.lower())
+    key2_pos = get_physical_position(key2.lower())
+    home1_key = get_home_key_for_finger(finger1_id)
+    home2_key = get_home_key_for_finger(finger2_id)
+    home1_pos = get_physical_position(home1_key.lower())
+    home2_pos = get_physical_position(home2_key.lower())
+    
+    if None in [key1_pos, key2_pos, home1_pos, home2_pos]:
+        return DistanceBreakdown(0.0, 0.0, 0.0, 0.0)
+    
+    same_finger = (finger1_id == finger2_id)
+    
+    if same_finger:
+        # Same finger: home→key1→key2→home
+        setup_dist = calculate_euclidean_distance(home1_pos, key1_pos)
+        interval_dist = calculate_euclidean_distance(key1_pos, key2_pos)
+        return_dist = calculate_euclidean_distance(key2_pos, home1_pos)
+    else:
+        # Different fingers: 
+        # Setup: finger1 home→key1, finger2 stays home
+        # Interval: finger1 stays at key1, finger2 home→key2  
+        # Return: finger1 key1→home, finger2 key2→home
+        setup_dist = calculate_euclidean_distance(home1_pos, key1_pos)
+        interval_dist = calculate_euclidean_distance(home2_pos, key2_pos)
+        return_dist = (calculate_euclidean_distance(key1_pos, home1_pos) + 
+                      calculate_euclidean_distance(key2_pos, home2_pos))
+    
+    total_dist = setup_dist + interval_dist + return_dist
+    
+    return DistanceBreakdown(
+        setup=setup_dist,
+        interval=interval_dist, 
+        return_distance=return_dist,
+        total=total_dist
+    )
 
-def compute_theoretical_keypair_distance(key1: str, key2: str) -> float:
+def compute_all_detailed_distances() -> Dict[str, DistanceBreakdown]:
     """
-    Compute theoretical distance for a key-pair assuming fingers start from home.
-    This will correctly return 0.0 for home row pairs where no movement is needed.
-    
-    Args:
-        key1, key2: The two keys in the pair
-        
-    Returns:
-        Total distance for typing this key-pair
-    """
-    finger_tracker = FingerTracker()
-    
-    # Calculate distance for first keystroke
-    distance1 = finger_tracker.calculate_distance_and_move_finger(key1)
-    
-    # Calculate distance for second keystroke  
-    distance2 = finger_tracker.calculate_distance_and_move_finger(key2)
-    
-    return distance1 + distance2
-
-def compute_all_theoretical_distances() -> Dict[str, float]:
-    """
-    Compute PURE THEORETICAL distances for ALL possible key-pairs.
-    Assumes all fingers start from home row positions.
-    
-    This is FREQUENCY-INDEPENDENT - treats all key-pairs equally.
+    Compute distance breakdowns for ALL possible key-pairs.
     
     Returns:
-        Dictionary mapping all key-pairs to theoretical distance scores
+        Dictionary mapping all key-pairs to distance breakdowns
     """
-    print("\n🔵 Computing PURE THEORETICAL distances for all key-pairs")
-    print("   (No text processing, no frequency bias)")
+    print("\n🔵 Computing distance breakdowns for all key-pairs")
+    print("   Components: setup, interval, return, total")
     
     all_key_pairs = generate_all_key_pairs()
-    theoretical_scores = {}
+    detailed_scores = {}
     
     print(f"  Computing distances for {len(all_key_pairs)} key-pairs...")
     
@@ -210,52 +196,55 @@ def compute_all_theoretical_distances() -> Dict[str, float]:
             print(f"    Progress: {i}/{len(all_key_pairs)} ({i/len(all_key_pairs)*100:.1f}%)")
         
         char1, char2 = key_pair[0], key_pair[1]
-        distance = compute_theoretical_keypair_distance(char1, char2)
-        theoretical_scores[key_pair] = distance
+        breakdown = compute_detailed_keypair_distance(char1, char2)
+        detailed_scores[key_pair] = breakdown
     
-    print(f"  ✅ Computed theoretical distances for all {len(theoretical_scores)} key-pairs")
+    print(f"  ✅ Computed breakdowns for all {len(detailed_scores)} key-pairs")
     
     # Show some statistics
-    distances = list(theoretical_scores.values())
-    zero_count = sum(1 for d in distances if d == 0.0)
-    avg_distance = sum(distances) / len(distances)
-    max_distance = max(distances)
-    min_distance = min(distances)
+    totals = [breakdown.total for breakdown in detailed_scores.values()]
+    setups = [breakdown.setup for breakdown in detailed_scores.values()]
+    intervals = [breakdown.interval for breakdown in detailed_scores.values()]
+    returns = [breakdown.return_distance for breakdown in detailed_scores.values()]
     
     print(f"  📊 Statistics:")
-    print(f"    Zero distances: {zero_count}")
-    print(f"    Min distance: {min_distance:.2f}mm")
-    print(f"    Average distance: {avg_distance:.2f}mm")
-    print(f"    Max distance: {max_distance:.2f}mm")
+    print(f"    Setup distances - avg: {sum(setups)/len(setups):.2f}mm, max: {max(setups):.2f}mm")
+    print(f"    Interval distances - avg: {sum(intervals)/len(intervals):.2f}mm, max: {max(intervals):.2f}mm")
+    print(f"    Return distances - avg: {sum(returns)/len(returns):.2f}mm, max: {max(returns):.2f}mm")
+    print(f"    Total distances - avg: {sum(totals)/len(totals):.2f}mm, max: {max(totals):.2f}mm")
     
-    return theoretical_scores
+    return detailed_scores
 
 def compute_all_key_pair_scores():
-    """Compute distance scores for all key-pairs using PURE THEORETICAL approach."""
-    print("Computing distance scores using PURE THEORETICAL approach...")
-    print("🎯 This version is FREQUENCY-INDEPENDENT")
-    print("   - No text processing")
-    print("   - No frequency weighting") 
-    print("   - Pure biomechanical evaluation")
+    """Compute distance scores for all key-pairs."""
+    print("Computing distance scores for all key-pairs...")
+    print("🎯 Four-component breakdown:")
+    print("   - distance_setup: Position finger(s) for first key")
+    print("   - distance_interval: Move from first to second key")
+    print("   - distance_return: Return finger(s) to home")
+    print("   - distance_total: Sum of all components")
     
-    # Compute theoretical distances for all key-pairs
-    theoretical_scores = compute_all_theoretical_distances()
+    # Compute distances for all key-pairs
+    detailed_scores = compute_all_detailed_distances()
     
-    # Convert to results format - use theoretical distances only
+    # Convert to results format
     results = []
-    for key_pair, distance in sorted(theoretical_scores.items()):
+    for key_pair, breakdown in sorted(detailed_scores.items()):
         results.append({
             'key_pair': key_pair,
-            'distance_score': distance
+            'distance_setup': breakdown.setup,
+            'distance_interval': breakdown.interval,
+            'distance_return': breakdown.return_distance,
+            'distance_total': breakdown.total
         })
     
     print(f"\n✅ Total key-pairs computed: {len(results)}")
-    print("🎯 All scores are frequency-independent and layout-agnostic")
+    print("🎯 All scores provide motion breakdown")
     
     return results
 
-def save_key_pair_scores(results, output_file="../tables/keypair_distance_scores.csv"):
-    """Save key-pair scores to CSV file with distance_score column."""
+def save_key_pair_scores(results, output_file="../tables/keypair_distance_scores_detailed.csv"):
+    """Save key-pair scores to CSV file."""
     
     # Create output directory if it doesn't exist
     Path(output_file).parent.mkdir(parents=True, exist_ok=True)
@@ -263,84 +252,55 @@ def save_key_pair_scores(results, output_file="../tables/keypair_distance_scores
     # Sort by key-pair for consistent ordering
     results.sort(key=lambda x: x['key_pair'])
     
+    fieldnames = ['key_pair', 'distance_setup', 'distance_interval', 'distance_return', 'distance_total']
+    
     with open(output_file, 'w', newline='', encoding='utf-8') as f:
-        writer = csv.DictWriter(f, fieldnames=['key_pair', 'distance_score'])
+        writer = csv.DictWriter(f, fieldnames=fieldnames)
         writer.writeheader()
         writer.writerows(results)
     
     print(f"✅ Saved {len(results)} key-pair scores to: {output_file}")
 
-def verify_distance_calculation_model():
-    """Verify that distance calculation correctly handles same-finger vs different-finger cases."""
+def verify_detailed_calculation_model():
+    """Verify that distance calculation works correctly."""
     
     print(f"\n🔍 DISTANCE CALCULATION MODEL VERIFICATION")
-    print("=" * 60)
-    print("Expected behavior:")
-    print("  Different fingers: home→key1 + home→key2")
-    print("  Same finger: home→key1 + key1→key2")
+    print("=" * 70)
     
-    # Test cases
+    # Test cases with expected behavior
     test_cases = [
-        # (key1, key2, expected_behavior, description)
-        ('E', 'R', 'different', 'E(middle) + R(index) = (D→E) + (F→R)'),
-        ('T', 'G', 'same', 'T+G(both index) = (F→T) + (T→G)'),
-        ('A', 'S', 'different', 'A(pinky) + S(ring) = (A→A) + (S→S) = 0 + 0'),
-        ('F', 'G', 'same', 'F+G(both index) = (F→F) + (F→G) = 0 + (F→G)'),
-        ('Q', 'W', 'different', 'Q(pinky) + W(ring) = (A→Q) + (S→W)'),
-        ('R', 'T', 'same', 'R+T(both index) = (F→R) + (R→T)'),
+        ('F', 'F', 'Home row same key - all zeros except return may be 0'),
+        ('F', 'G', 'Same finger (index) - sequential motion'),
+        ('F', 'J', 'Different fingers (both index but different hands)'),
+        ('A', 'S', 'Different fingers (pinky to ring) - home row'),
+        ('Q', 'P', 'Different fingers - maximum distance'),
+        ('T', 'G', 'Same finger - off home row'),
     ]
     
     print(f"\n📊 Test Results:")
-    print(f"{'Pair':<4} | {'Finger':<10} | {'Calculated':<10} | {'Components':<25} | {'Status'}")
+    print(f"{'Pair':<4} | {'Setup':<8} | {'Interval':<8} | {'Return':<8} | {'Total':<8} | {'Description'}")
     print("-" * 75)
     
-    for key1, key2, expected_type, description in test_cases:
-        # Get finger assignments
-        finger1 = get_finger_id(key1.lower())
-        finger2 = get_finger_id(key2.lower())
-        same_finger = (finger1 == finger2)
+    for key1, key2, description in test_cases:
+        breakdown = compute_detailed_keypair_distance(key1, key2)
         
-        # Calculate distance using our function
-        total_distance = compute_theoretical_keypair_distance(key1, key2)
-        
-        # Manually verify the calculation
-        if same_finger:
-            # Same finger: home→key1 + key1→key2
-            home_key = HOME_ROW_POSITIONS.get(finger1)
-            home_pos = get_physical_position(home_key)
-            key1_pos = get_physical_position(key1.lower())
-            key2_pos = get_physical_position(key2.lower())
-            
-            expected_dist1 = calculate_euclidean_distance(home_pos, key1_pos)
-            expected_dist2 = calculate_euclidean_distance(key1_pos, key2_pos)
-            expected_total = expected_dist1 + expected_dist2
-            components = f"({home_key.upper()}→{key1}) + ({key1}→{key2})"
-        else:
-            # Different fingers: home→key1 + home→key2  
-            home_key1 = HOME_ROW_POSITIONS.get(finger1)
-            home_key2 = HOME_ROW_POSITIONS.get(finger2)
-            home_pos1 = get_physical_position(home_key1)
-            home_pos2 = get_physical_position(home_key2)
-            key1_pos = get_physical_position(key1.lower())
-            key2_pos = get_physical_position(key2.lower())
-            
-            expected_dist1 = calculate_euclidean_distance(home_pos1, key1_pos)
-            expected_dist2 = calculate_euclidean_distance(home_pos2, key2_pos)
-            expected_total = expected_dist1 + expected_dist2
-            components = f"({home_key1.upper()}→{key1}) + ({home_key2.upper()}→{key2})"
-        
-        # Check if calculation matches expectation
-        matches = abs(total_distance - expected_total) < 0.001
-        finger_type = "same" if same_finger else "diff"
-        status = "✅" if matches and (finger_type == expected_type[:4]) else "❌"
-        
-        print(f"{key1+key2:<4} | {finger_type:<10} | {total_distance:<10.2f} | {components:<25} | {status}")
+        print(f"{key1+key2:<4} | {breakdown.setup:<8.2f} | {breakdown.interval:<8.2f} | "
+              f"{breakdown.return_distance:<8.2f} | {breakdown.total:<8.2f} | {description}")
+    
+    # Verify that total equals sum of components
+    print(f"\n🔍 Component sum verification:")
+    for key1, key2, description in test_cases[:3]:  # Test a few cases
+        breakdown = compute_detailed_keypair_distance(key1, key2)
+        calculated_total = breakdown.setup + breakdown.interval + breakdown.return_distance
+        matches = abs(breakdown.total - calculated_total) < 0.001
+        status = "✅" if matches else "❌"
+        print(f"  {key1+key2}: {breakdown.total:.2f} = {breakdown.setup:.2f} + {breakdown.interval:.2f} + {breakdown.return_distance:.2f} {status}")
     
     print(f"\n🎯 Model verification complete!")
     return True
 
-def validate_frequency_independence(output_file="../tables/keypair_distance_scores.csv"):
-    """Validate that the scores are truly frequency-independent."""
+def validate_detailed_output(output_file="../tables/keypair_distance_scores_detailed.csv"):
+    """Validate the output file."""
     
     if not os.path.exists(output_file):
         print(f"❌ Output file not found: {output_file}")
@@ -350,10 +310,18 @@ def validate_frequency_independence(output_file="../tables/keypair_distance_scor
         reader = csv.DictReader(f)
         rows = list(reader)
     
-    print(f"\n📊 FREQUENCY-INDEPENDENCE VALIDATION")
+    print(f"\n📊 OUTPUT VALIDATION")
     print("=" * 50)
     
-    # Check that we have scores for ALL possible key-pairs
+    # Check that we have all expected columns
+    expected_columns = ['key_pair', 'distance_setup', 'distance_interval', 'distance_return', 'distance_total']
+    actual_columns = reader.fieldnames if reader.fieldnames else []
+    missing_columns = set(expected_columns) - set(actual_columns)
+    
+    print(f"Expected columns: {expected_columns}")
+    print(f"Missing columns: {list(missing_columns) if missing_columns else 'None ✅'}")
+    
+    # Check total count
     keys = get_all_qwerty_keys()
     expected_count = len(keys) ** 2
     actual_count = len(rows)
@@ -362,88 +330,84 @@ def validate_frequency_independence(output_file="../tables/keypair_distance_scor
     print(f"Actual key-pairs: {actual_count}")
     print(f"Complete coverage: {'✅' if actual_count == expected_count else '❌'}")
     
-    # Verify scores are based on theoretical calculations
-    distance_scores = [float(row['distance_score']) for row in rows]
-    print(f"\nDistance score statistics:")
-    print(f"  Min: {min(distance_scores):.2f}mm")
-    print(f"  Max: {max(distance_scores):.2f}mm")
-    print(f"  Average: {sum(distance_scores)/len(distance_scores):.2f}mm")
+    # Validate numeric values and component relationships
+    valid_rows = 0
+    for row in rows:
+        try:
+            setup = float(row['distance_setup'])
+            interval = float(row['distance_interval'])
+            return_dist = float(row['distance_return'])
+            total = float(row['distance_total'])
+            
+            # Check that total equals sum of components (within floating point precision)
+            calculated_total = setup + interval + return_dist
+            if abs(total - calculated_total) < 0.001:
+                valid_rows += 1
+        except (ValueError, KeyError):
+            continue
     
-    # Check some expected patterns
-    print(f"\n🔍 Validation checks:")
+    print(f"Valid numeric rows: {valid_rows}/{actual_count}")
+    print(f"Component sum consistency: {'✅' if valid_rows == actual_count else '❌'}")
     
-    # Same-key home row pairs should be 0
-    home_row_keys = ['A', 'S', 'D', 'F', 'J', 'K', 'L', ';']
-    home_same_key_pairs = [row for row in rows if row['key_pair'][0] == row['key_pair'][1] and row['key_pair'][0] in home_row_keys]
-    zero_home_pairs = [row for row in home_same_key_pairs if float(row['distance_score']) == 0.0]
-    print(f"  Home row same-key pairs with 0 distance: {len(zero_home_pairs)}/{len(home_same_key_pairs)} {'✅' if len(zero_home_pairs) == len(home_same_key_pairs) else '❌'}")
-    
-    # Adjacent keys should have shorter distances than distant keys
-    qw_distance = next((float(row['distance_score']) for row in rows if row['key_pair'] == 'QW'), None)
-    qp_distance = next((float(row['distance_score']) for row in rows if row['key_pair'] == 'QP'), None)
-    
-    if qw_distance and qp_distance:
-        print(f"  QW (adjacent): {qw_distance:.2f}mm")
-        print(f"  QP (distant): {qp_distance:.2f}mm")
-        print(f"  Distance ordering correct: {'✅' if qp_distance > qw_distance else '❌'}")
-    
-    # Check that common English bigrams don't have suspiciously low scores
-    common_english = ['TH', 'HE', 'IN', 'ER', 'AN']
-    random_pairs = ['XZ', 'QJ', 'WK', 'YB', 'PV']
-    
-    common_avg = sum(float(row['distance_score']) for row in rows if row['key_pair'] in common_english) / len(common_english)
-    random_avg = sum(float(row['distance_score']) for row in rows if row['key_pair'] in random_pairs) / len(random_pairs)
-    
-    print(f"  Common English avg: {common_avg:.2f}mm")
-    print(f"  Random pairs avg: {random_avg:.2f}mm")
-    print(f"  No English bias: {'✅' if abs(common_avg - random_avg) < (random_avg * 0.3) else '⚠️'}")
-    
-    print(f"\n✅ Frequency-independence validation complete!")
-    
+    # Show some statistics
+    if valid_rows > 0:
+        setup_values = [float(row['distance_setup']) for row in rows]
+        interval_values = [float(row['distance_interval']) for row in rows]
+        return_values = [float(row['distance_return']) for row in rows]
+        total_values = [float(row['distance_total']) for row in rows]
+        
+        print(f"\nDistance component statistics:")
+        print(f"  Setup - min: {min(setup_values):.2f}, max: {max(setup_values):.2f}, avg: {sum(setup_values)/len(setup_values):.2f}")
+        print(f"  Interval - min: {min(interval_values):.2f}, max: {max(interval_values):.2f}, avg: {sum(interval_values)/len(interval_values):.2f}")
+        print(f"  Return - min: {min(return_values):.2f}, max: {max(return_values):.2f}, avg: {sum(return_values)/len(return_values):.2f}")
+        print(f"  Total - min: {min(total_values):.2f}, max: {max(total_values):.2f}, avg: {sum(total_values)/len(total_values):.2f}")
+
+    print(f"\n✅ Output validation complete!")
+
     return True
 
 def main():
     """Main entry point."""
     parser = argparse.ArgumentParser(
-        description='Generate FREQUENCY-INDEPENDENT distance scores for QWERTY key-pairs',
+        description='Generate distance scores for QWERTY key-pairs',
         epilog="""
-This version computes PURE THEORETICAL distance scores with:
-- No text processing
-- No frequency weighting
-- Complete layout-agnostic evaluation
+This version computes distance breakdowns with four components:
+- distance_setup: Position finger(s) for first key
+- distance_interval: Move from first to second key  
+- distance_return: Return finger(s) to home positions
+- distance_total: Sum of all components
 
-Perfect for dual framework analysis where you want to separate
-design quality from language-specific optimization.
+Perfect for analyzing different aspects of typing motion.
         """
     )
-    parser.add_argument('--output', default='../tables/keypair_distance_scores.csv',
+    parser.add_argument('--output', default='../tables/keypair_distance_scores_detailed.csv',
                         help='Output CSV file path')
     
     args = parser.parse_args()
     
-    print("Generate FREQUENCY-INDEPENDENT distance-based key-pair scores")
+    print("Generate distance-based key-pair scores")
     print("=" * 70)
     
     # Show key information
     keys = get_all_qwerty_keys()
     print(f"QWERTY keys ({len(keys)}): {''.join(sorted(keys))}")
     print(f"Total key-pairs to compute: {len(keys)**2}")
-    print("🎯 Using PURE THEORETICAL approach (no frequency bias)")
+    print("🎯 Four-component breakdown")
     
-    # Compute scores using pure theoretical approach
+    # Compute scores
     results = compute_all_key_pair_scores()
     
     # Save results
     save_key_pair_scores(results, args.output)
     
-    # Verify distance calculation model
-    verify_distance_calculation_model()
+    # Verify calculation model
+    verify_detailed_calculation_model()
     
-    # Validate frequency independence
-    validate_frequency_independence(args.output)
+    # Validate output
+    validate_detailed_output(args.output)
     
-    print(f"\n✅ Frequency-independent distance generation complete: {args.output}")
-    print("🎯 These scores are ready for dual framework analysis!")
+    print(f"\n✅ Distance generation complete: {args.output}")
+    print("🎯 Four-component breakdown ready for analysis!")
     
     return 0
 

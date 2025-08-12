@@ -1,17 +1,18 @@
 > poetry run python3 prep_keypair_distance_scores.py --output ../tables/keypair_distance_scores.csv
-Generate FREQUENCY-INDEPENDENT distance-based key-pair scores
+Generate distance-based key-pair scores
 ======================================================================
 QWERTY keys (32): ',./;ABCDEFGHIJKLMNOPQRSTUVWXYZ[
 Total key-pairs to compute: 1024
-🎯 Using PURE THEORETICAL approach (no frequency bias)
-Computing distance scores using PURE THEORETICAL approach...
-🎯 This version is FREQUENCY-INDEPENDENT
-   - No text processing
-   - No frequency weighting
-   - Pure biomechanical evaluation
+🎯 Four-component breakdown
+Computing distance scores for all key-pairs...
+🎯 Four-component breakdown:
+   - distance_setup: Position finger(s) for first key
+   - distance_interval: Move from first to second key
+   - distance_return: Return finger(s) to home
+   - distance_total: Sum of all components
 
-🔵 Computing PURE THEORETICAL distances for all key-pairs
-   (No text processing, no frequency bias)
+🔵 Computing distance breakdowns for all key-pairs
+   Components: setup, interval, return, total
   Computing distances for 1024 key-pairs...
     Progress: 0/1024 (0.0%)
     Progress: 100/1024 (9.8%)
@@ -24,56 +25,54 @@ Computing distance scores using PURE THEORETICAL approach...
     Progress: 800/1024 (78.1%)
     Progress: 900/1024 (87.9%)
     Progress: 1000/1024 (97.7%)
-  ✅ Computed theoretical distances for all 1024 key-pairs
+  ✅ Computed breakdowns for all 1024 key-pairs
   📊 Statistics:
-    Zero distances: 64
-    Min distance: 0.00mm
-    Average distance: 33.04mm
-    Max distance: 85.66mm
+    Setup distances - avg: 16.23mm, max: 34.67mm
+    Interval distances - avg: 16.81mm, max: 50.99mm
+    Return distances - avg: 30.11mm, max: 65.28mm
+    Total distances - avg: 63.15mm, max: 130.56mm
 
 ✅ Total key-pairs computed: 1024
-🎯 All scores are frequency-independent and layout-agnostic
+🎯 All scores provide motion breakdown
 ✅ Saved 1024 key-pair scores to: ../tables/keypair_distance_scores.csv
 
 🔍 DISTANCE CALCULATION MODEL VERIFICATION
-============================================================
-Expected behavior:
-  Different fingers: home→key1 + home→key2
-  Same finger: home→key1 + key1→key2
+======================================================================
 
 📊 Test Results:
-Pair | Finger     | Calculated | Components                | Status
+Pair | Setup    | Interval | Return   | Total    | Description
 ---------------------------------------------------------------------------
-ER   | diff       | 39.29      | (D→E) + (F→R)             | ✅
-TG   | same       | 43.25      | (F→T) + (T→G)             | ✅
-AS   | diff       | 0.00       | (A→A) + (S→S)             | ✅
-FG   | same       | 19.00      | (F→F) + (F→G)             | ✅
-QW   | diff       | 39.29      | (A→Q) + (S→W)             | ✅
-RT   | same       | 38.65      | (F→R) + (R→T)             | ✅
+FF   | 0.00     | 0.00     | 0.00     | 0.00     | Home row same key - all zeros except return may be 0
+FG   | 0.00     | 19.00    | 19.00    | 38.00    | Same finger (index) - sequential motion
+FJ   | 0.00     | 0.00     | 0.00     | 0.00     | Different fingers (both index but different hands)
+AS   | 0.00     | 0.00     | 0.00     | 0.00     | Different fingers (pinky to ring) - home row
+QP   | 19.65    | 19.65    | 39.29    | 78.59    | Different fingers - maximum distance
+TG   | 23.60    | 19.65    | 19.00    | 62.25    | Same finger - off home row
+
+🔍 Component sum verification:
+  FF: 0.00 = 0.00 + 0.00 + 0.00 ✅
+  FG: 38.00 = 0.00 + 19.00 + 19.00 ✅
+  FJ: 0.00 = 0.00 + 0.00 + 0.00 ✅
 
 🎯 Model verification complete!
 
-📊 FREQUENCY-INDEPENDENCE VALIDATION
+📊 OUTPUT VALIDATION
 ==================================================
+Expected columns: ['key_pair', 'distance_setup', 'distance_interval', 'distance_return', 'distance_total']
+Missing columns: None ✅
 Expected key-pairs: 1024
 Actual key-pairs: 1024
 Complete coverage: ✅
+Valid numeric rows: 1024/1024
+Component sum consistency: ✅
 
-Distance score statistics:
-  Min: 0.00mm
-  Max: 85.66mm
-  Average: 33.04mm
+Distance component statistics:
+  Setup - min: 0.00, max: 34.67, avg: 16.23
+  Interval - min: 0.00, max: 50.99, avg: 16.81
+  Return - min: 0.00, max: 65.28, avg: 30.11
+  Total - min: 0.00, max: 130.56, avg: 63.15
 
-🔍 Validation checks:
-  Home row same-key pairs with 0 distance: 8/8 ✅
-  QW (adjacent): 39.29mm
-  QP (distant): 39.29mm
-  Distance ordering correct: ❌
-  Common English avg: 36.45mm
-  Random pairs avg: 37.73mm
-  No English bias: ✅
+✅ Output validation complete!
 
-✅ Frequency-independence validation complete!
-
-✅ Frequency-independent distance generation complete: ../tables/keypair_distance_scores.csv
-🎯 These scores are ready for dual framework analysis!
+✅ Distance generation complete: ../tables/keypair_distance_scores.csv
+🎯 Four-component breakdown ready for analysis!

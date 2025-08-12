@@ -1,0 +1,39 @@
+> poetry run python3 prep_keypair_time_scores.py --bigram-file ../../process_136M_keystrokes/output/bigram_times.csv --frequency-file ../input/english-letter-pair-frequencies-google-ngrams.csv
+Generate time scores with built-in QWERTY debiasing
+============================================================
+QWERTY keys (32): ',./;ABCDEFGHIJKLMNOPQRSTUVWXYZ[
+Total key-pairs to compute: 1024
+Bigram times file: ../../process_136M_keystrokes/output/bigram_times.csv
+Frequency file: ../input/english-letter-pair-frequencies-google-ngrams.csv
+🎯 Frequency-based QWERTY debiasing: ENABLED
+🔄 Mirror-based conservative debiasing: ENABLED
+Loading 136M bigram data from ../../process_136M_keystrokes/output/bigram_times.csv...
+Loaded 19,809,877 bigram records
+Calculated medians for 413 bigrams
+✅ Loaded 669 English bigram frequencies for debiasing
+
+🔧 Applying frequency-based debiasing...
+   📝 Mapped 625 letter-pairs to key-pairs
+   📊 Frequency-time correlation: -0.586
+   📊 Regression bias factor: 41153.4ms per frequency unit
+      (R²=0.343, p=0.000)
+   ✅ Using regression bias factor (statistically significant)
+   🎯 Using bias factor: 41153.4ms per frequency unit
+   ✅ Applied corrections to 620/1024 key-pairs
+      Average correction: 65.7ms
+   ✅ Applied mirror corrections to 326 key-pairs
+      Average adjustment: 104.5ms
+✅ Saved 1024 debiased key-pair times to: ../tables/keypair_time_scores.csv
+
+📊 Output Validation Results:
+   Total key-pairs: 1024
+   Expected count: 1024
+   Match: ✅
+   Time score range: 122.5 to 699.4ms
+   Average time: 416.3ms
+   Negative or zero time scores: 0 ✅
+
+✅ Output validation complete!
+
+✅ Time generation with integrated debiasing complete: ../tables/keypair_time_scores.csv
+🎯 Output is layout-agnostic and ready for dual framework analysis!

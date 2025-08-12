@@ -3,7 +3,7 @@
 Keyboard Layout Scorer using precomputed score table.
 
 A comprehensive tool for evaluating keyboard layouts using frequency-weighted scoring.
-Scoring methods include engram, comfort, comfort-key, distance, time, and dvorak7.
+Scoring methods include engram, comfort, comfort-key, distance, time, dvorak7, and dvorak7-speed.
 
 Setup:
 1. Generate individual score files (keypair_*_scores.csv) using your scoring scripts
@@ -19,6 +19,12 @@ Default behavior:
 - Scoring mode: Frequency-weighted (prioritizes common English letter combinations)
 - Score mapping: Letter-pair frequencies → Key-pair scores (distance/time inverted)
 
+Dvorak-7 Speed Scoring:
+- dvorak7-speed: Empirically-weighted Dvorak-7 using 19.4M typing speed correlations
+- Provides both pure Dvorak-7 scores and speed-weighted scores
+- Based on actual typing data analysis with FDR correction
+- Requires: input/dvorak7_speed_weights.csv (from empirical analysis)
+
 Usage:
     # Single layout evaluation (all available scoring methods)
     python score_layouts.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ"
@@ -28,6 +34,12 @@ Usage:
     
     # Compare multiple layouts  
     python score_layouts.py --compare qwerty:"qwertyuiop" dvorak:"',.pyfgcrl" colemak:"qwfpgjluy;"
+    
+    # Pure vs speed-weighted Dvorak-7 comparison
+    python score_layouts.py --compare qwerty:"qwertyuiop" dvorak:"',.pyfgcrl" --scorer dvorak7-speed
+    
+    # Both pure and speed-weighted Dvorak-7
+    python score_layouts.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --scorers dvorak7,dvorak7-speed
     
     # Verbose output (shows both weighted and raw scores)
     python score_layouts.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --verbose
@@ -52,6 +64,7 @@ Key features:
 - Graceful fallback to raw scoring if frequency file missing
 - Support for all scoring methods in the unified score table
 - Dynamic engram and comfort-key scoring (requires prep_scoring_tables.py output)
+- Empirical Dvorak-7 speed scoring with both pure and speed-weighted results
 """
 
 import sys
@@ -83,12 +96,20 @@ class LayoutScorer:
         self.letter_frequencies = self._load_letter_frequencies()
         self.key_comfort_scores = self._load_key_comfort_scores()  # from tables/key_scores.csv
         
+        # Load Dvorak-7 speed weights if available
+        self.dvorak7_speed_weights = self._load_dvorak7_speed_weights()
+        
         # Add dynamic scorers to available list
         if self.letter_frequencies is not None and self.key_comfort_scores is not None:
             if 'comfort-key' not in self.available_scorers:
                 self.available_scorers.append('comfort-key')
             if 'comfort' in self.available_scorers and 'engram' not in self.available_scorers:
                 self.available_scorers.append('engram')
+        
+        # Add dvorak7-speed to available scorers if weights are loaded
+        if self.dvorak7_speed_weights is not None:
+            if 'dvorak7-speed' not in self.available_scorers:
+                self.available_scorers.append('dvorak7-speed')
         
         if self.verbose:
             print(f"Score table: {score_table_path}")
@@ -100,6 +121,8 @@ class LayoutScorer:
                 print(f"Loaded letter frequencies for {len(self.letter_frequencies)} letters")
             if self.key_comfort_scores is not None:
                 print(f"Loaded key comfort scores for {len(self.key_comfort_scores)} keys")
+            if self.dvorak7_speed_weights is not None:
+                print(f"Loaded Dvorak-7 speed weights for empirical scoring")
             if self.use_raw:
                 print("Using raw (unweighted) scoring only")
             elif self.bigram_frequencies is not None:
@@ -301,6 +324,56 @@ class LayoutScorer:
         
         return scores
     
+    def _load_dvorak7_speed_weights(self) -> Optional[Dict]:
+        """Load Dvorak-7 empirical speed weights."""
+        filepath = "input/dvorak7_speed_weights.csv"
+        
+        if not Path(filepath).exists():
+            if self.verbose:
+                print(f"Dvorak-7 speed weights not found: {filepath}")
+            return None
+        
+        try:
+            df = pd.read_csv(filepath)
+            
+            # Validate required columns
+            required_cols = ['combination', 'k_way', 'correlation', 'significant_after_fdr']
+            for col in required_cols:
+                if col not in df.columns:
+                    if self.verbose:
+                        print(f"Required column '{col}' not found in speed weights file")
+                    return None
+            
+            # Filter to only significant results
+            significant_df = df[df['significant_after_fdr'] == True]
+            
+            # Use full keyboard weights as default (from "with middle columns" analysis)
+            # This covers all 32 keys including middle columns (B,G,H,N,T,Y)
+            weights = {
+                'vertical': -0.105,      # Row separation 
+                'repetition': -0.101,    # Hand/finger alternation
+                'adjacent': -0.088,      # Avoid adjacent fingers
+                'movement': -0.002,      # Home row usage (minimal effect)
+                'weak': +0.065,          # Avoid weak fingers (contradicts Dvorak)
+                'outward': +0.024,       # Finger rolls (contradicts Dvorak) 
+                'horizontal': +0.019     # Column adherence (contradicts Dvorak)
+            }
+            
+            if self.verbose:
+                print(f"Loaded Dvorak-7 speed weights: {len(significant_df)} combinations")
+                print(f"Using full keyboard weights (32-key layout)")
+            
+            return {
+                'combinations': significant_df,
+                'weights': weights,
+                'best_combination': significant_df.iloc[0] if len(significant_df) > 0 else None
+            }
+            
+        except Exception as e:
+            if self.verbose:
+                print(f"Error loading Dvorak-7 speed weights: {e}")
+            return None
+    
     def _detect_available_scorers(self) -> List[str]:
         """Detect available scoring methods from table columns."""
         scorers = []
@@ -348,6 +421,120 @@ class LayoutScorer:
         
         return comfort_key_score
     
+    def _score_layout_dvorak7_speed(self, layout_mapping: Dict[str, str]) -> Dict[str, float]:
+        """Score layout using empirical Dvorak-7 speed weights."""
+        # Import the canonical scoring function
+        try:
+            from prep_keypair_dvorak7_scores import score_bigram_dvorak7
+        except ImportError:
+            raise ValueError("prep_keypair_dvorak7_scores module not found - required for dvorak7-speed scoring")
+        
+        if self.dvorak7_speed_weights is None:
+            raise ValueError("Dvorak-7 speed weights not available")
+        
+        # Get empirical weights (from full 32-key analysis)
+        weights = self.dvorak7_speed_weights['weights']
+        
+        # Use actual English bigrams from frequency data
+        if self.bigram_frequencies:
+            letter_pairs = list(self.bigram_frequencies.keys())
+        else:
+            # Fallback to common English bigrams
+            letter_pairs = ['TH', 'HE', 'IN', 'ER', 'AN', 'ND', 'ON', 'EN', 'AT', 'OU',
+                          'ED', 'HA', 'TO', 'OR', 'IT', 'IS', 'HI', 'ES', 'NG', 'VE']
+        
+        # Initialize scoring
+        pure_scores = []
+        speed_weighted_scores = []
+        
+        use_frequency = self.bigram_frequencies is not None and not self.use_raw
+        weighted_total_pure = 0.0
+        weighted_total_speed = 0.0
+        total_frequency = 0.0
+        
+        for letter_pair in letter_pairs:
+            if len(letter_pair) == 2:
+                letter1, letter2 = letter_pair[0], letter_pair[1]
+                
+                # Only score bigrams where both letters exist in the layout
+                if letter1 in layout_mapping and letter2 in layout_mapping:
+                    try:
+                        # Get Dvorak-7 individual criteria scores
+                        criteria_scores = score_bigram_dvorak7(letter_pair)
+                        
+                        # Calculate pure Dvorak-7 score (simple average)
+                        pure_score = sum(criteria_scores.values()) / len(criteria_scores)
+                        pure_scores.append(pure_score)
+                        
+                        # Calculate speed-weighted score using empirical weights
+                        speed_score = 0.0
+                        total_abs_weight = 0.0
+                        
+                        for criterion, score in criteria_scores.items():
+                            weight = weights.get(criterion, 0.0)
+                            # Negative correlation = good for typing, so negate for positive contribution
+                            contribution = score * (-weight)
+                            speed_score += contribution
+                            total_abs_weight += abs(weight)
+                        
+                        # Normalize to keep in reasonable range
+                        if total_abs_weight > 0:
+                            speed_score = speed_score / total_abs_weight
+                        else:
+                            speed_score = pure_score
+                        
+                        speed_weighted_scores.append(speed_score)
+                        
+                        # Frequency weighting (if enabled)
+                        if use_frequency:
+                            frequency = self.bigram_frequencies.get(letter_pair, 0.0)
+                            weighted_total_pure += pure_score * frequency
+                            weighted_total_speed += speed_score * frequency
+                            total_frequency += frequency
+                        
+                    except Exception as e:
+                        # Skip bigrams that can't be scored
+                        if self.verbose:
+                            print(f"Warning: Could not score bigram '{letter_pair}': {e}")
+                        continue
+        
+        # Calculate final scores
+        if use_frequency and total_frequency > 0:
+            pure_average = weighted_total_pure / total_frequency
+            speed_average = weighted_total_speed / total_frequency
+        else:
+            pure_average = np.mean(pure_scores) if pure_scores else 0.0
+            speed_average = np.mean(speed_weighted_scores) if speed_weighted_scores else 0.0
+        
+        results = {
+            # Primary scores
+            'average_score': speed_average,  # Primary: speed-weighted
+            'raw_average_score': pure_average,  # Secondary: pure Dvorak-7
+            
+            # Detailed breakdown
+            'pure_dvorak7_score': pure_average,
+            'speed_weighted_score': speed_average,
+            'improvement_ratio': speed_average / pure_average if pure_average > 0 else 1.0,
+            
+            # Layout coverage analysis
+            'letters_in_layout': len(layout_mapping),
+            'bigrams_scored': len(pure_scores),
+            'coverage': len(pure_scores) / len(letter_pairs) if letter_pairs else 0.0,
+            
+            # Standard fields for compatibility
+            'pair_count': len(pure_scores),
+            'total_score': weighted_total_speed if use_frequency else sum(speed_weighted_scores),
+            'raw_total_score': weighted_total_pure if use_frequency else sum(pure_scores),
+        }
+        
+        if use_frequency:
+            results.update({
+                'total_frequency': total_frequency,
+                'frequency_coverage': total_frequency / sum(self.bigram_frequencies.values()) if self.bigram_frequencies else 0.0
+            })
+        
+        return results
+    
     def _score_layout_with_method(self, layout_mapping: Dict[str, str], scorer: str) -> Dict[str, float]:
         """Score a layout using a specific scoring method with NA validation."""
         # Validate layout mapping for NA values
@@ -360,6 +547,8 @@ class LayoutScorer:
             return self._score_layout_comfort_key(layout_mapping)
         elif scorer == 'engram':
             return self._score_layout_engram(layout_mapping)
+        elif scorer == 'dvorak7-speed':
+            return self._score_layout_dvorak7_speed(layout_mapping)
         
         # Handle table-based scoring methods
         score_col = f"{scorer}_score_normalized"
@@ -766,7 +955,7 @@ def create_layout_mapping(letters: str, positions: str) -> Dict[str, str]:
     return mapping
 
 def print_results(results: Dict[str, float], format_type: str = 'detailed', scorer_name: str = '', use_raw: bool = False, verbose: bool = False):
-    """Print scoring results."""
+    """Print scoring results with Dvorak-7 speed analysis."""
     
     if format_type == 'csv_output':
         # Minimal CSV output for programmatic use
@@ -779,32 +968,70 @@ def print_results(results: Dict[str, float], format_type: str = 'detailed', scor
         return
     
     if format_type == 'csv':
-        # Print CSV header if this is the first call
-        if scorer_name:
+        # CSV output for dvorak7-speed
+        if scorer_name == 'dvorak7-speed':
+            if use_raw:
+                print("scorer,speed_weighted_score,pure_dvorak7_score,improvement_ratio,letters_in_layout,bigrams_scored")
+                print(f"{scorer_name},{results['speed_weighted_score']:.6f},{results['pure_dvorak7_score']:.6f},"
+                      f"{results['improvement_ratio']:.6f},{results['letters_in_layout']},{results['bigrams_scored']}")
+            else:
+                print("scorer,speed_weighted_score,pure_dvorak7_score,improvement_ratio,letters_in_layout,bigrams_scored,coverage,frequency_coverage")
+                print(f"{scorer_name},{results['speed_weighted_score']:.6f},{results['pure_dvorak7_score']:.6f},"
+                      f"{results['improvement_ratio']:.6f},{results['letters_in_layout']},{results['bigrams_scored']},"
+                      f"{results['coverage']:.6f},{results.get('frequency_coverage', 0.0):.6f}")
+        else:
+            # Standard CSV output for other scorers
             if use_raw:
                 print("scorer,average_score,total_score,pair_count,coverage")
+                print(f"{scorer_name},{results['average_score']:.6f},{results['total_score']:.6f},"
+                      f"{results['pair_count']},{results['coverage']:.6f}")
             else:
-                print("scorer,average_score,arithmetic_score,total_score,raw_average_score,raw_total_score,pair_count,coverage,frequency_coverage")
-
-        if use_raw:
-            print(f"{scorer_name},{results['average_score']:.6f},{results['total_score']:.6f},"
-                  f"{results['pair_count']},{results['coverage']:.6f}")
-        else:
-            print(f"{scorer_name},{results['average_score']:.6f},{results['total_score']:.6f},"
-                f"{results['raw_average_score']:.6f},{results['raw_total_score']:.6f},"
-                f"{results['pair_count']},{results['coverage']:.6f},{results['frequency_coverage']:.6f}")
+                print("scorer,average_score,total_score,raw_average_score,raw_total_score,pair_count,coverage,frequency_coverage")
+                print(f"{scorer_name},{results['average_score']:.6f},{results['total_score']:.6f},"
+                    f"{results['raw_average_score']:.6f},{results['raw_total_score']:.6f},"
+                    f"{results['pair_count']},{results['coverage']:.6f},{results['frequency_coverage']:.6f}")
         return
     
     # Detailed format
-    if use_raw:
-        print(f"Average bigram score: {results['average_score']:.6f}")
-        print(f"Total score: {results['total_score']:.6f}")
-    else:
-        print(f"Frequency-weighted average bigram score: {results['average_score']:.6f}")
+    if scorer_name == 'dvorak7-speed':
+        print("=" * 60)
+        print("EMPIRICAL DVORAK-7 SPEED ANALYSIS")
+        print("=" * 60)
         
-        # Show raw scores if verbose
-        if verbose:
-            print(f"Raw average bigram score: {results['raw_average_score']:.6f}")
+        print(f"Speed-weighted score:     {results['speed_weighted_score']:.6f}")
+        print(f"Pure Dvorak-7 score:      {results['pure_dvorak7_score']:.6f}")
+        print(f"Improvement ratio:        {results['improvement_ratio']:.3f}x")
+        
+        improvement = (results['improvement_ratio'] - 1) * 100
+        if improvement > 0:
+            print(f"→ Speed weighting improves score by {improvement:.1f}%")
+        elif improvement < 0:
+            print(f"→ Speed weighting reduces score by {abs(improvement):.1f}%")
+        else:
+            print(f"→ Speed weighting has no net effect")
+        
+        print(f"\nLayout Analysis:")
+        print(f"  Letters in layout:      {results['letters_in_layout']}")
+        print(f"  Bigrams scored:         {results['bigrams_scored']}")
+        print(f"  Coverage:               {results['coverage']:.1%}")
+        
+        if 'frequency_coverage' in results:
+            print(f"  Frequency coverage:     {results['frequency_coverage']:.1%}")
+        
+        print(f"\nBased on 19.4M empirical bigrams")
+        print(f"Weights from actual typing speed correlations")
+        print(f"Using full 32-key layout weights")
+    else:
+        # Standard detailed output for other scorers
+        if use_raw:
+            print(f"Average bigram score: {results['average_score']:.6f}")
+            print(f"Total score: {results['total_score']:.6f}")
+        else:
+            print(f"Frequency-weighted average bigram score: {results['average_score']:.6f}")
+            
+            # Show raw scores if verbose
+            if verbose:
+                print(f"Raw average bigram score: {results['raw_average_score']:.6f}")
     
     print(f"Pair count: {results['pair_count']}")
     print(f"Coverage (% letter-pairs with precomputed scores): {results['coverage']:.1%}")
@@ -899,6 +1126,12 @@ Examples:
   # Compare layouts with default frequency weighting
   python score_layouts.py --compare qwerty:"qwertyuiop" dvorak:"',.pyfgcrl"
   
+  # Pure vs Speed-weighted Dvorak-7 comparison
+  python score_layouts.py --compare qwerty:"qwertyuiop" dvorak:"',.pyfgcrl" --scorer dvorak7-speed
+  
+  # Both pure and speed-weighted Dvorak-7
+  python score_layouts.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --scorers dvorak7,dvorak7-speed
+  
   # Use custom score table and frequency file
   python score_layouts.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --score-table custom_scores.csv --frequency-file custom_freqs.csv
   
@@ -916,6 +1149,7 @@ Default behavior:
 - Uses tables/key_scores.csv for individual key comfort scores (created by prep_scoring_tables.py)
 - Uses input/english-letter-pair-frequencies-google-ngrams.csv for frequency weighting (if it exists)
 - Uses input/english-letter-frequencies-google-ngrams.csv for letter frequencies (if it exists)
+- Uses input/dvorak7_speed_weights.csv for empirical Dvorak-7 speed scoring (if it exists)
 - Falls back to raw scoring if frequency file is not found
 - With --raw: Ignores frequencies and uses raw (unweighted) scoring
 - With --verbose: Shows both weighted and raw scores for comparison
@@ -924,6 +1158,7 @@ Default behavior:
 Available scoring methods depend on the score table contents (e.g., distance, comfort, dvorak7, time).
 Distance and time scores are automatically inverted (1-score) since higher values are worse.
 Engram and comfort-key scores are computed dynamically and require letter frequencies and key comfort scores.
+dvorak7-speed provides both pure and empirically-weighted Dvorak-7 scores based on 19.4M typing correlations.
         """
     )
     
