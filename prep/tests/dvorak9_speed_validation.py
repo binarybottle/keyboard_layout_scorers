@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Comprehensive Empirical Analysis of Dvorak-9 Criteria vs Typing Speed
+Comprehensive Empirical Analysis of Dvorak-7 Criteria vs Typing Speed
 
 This script performs a complete empirical validation of August Dvorak's 9 typing 
 evaluation criteria using real typing data from 136M+ keystrokes. The analysis
@@ -76,8 +76,8 @@ import argparse
 import sys
 import random
 
-# Import the canonical scoring function from dvorak9_scorer
-from dvorak9_scorer import score_bigram_dvorak9, Dvorak9Scorer
+# Import the canonical scoring function from dvorak7_scorer
+from dvorak7_scorer import score_bigram_dvorak7, dvorak7Scorer
 
 warnings.filterwarnings("ignore", category=FutureWarning)
 warnings.filterwarnings("ignore", category=UserWarning)
@@ -93,7 +93,7 @@ def print_and_log(*args, **kwargs):
     log_content.append(message)
     original_print(*args, **kwargs)
 
-def save_log(filename="speed_weights_for_dvorak9_feature_combinations.log"):
+def save_log(filename="speed_weights_for_dvorak7_feature_combinations.log"):
     """Save log content to file"""
     global log_content
     with open(filename, 'w', encoding='utf-8') as f:
@@ -213,7 +213,7 @@ def load_empirical_weights(csv_file="speed_weights.csv", significance_threshold=
 
 def print_scoring_results(results):
     """Print formatted scoring results with empirical weight information."""
-    print("Empirical Dvorak-9 Scoring Results")
+    print("Empirical Dvorak-7 Scoring Results")
     print("=" * 60)
     
     print(f"Total Weighted Score: {results['total_weighted_score']:8.3f}")
@@ -598,7 +598,7 @@ def analyze_correlations(sequences, times, criteria_names, group_name, analysis_
             print_and_log(f"    Progress: {i:,}/{len(sequences):,} ({i/len(sequences)*100:.1f}%) - {elapsed:.1f}s", end='\r')
         
         # Calculate Dvorak scores using the canonical function
-        scores = score_bigram_dvorak9(seq)
+        scores = score_bigram_dvorak7(seq)
         
         # Validate scores
         if all(isinstance(score, (int, float)) and not np.isnan(score) for score in scores.values()):
@@ -978,7 +978,7 @@ def create_frequency_comparison_plots(results, output_dir='plots'):
     
     # Create the plot
     fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(16, 12))
-    fig.suptitle('Dvorak-9 criteria correlations: raw vs frequency-adjusted', fontsize=16, fontweight='bold')
+    fig.suptitle('Dvorak-7 criteria correlations: raw vs frequency-adjusted', fontsize=16, fontweight='bold')
     
     # Split by middle column status
     without_middle = df[df['group'].str.contains('No Middle', na=False)]
@@ -1103,7 +1103,7 @@ def create_frequency_comparison_plots(results, output_dir='plots'):
     plt.tight_layout()
     
     # Save plot
-    output_path = Path(output_dir) / 'dvorak9_frequency_comparison.png'
+    output_path = Path(output_dir) / 'dvorak7_frequency_comparison.png'
     plt.savefig(output_path, dpi=300, bbox_inches='tight')
     plt.close()
     
@@ -2218,7 +2218,7 @@ def analyze_weight_distribution(csv_file="speed_weights.csv"):
 
 def test_empirical_scorer():
     """Test the empirical scorer with real weights."""
-    print("Testing Empirical Dvorak-9 Scorer")
+    print("Testing Empirical Dvorak-7 Scorer")
     print("=" * 50)
     
     # Test layout (partial DVORAK)
@@ -2229,7 +2229,7 @@ def test_empirical_scorer():
     text = "the rain in spain falls mainly on the plain"
     
     # Initialize with empirical weights
-    scorer = Dvorak9Scorer(layout_mapping, text)
+    scorer = dvorak7Scorer(layout_mapping, text)
     results = scorer.calculate_scores()
     
     # Show scoring results
@@ -2245,7 +2245,7 @@ def test_empirical_scorer():
 
 def main():
     """Main analysis function"""
-    parser = argparse.ArgumentParser(description='Analyze Dvorak-9 criteria correlations with typing speed')
+    parser = argparse.ArgumentParser(description='Analyze Dvorak-7 criteria correlations with typing speed')
     parser.add_argument('--max-bigrams', type=int, help='Maximum number of bigrams to analyze')
     parser.add_argument('--random-seed', type=int, default=42, help='Random seed for reproducibility')
     parser.add_argument('--test-scorer', action='store_true', help='Test the scorer on sample data')
@@ -2253,13 +2253,13 @@ def main():
     
     if args.test_scorer:
         # Test the unified scorer
-        print_and_log("Testing Dvorak-9 Scorer")
+        print_and_log("Testing Dvorak-7 Scorer")
         print_and_log("=" * 50)
         
         layout_mapping = {'e': 'D', 't': 'K', 'a': 'A', 'o': 'S', 'i': 'F', 'n': 'J', 's': 'R', 'h': 'U', 'r': 'L'}
         text = "the quick brown fox jumps over the lazy dog"
         
-        scorer = Dvorak9Scorer(layout_mapping, text)
+        scorer = dvorak7Scorer(layout_mapping, text)
         results = scorer.calculate_scores()
         
         print_scoring_results(results)
@@ -2277,14 +2277,14 @@ def main():
     middle_column_keys = {'b', 'g', 'h', 'n', 't', 'y'}
     
     # Print configuration
-    print_and_log("Dvorak-9 Criteria Correlation Analysis - Bigram Speed")
+    print_and_log("Dvorak-7 Criteria Correlation Analysis - Bigram Speed")
     print_and_log("=" * 80)
     print_and_log("Configuration:")
     print_and_log(f"  Max bigrams: {args.max_bigrams:,}" if args.max_bigrams else "  Max bigrams: unlimited")
     print_and_log(f"  Random seed: {args.random_seed}")
     print_and_log(f"  Middle column keys: {', '.join(sorted(middle_column_keys))}")
     print_and_log("  Analysis includes both raw and frequency-adjusted correlations")
-    print_and_log("  Using canonical scoring from dvorak9_scorer.py")
+    print_and_log("  Using canonical scoring from dvorak7_scorer.py")
     print_and_log("")
     
     # Load frequency data
@@ -2347,8 +2347,8 @@ def main():
     print_and_log("ANALYSIS COMPLETE")
     print_and_log("=" * 80)
     print_and_log(f"Total runtime: {format_time(total_elapsed)}")
-    print_and_log(f"Dvorak-9 Analysis Complete")
-    print_and_log("Now using canonical scorer from dvorak9_scorer.py")
+    print_and_log(f"Dvorak-7 Analysis Complete")
+    print_and_log("Now using canonical scorer from dvorak7_scorer.py")
     
     # Save log
     save_log()

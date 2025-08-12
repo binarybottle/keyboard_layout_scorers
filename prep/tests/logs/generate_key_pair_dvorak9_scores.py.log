@@ -1,10 +1,10 @@
 > poetry run python3 generate_key_pair_scores.py
-Dvorak-9 key-pair Score Generator
+Dvorak-7 key-pair Score Generator
 ==================================================
 QWERTY keys (32): ',./;ABCDEFGHIJKLMNOPQRSTUVWXYZ[
 Total key-pairs to compute: 1024
 
-Computing Dvorak-9 scores for 1024 key-pairs...
+Computing Dvorak-7 scores for 1024 key-pairs...
   Progress: 0/1024 (0.0%)
   Progress: 100/1024 (9.8%)
   Progress: 200/1024 (19.5%)
@@ -16,7 +16,7 @@ Computing Dvorak-9 scores for 1024 key-pairs...
   Progress: 800/1024 (78.1%)
   Progress: 900/1024 (87.9%)
   Progress: 1000/1024 (97.7%)
-✅ Saved 1024 key-pair scores to: input/dvorak9/key_pair_scores.csv
+✅ Saved 1024 key-pair scores to: input/dvorak7/key_pair_scores.csv
 
 📊 Validation Results:
    Total key-pairs: 1024
@@ -30,5 +30,5 @@ Computing Dvorak-9 scores for 1024 key-pairs...
    '': 0.333
 
 ✅ key-pair score generation complete!
-   Output file: input/dvorak9/key_pair_scores.csv
-   Ready for use with dvorak9_scorer.py
+   Output file: input/dvorak7/key_pair_scores.csv
+   Ready for use with dvorak7_scorer.py

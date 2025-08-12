@@ -1,8 +1,8 @@
-> poetry run python3 validate_scorer.py --weights input/dvorak9/comfort_weights.csv
-Dvorak-9 Comprehensive Scoring Validation
+> poetry run python3 validate_scorer.py --weights input/dvorak7/comfort_weights.csv
+Dvorak-7 Comprehensive Scoring Validation
 ============================================================
-Using canonical scoring implementation from dvorak9_scorer.py
-Testing weighted scoring with: input/dvorak9/comfort_weights.csv
+Using canonical scoring implementation from dvorak7_scorer.py
+Testing weighted scoring with: input/dvorak7/comfort_weights.csv
 ============================================================
 
 === CANONICAL IMPLEMENTATION VALIDATION ===
@@ -89,8 +89,8 @@ Neither home row: QZ
 Testing all possible bigrams (basic criteria)...
 Testing 32 keys = 1024 possible bigrams (basic criteria)
 ✅ Basic criteria results:
-   All bigrams: output/dvorak9_scores_all_bigrams.csv
-   Unique patterns: output/dvorak9_scores_unique_all_bigrams.csv
+   All bigrams: output/dvorak7_scores_all_bigrams.csv
+   Unique patterns: output/dvorak7_scores_unique_all_bigrams.csv
    Total bigrams: 1024
    Unique score combinations: 135
 
@@ -183,12 +183,12 @@ STRONG_FINGERS:
 Testing frequency-weighted scoring...
 
 Testing weighted scoring:
-  Weights file: input/dvorak9/comfort_weights.csv
+  Weights file: input/dvorak7/comfort_weights.csv
   Weights type: comfort
-  Output file: output/dvorak9_weighted_scores_comfort.csv
+  Output file: output/dvorak7_weighted_scores_comfort.csv
   Testing with 19 character layout
 Loaded 669 bigram frequencies from input/prep/normalized_letter_pair_frequencies_en.csv
-Loaded 1024 precomputed key-pair scores from input/dvorak9/key_pair_scores.csv
+Loaded 1024 precomputed key-pair scores from input/dvorak7/key_pair_scores.csv
 ✅ Weighted scoring test completed:
    Layout score: 0.1336
    Scoring mode: weighted
@@ -196,10 +196,10 @@ Loaded 1024 precomputed key-pair scores from input/dvorak9/key_pair_scores.csv
 
 ============================================================
 Validation complete!
-✅ SUCCESS: Using canonical implementation from dvorak9_scorer.py
+✅ SUCCESS: Using canonical implementation from dvorak7_scorer.py
 
 Check output files in 'output/':
-  - dvorak9_scores_all_bigrams.csv (individual criterion scores 0-1)
-  - dvorak9_scores_unique_all_bigrams.csv (unique score patterns)
-  - dvorak9_weighted_scores_comfort.csv (empirical combination scores)
-  ✓ Tested with input/dvorak9/comfort_weights.csv
+  - dvorak7_scores_all_bigrams.csv (individual criterion scores 0-1)
+  - dvorak7_scores_unique_all_bigrams.csv (unique score patterns)
+  - dvorak7_weighted_scores_comfort.csv (empirical combination scores)
+  ✓ Tested with input/dvorak7/comfort_weights.csv

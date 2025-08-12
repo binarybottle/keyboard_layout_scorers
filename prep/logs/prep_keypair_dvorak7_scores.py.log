@@ -1,11 +1,11 @@
-> poetry run python3 prep_keypair_dvorak9_scores.py
-Prepare Dvorak-9 key-pair scores (overall + individual criteria)
+> poetry run python3 prep_keypair_dvorak7_scores.py
+Prepare Dvorak-7 key-pair scores (overall + individual criteria)
 ======================================================================
 QWERTY keys (32): ',./;ABCDEFGHIJKLMNOPQRSTUVWXYZ[
 Total key-pairs to compute: 1024
 Output files: 1 overall + 9 individual criteria = 10 total
 
-Computing Dvorak-9 scores for 1024 key-pairs...
+Computing Dvorak-7 scores for 1024 key-pairs...
   Progress: 0/1024 (0.0%)
   Progress: 100/1024 (9.8%)
   Progress: 200/1024 (19.5%)
@@ -17,14 +17,14 @@ Computing Dvorak-9 scores for 1024 key-pairs...
   Progress: 800/1024 (78.1%)
   Progress: 900/1024 (87.9%)
   Progress: 1000/1024 (97.7%)
-✅ Saved overall scores to: ../tables/keypair_dvorak9_scores.csv
-✅ Saved fingers scores to: ../tables/keypair_dvorak9_fingers_scores.csv
-✅ Saved skip_fingers scores to: ../tables/keypair_dvorak9_skip_fingers_scores.csv
-✅ Saved same_row scores to: ../tables/keypair_dvorak9_same_row_scores.csv
-✅ Saved home_row scores to: ../tables/keypair_dvorak9_home_row_scores.csv
-✅ Saved columns scores to: ../tables/keypair_dvorak9_columns_scores.csv
-✅ Saved strum scores to: ../tables/keypair_dvorak9_strum_scores.csv
-✅ Saved strong_fingers scores to: ../tables/keypair_dvorak9_strong_fingers_scores.csv
+✅ Saved overall scores to: ../tables/keypair_dvorak7_scores.csv
+✅ Saved repetition scores to: ../tables/keypair_dvorak7_repetition_scores.csv
+✅ Saved adjacent scores to: ../tables/keypair_dvorak7_adjacent_scores.csv
+✅ Saved vertical scores to: ../tables/keypair_dvorak7_vertical_scores.csv
+✅ Saved movement scores to: ../tables/keypair_dvorak7_movement_scores.csv
+✅ Saved horizontal scores to: ../tables/keypair_dvorak7_horizontal_scores.csv
+✅ Saved outward scores to: ../tables/keypair_dvorak7_outward_scores.csv
+✅ Saved weak scores to: ../tables/keypair_dvorak7_weak_scores.csv
 
 📊 Validation Results:
    Total key-pairs: 1024
@@ -36,13 +36,13 @@ Computing Dvorak-9 scores for 1024 key-pairs...
    Accuracy check: 20/20 samples correct
 
 📁 Individual Criterion Files:
-   ✅ fingers: 1024 pairs
-   ✅ skip_fingers: 1024 pairs
-   ✅ same_row: 1024 pairs
-   ✅ home_row: 1024 pairs
-   ✅ columns: 1024 pairs
-   ✅ strum: 1024 pairs
-   ✅ strong_fingers: 1024 pairs
+   ✅ repetition: 1024 pairs
+   ✅ adjacent: 1024 pairs
+   ✅ vertical: 1024 pairs
+   ✅ movement: 1024 pairs
+   ✅ horizontal: 1024 pairs
+   ✅ outward: 1024 pairs
+   ✅ weak: 1024 pairs
 
 🔍 Criteria-Specific Validation:
    Same key repetition: ✅ (3/3)
@@ -69,6 +69,6 @@ Computing Dvorak-9 scores for 1024 key-pairs...
    KD: All criteria = 1.0? ✅
    KF: All criteria = 1.0? ✅
 
-✅ Dvorak-9 key-pair score generation complete!
-   Overall scores: ../tables/keypair_dvorak9_scores.csv
-   Individual criteria: ../tables/keypair_dvorak9_*_scores.csv
+✅ Dvorak-7 key-pair score generation complete!
+   Overall scores: ../tables/keypair_dvorak7_scores.csv
+   Individual criteria: ../tables/keypair_dvorak7_*_scores.csv

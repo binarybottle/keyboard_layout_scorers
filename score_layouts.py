@@ -3,7 +3,7 @@
 Keyboard Layout Scorer using precomputed score table.
 
 A comprehensive tool for evaluating keyboard layouts using frequency-weighted scoring.
-Scoring methods include engram, comfort, comfort-key, distance, time, and dvorak9.
+Scoring methods include engram, comfort, comfort-key, distance, time, and dvorak7.
 
 Setup:
 1. Generate individual score files (keypair_*_scores.csv) using your scoring scripts
@@ -921,7 +921,7 @@ Default behavior:
 - With --verbose: Shows both weighted and raw scores for comparison
 - With --csv-output: Minimal CSV format for programmatic use (layout,scorer,weighted_score,raw_score)
 
-Available scoring methods depend on the score table contents (e.g., distance, comfort, dvorak9, time).
+Available scoring methods depend on the score table contents (e.g., distance, comfort, dvorak7, time).
 Distance and time scores are automatically inverted (1-score) since higher values are worse.
 Engram and comfort-key scores are computed dynamically and require letter frequencies and key comfort scores.
         """

@@ -1,7 +1,7 @@
 > poetry run python3 validate_scorer.py
-Dvorak-9 Comprehensive Scoring Validation
+Dvorak-7 Comprehensive Scoring Validation
 ============================================================
-Using canonical scoring implementation from dvorak9_scorer.py
+Using canonical scoring implementation from dvorak7_scorer.py
 ============================================================
 
 === CANONICAL IMPLEMENTATION VALIDATION ===
@@ -88,8 +88,8 @@ Neither home row: QZ
 Testing all possible bigrams (basic criteria)...
 Testing 32 keys = 1024 possible bigrams (basic criteria)
 ✅ Basic criteria results:
-   All bigrams: output/dvorak9_scores_all_bigrams.csv
-   Unique patterns: output/dvorak9_scores_unique_all_bigrams.csv
+   All bigrams: output/dvorak7_scores_all_bigrams.csv
+   Unique patterns: output/dvorak7_scores_unique_all_bigrams.csv
    Total bigrams: 1024
    Unique score combinations: 135
 
@@ -180,8 +180,8 @@ STRONG_FINGERS:
 
 ============================================================
 Validation complete!
-✅ SUCCESS: Using canonical implementation from dvorak9_scorer.py
+✅ SUCCESS: Using canonical implementation from dvorak7_scorer.py
 
 Check output files in 'output/':
-  - dvorak9_scores_all_bigrams.csv (individual criterion scores 0-1)
-  - dvorak9_scores_unique_all_bigrams.csv (unique score patterns)
+  - dvorak7_scores_all_bigrams.csv (individual criterion scores 0-1)
+  - dvorak7_scores_unique_all_bigrams.csv (unique score patterns)

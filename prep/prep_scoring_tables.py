@@ -9,7 +9,7 @@ Input files expected:
 - keypair_time_scores.csv (key_pair, time_score)
 - keypair_comfort_scores.csv (key_pair, comfort_score)  
 - keypair_distance_scores.csv (key_pair, distance_score)
-- keypair_dvorak9_scores.csv (key_pair, dvorak9_score)
+- keypair_dvorak7_scores.csv (key_pair, dvorak7_score)
 
 Output:
 - tables/keypair_scores.csv: Unified key-pair scores with normalized versions (0-1 range)
@@ -245,17 +245,15 @@ def create_unified_score_table(input_dir: str, verbose: bool = False) -> None:
         'comfort_score': 'keypair_comfort_scores.csv',
         'distance_score': 'keypair_distance_scores.csv',
         'time_score': 'keypair_time_scores.csv',
-        'dvorak9_score': 'keypair_dvorak9_scores.csv',
-        # Individual dvorak9 criteria
-        'dvorak9_hands': 'keypair_dvorak9_hands_scores.csv',
-        'dvorak9_fingers': 'keypair_dvorak9_fingers_scores.csv', 
-        'dvorak9_skip_fingers': 'keypair_dvorak9_skip_fingers_scores.csv',
-        'dvorak9_dont_cross_home': 'keypair_dvorak9_dont_cross_home_scores.csv',
-        'dvorak9_same_row': 'keypair_dvorak9_same_row_scores.csv',
-        'dvorak9_home_row': 'keypair_dvorak9_home_row_scores.csv',
-        'dvorak9_columns': 'keypair_dvorak9_columns_scores.csv',
-        'dvorak9_strum': 'keypair_dvorak9_strum_scores.csv',
-        'dvorak9_strong_fingers': 'keypair_dvorak9_strong_fingers_scores.csv'
+        'dvorak7_score': 'keypair_dvorak7_scores.csv',
+        # Individual dvorak7 criteria
+        'dvorak7_repetition': 'keypair_dvorak7_repetition_scores.csv',
+        'dvorak7_movement': 'keypair_dvorak7_movement_scores.csv',
+        'dvorak7_vertical': 'keypair_dvorak7_vertical_scores.csv',
+        'dvorak7_horizontal': 'keypair_dvorak7_horizontal_scores.csv',
+        'dvorak7_adjacent': 'keypair_dvorak7_adjacent_scores.csv',
+        'dvorak7_weak': 'keypair_dvorak7_weak_scores.csv',
+        'dvorak7_outward': 'keypair_dvorak7_outward_scores.csv'
     }
 
     if verbose:
@@ -377,7 +375,7 @@ def validate_input_directory(input_dir: str) -> None:
         'keypair_time_scores.csv',
         'keypair_comfort_scores.csv', 
         'keypair_distance_scores.csv',
-        'keypair_dvorak9_scores.csv'
+        'keypair_dvorak7_scores.csv'
     ]
     
     found_files = [f for f in expected_files if (input_path / f).exists()]
@@ -404,12 +402,12 @@ Input files expected in input directory:
     - keypair_time_scores.csv (key_pair, time_score)
     - keypair_comfort_scores.csv (key_pair, comfort_score)
     - keypair_distance_scores.csv (key_pair, distance_score)  
-    - keypair_dvorak9_scores.csv (key_pair, dvorak9_score)
+    - keypair_dvorak7_scores.csv (key_pair, dvorak7_score)
 
 Creates two standardized output files:
     - tables/keypair_scores.csv: Unified key-pair scores
         - key_pair: Two-character key pair (e.g., "QW", "AS")
-        - Original score columns (time_score, comfort_score, distance_score, dvorak9_score)
+        - Original score columns (time_score, comfort_score, distance_score, dvorak7_score)
         - Normalized score columns (*_score_normalized) with smart distribution-aware normalization (0-1 range)
     
     - tables/key_scores.csv: Individual key comfort scores

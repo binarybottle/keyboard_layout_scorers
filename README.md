@@ -14,7 +14,7 @@ The framework supports four main scoring approaches:
 - **Distance Scorer**: Physical finger travel distance analysis with per-finger distance tracking
 - **Time Scorer**: Typing time analysis based on empirical data from CSV typing datasets
 - **Comfort Scorer**: Key comfort analysis based on finger ergonomics and key positions
-- **Dvorak-9 Scorer**: Implementation of Dvorak's 9 theoretical typing principles with individual criterion breakdown
+- **Dvorak-7 Scorer**: Implementation of Dvorak's 9 theoretical typing principles with individual criterion breakdown
 
 ## Installation
 
@@ -37,7 +37,7 @@ First, generate the precomputed scoring tables (this only needs to be done once)
 python prep_keypair_distance_scores.py --text-files corpus1.txt,corpus2.txt
 python prep_keypair_time_scores.py --input-dir /path/to/csv/typing/data/
 python prep_keypair_comfort_scores.py
-python prep_keypair_dvorak9_scores.py
+python prep_keypair_dvorak7_scores.py
 
 # Combine into unified scoring tables
 python prep_scoring_tables.py --input-dir tables/ --verbose
@@ -83,7 +83,7 @@ keyboard_layout_scorers/
 ├── prep_keypair_distance_scores.py    # Generate distance scoring table
 ├── prep_keypair_time_scores.py        # Generate time scoring table  
 ├── prep_keypair_comfort_scores.py     # Generate comfort scoring table
-├── prep_keypair_dvorak9_scores.py     # Generate Dvorak-9 scoring table
+├── prep_keypair_dvorak7_scores.py     # Generate Dvorak-7 scoring table
 ├── prep_scoring_tables.py             # Combine tables with normalization
 ├──
 ├── # Layout Scoring (Phase 2)
@@ -98,7 +98,7 @@ keyboard_layout_scorers/
 │   ├── keypair_distance_scores.csv    # Distance scoring data
 │   ├── keypair_time_scores.csv        # Time scoring data
 │   ├── keypair_comfort_scores.csv     # Comfort scoring data
-│   └── keypair_dvorak9_scores.csv     # Dvorak-9 scoring data
+│   └── keypair_dvorak7_scores.csv     # Dvorak-7 scoring data
 ├──
 ├── input/                             # Input data files
 │   ├── english-letter-pair-frequencies-google-ngrams.csv
@@ -128,10 +128,10 @@ keyboard_layout_scorers/
 - Handles same-hand vs different-hand transitions
 - Outputs: `keypair_comfort_scores.csv`
 
-**Dvorak-9 Scores** (`prep_keypair_dvorak9_scores.py`):
+**Dvorak-7 Scores** (`prep_keypair_dvorak7_scores.py`):
 - Implements all 9 Dvorak theoretical principles
 - Generates both overall and individual criterion scores
-- Outputs: `keypair_dvorak9_scores.csv` + individual criterion files
+- Outputs: `keypair_dvorak7_scores.csv` + individual criterion files
 
 **Table Unification** (`prep_scoring_tables.py`):
 - Combines all individual score files
@@ -201,7 +201,7 @@ he,3.07
 
 **Scoring Tables:**
 ```csv
-key_pair,distance_score,comfort_score,time_score,dvorak9_score
+key_pair,distance_score,comfort_score,time_score,dvorak7_score
 QW,45.2,0.7,150.3,0.6
 AS,15.1,0.9,89.2,0.8
 ```

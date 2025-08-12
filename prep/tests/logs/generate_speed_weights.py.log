@@ -1,11 +1,11 @@
-Dvorak-9 Criteria Correlation Analysis - Bigram Speed
+Dvorak-7 Criteria Correlation Analysis - Bigram Speed
 ================================================================================
 Configuration:
   Max bigrams: unlimited
   Random seed: 42
   Middle column keys: b, g, h, n, t, y
   Analysis includes both raw and frequency-adjusted correlations
-  Using canonical scoring from dvorak9_scorer.py
+  Using canonical scoring from dvorak7_scorer.py
 
 Loading frequency data...
 🔍 Loading frequency data for regression analysis...
@@ -512,7 +512,7 @@ Note: Negative correlation = higher score → faster typing (validates Dvorak)
 ------------------------------------------------------------------------------------------------------------------------
 
 Generating comparison plots...
-Comparison plots saved to: plots/dvorak9_frequency_comparison.png
+Comparison plots saved to: plots/dvorak7_frequency_comparison.png
 
 Generating results interpretation...
 
@@ -892,5 +892,5 @@ DIFFERENCES BETWEEN GROUPS:
 ANALYSIS COMPLETE
 ================================================================================
 Total runtime: 19.2m
-Dvorak-9 Analysis Complete
-Now using canonical scorer from dvorak9_scorer.py
+Dvorak-7 Analysis Complete
+Now using canonical scorer from dvorak7_scorer.py

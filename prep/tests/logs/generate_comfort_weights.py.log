@@ -1,5 +1,5 @@
 > poetry run python3 generate_comfort_weights.py
-Dvorak-9 Comfort-Based Weight Generation (30-Key Extended)
+Dvorak-7 Comfort-Based Weight Generation (30-Key Extended)
 ============================================================
 Input file: input/prep/normalized_key_pair_comfort_scores_32keys_LvsRpairs.csv
 
@@ -218,7 +218,7 @@ Extended 30-key comfort analysis results:
 ============================================================
 COMFORT ANALYSIS COMPLETE
 ============================================================
-✅ Generated comfort-based weights for Dvorak-9 scoring
+✅ Generated comfort-based weights for Dvorak-7 scoring
 ✅ Covers all 30 standard typing keys using extended comfort dataset
-✅ Use 'comfort_weights.csv' with dvorak9_scorer.py
+✅ Use 'comfort_weights.csv' with dvorak7_scorer.py
 ✅ Interpretation: Positive correlation = supports Dvorak (more comfortable)

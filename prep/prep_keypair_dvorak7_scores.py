@@ -1,52 +1,53 @@
 #!/usr/bin/env python3
 """
-Generate precomputed Dvorak-9 scores for all possible QWERTY key-pairs.
+Generate precomputed Dvorak-7 scores for all possible QWERTY key-pairs.
 
 (c) Arno Klein (arnoklein.info), MIT License (see LICENSE)
 
-This script computes both the overall Dvorak-9 score and individual criterion scores 
-for every possible combination of QWERTY keys and saves them to separate CSV files.
+This script computes both the overall Dvorak-7 score and individual criterion scores
+for every possible pair of QWERTY keys and saves them to separate CSV files.
 
 The output files contain all possible key-pairs (e.g., "QW", "QE", "AS") with
 their corresponding scores.
 
 Main output files:
-- ../tables/keypair_dvorak9_scores.csv - Overall average score
-- ../tables/keypair_dvorak9_hands_scores.csv - Hands criterion
-- ../tables/keypair_dvorak9_fingers_scores.csv - Fingers criterion
-- ../tables/keypair_dvorak9_skip_fingers_scores.csv - Skip fingers criterion
-- ../tables/keypair_dvorak9_no_hurdling_scores.csv - Don't cross home criterion
-- ../tables/keypair_dvorak9_same_row_scores.csv - Same row criterion
-- ../tables/keypair_dvorak9_home_row_scores.csv - Home row criterion
-- ../tables/keypair_dvorak9_finger_lanes_scores.csv - Columns criterion
-- ../tables/keypair_dvorak9_strum_scores.csv - Strum criterion
-- ../tables/keypair_dvorak9_strong_fingers_scores.csv - Strong fingers criterion
+    - ../tables/keypair_dvorak7_scores.csv - Overall average score
+    - ../tables/keypair_dvorak7_repetition_scores.csv
+    - ../tables/keypair_dvorak7_movement_scores.csv
+    - ../tables/keypair_dvorak7_vertical_scores.csv
+    - ../tables/keypair_dvorak7_horizontal_scores.csv
+    - ../tables/keypair_dvorak7_adjacent_scores.csv
+    - ../tables/keypair_dvorak7_weak_scores.csv
+    - ../tables/keypair_dvorak7_outward_scores.csv
 
 This precomputation allows the main scorer to simply look up scores rather
 than computing them on-demand, making layout scoring much faster.
 
-The 9 scoring criteria for typing bigrams are derived from Dvorak's
+The 7 scoring criteria for typing bigrams are derived from Dvorak's
 "Typing Behavior" book and patent (1936) (0-1, higher = better performance):
-    1. Two hands - favor alternating hands
-    2. Two fingers - avoid same finger repetition
-    3. Strong fingers - favor index and middle fingers
-    4. Finger lanes - favor fingers staying in their designated columns
-    5. Home row - favor using the home row
-    6. Same row - favor staying within the same row (same hand)
-    7. No hurdling - avoid hurdling over the home row (same hand)
-    8. Remote fingers - favor non-adjacent (or 2 strong) fingers (same hand)
-    9. Strum - favor inward rolls over outward rolls (same hand)
+
+    1.  Repetition: Typing with 1 hand or 1 finger
+    2.  Movement: Typing outside the 8 home keys
+    3.  Vertical separation: Typing in different rows 
+    4.  Horizontal reach: Typing outside 8 finger columns
+    5.  Adjacent fingers: Typing with adjacent fingers (except strong pair)
+    6.  Weak fingers: Typing with weaker fingers
+    7.  Outward direction: Finger sequence away from the thumb
+
+When applied to a single bigram, each criterion may be scored 0, 0.5, or 1 
+generally to indicate when 0, 1, or 2 fingers or keys satisfy a criterion. 
+The Dvorak-7 layout score is the average of the weighted means of each criterion 
+scored across all possible bigrams (here the weights are all 1).
 
 Usage:
-    python prep_keypair_dvorak9_scores.py
+    python prep_keypair_dvorak7_scores.py
 
 Output:
-    ../tables/keypair_dvorak9_scores.csv - CSV with columns: key_pair, dvorak9_score
-    ../tables/keypair_dvorak9_*_scores.csv - Individual criterion scores
+    ../tables/keypair_dvorak7_scores.csv - CSV with columns: key_pair, dvorak7_score
+    ../tables/keypair_dvorak7_*_scores.csv - Individual criterion scores
 """
 
 import csv
-import os
 from pathlib import Path
 from typing import Dict
 
@@ -105,7 +106,7 @@ def is_finger_in_column(key: str, finger: int, hand: str) -> bool:
         return key in FINGER_COLUMNS[hand][finger]
     return False
 
-def score_bigram_dvorak9(bigram: str) -> Dict[str, float]:
+def score_bigram_dvorak7(bigram: str) -> Dict[str, float]:
     """Calculate all 9 Dvorak criteria scores for a bigram."""
     if len(bigram) != 2:
         raise ValueError("Bigram must be exactly 2 characters long")    
@@ -125,103 +126,112 @@ def score_bigram_dvorak9(bigram: str) -> Dict[str, float]:
     scores = {}
 
     #----------------------------------------------------------------------------------
-    # Dvorak-9 scoring criteria
-    #----------------------------------------------------------------------------------
-    # 1. Two hands - favor alternating hands
-    # 2. Two fingers - avoid same finger repetition
-    # 3. Skip fingers - favor non-adjacent fingers
-    # 4. Strong fingers - favor index and middle fingers
-    # 5. Finger lanes - favor fingers staying in their designated columns
-    # 6. No hurdling - avoid hurdling over the home row (same hand)
-    # 7. Home row - favor using the home row
-    # 8. Same row - favor staying within the same row (same hand)
-    # 9. Strum - favor inward rolls over outward rolls (same hand)
+    # Dvorak-7 scoring criteria
     #----------------------------------------------------------------------------------    
-
-    # 1. Two hands - favor alternating hands
-    #scores['hands'] = 1.0 if hand1 != hand2 else 0.0
-    
-    # 2. Two fingers - avoid same finger repetition
+    # 1.  Repetition: Typing with 1 hand or 1 finger
+    # 2.  Movement: Typing outside the 8 home keys
+    # 3.  Vertical separation: Typing in different rows 
+    # 4.  Horizontal reach: Typing outside 8 finger columns
+    # 5.  Adjacent fingers: Typing with adjacent fingers (except stronger pair of fingers 1 and 2)
+    # 6.  Weak fingers: Typing with weaker fingers 3 and 4
+    # 7.  Outward direction: Finger sequence away from the thumb
+    #----------------------------------------------------------------------------------    
+   
+    # 1. Repetition: Typing with 1 hand or 1 finger
+    #    1.0: 2 fingers on 2 hands to type 2 keys
+    #    0.5: 2 fingers on 1 hand to type 2 keys
+    #    0.0: 1 finger on 1 hand to type 1-2 keys
     if hand1 != hand2:
-        scores['fingers'] = 1.0  # Different hands = different fingers
+        scores['repetition'] = 1.0  # 2 fingers on 2 hands to type 2 keys
     elif finger1 != finger2:
-        scores['fingers'] = 0.5  # Same hand, different fingers
+        scores['repetition'] = 0.5  # 2 fingers on 1 hand to type 2 keys
     elif finger1 == finger2:
-        scores['fingers'] = 0.0  # Same hand, same finger
+        scores['repetition'] = 0.0  # 1 finger on 1 hand to type 1-2 keys
 
-    # 3. Skip fingers - favor skipping fingers
+    # 2. Movement: Typing outside the 8 home keys
+    #    1.0: 2 home keys
+    #    0.5: 1 home key
+    #    0.0: 0 home keys
+    home_count = sum(1 for homekey in [homekey1, homekey2] if homekey == 1)
+    #home_count = sum(1 for row in [row1, row2] if row == HOME_ROW)
+    if home_count == 2:
+        scores['movement'] = 1.0      # 2 home keys
+    elif home_count == 1:
+        scores['movement'] = 0.5      # 1 home key
+    else:
+        scores['movement'] = 0.0      # 0 home keys
+
+    # 3. Vertical separation: Typing in different rows
+    #    1.0: 2 keys in the same row, or opposite hands
+    #    0.5: 2 keys in adjacent rows (reach)
+    #    0.0: 2 keys straddling home row (hurdle)
     if hand1 != hand2:
-        scores['skip_fingers'] = 1.0      # Different hands is good
+        scores['vertical'] = 1.0          # opposite hands always score well
+    else:
+        if row1 == row2:
+            scores['vertical'] = 1.0      # 2 keys in the same row
+        elif (row1 == 1 and row2 == 2) or (row1 == 2 and row2 == 1) or \
+             (row1 == 2 and row2 == 3) or (row1 == 3 and row2 == 2):
+            scores['vertical'] = 0.5      # 2 keys in adjacent rows (reach)
+        elif (row1 == 1 and row2 == 3) or (row1 == 3 and row2 == 1):
+            scores['vertical'] = 0.0      # 2 keys straddling home row (hurdle)
+
+    # 4. Horizontal reach: Typing outside 8 finger columns
+    #    1.0: 2 keys within finger columns
+    #    0.5: 1 key within finger columns
+    #    0.0: 0 keys within finger columns
+    in_column1 = is_finger_in_column(char1, finger1, hand1)
+    in_column2 = is_finger_in_column(char2, finger2, hand2)
+    if in_column1 and in_column2:
+        scores['horizontal'] = 1.0           # 2 keys within finger columns
+    elif in_column1 or in_column2:
+        scores['horizontal'] = 0.5           # 1 key within finger columns
+    else:
+        scores['horizontal'] = 0.0           # 0 keys within finger columns
+
+    # 5. Adjacent fingers: Typing with adjacent fingers (except strong pair of fingers 1 and 2)
+    #    1.0: non-adjacent fingers, strong finger pair, or opposite hands
+    #    0.0: same finger, or adjacent fingers where at least 1 is weak
+    if hand1 != hand2:
+        scores['adjacent'] = 1.0      # opposite hands always score well
     elif finger1 == finger2:
-        scores['skip_fingers'] = 0.0      # Same finger is bad
+        scores['adjacent'] = 0.0      # same finger scores zero
     elif finger1 in STRONG_FINGERS and finger2 in STRONG_FINGERS:
-        scores['skip_fingers'] = 1.0      # Strong fingers (index/middle) are good
+        scores['adjacent'] = 1.0      # strong finger pair (index & middle)
     else:
         finger_gap = abs(finger1 - finger2)
         if finger_gap == 1:
-            scores['skip_fingers'] = 0    # Adjacent fingers is bad
+            scores['adjacent'] = 0    # adjacent fingers where at least 1 is weak
         elif finger_gap == 2:
-            scores['skip_fingers'] = 1.0  # Skipping 1 finger is good
+            scores['adjacent'] = 1.0  # non-adjacent fingers: skipping 1 finger
         elif finger_gap == 3:
-            scores['skip_fingers'] = 1.0  # Skipping 2 fingers is good
+            scores['adjacent'] = 1.0  # non-adjacent fingers: skipping 2 fingers
 
-    # 4. Strong fingers - favor index and middle fingers
+    # 6. Weak fingers: Typing with weaker fingers 3 and 4
+    #    1.0: 0 keys typed with weak fingers
+    #    0.5: 1 key typed with 1 weak finger
+    #    0.0: 2 keys typed with 1-2 weak fingers
     strong_count = sum(1 for finger in [finger1, finger2] if finger in STRONG_FINGERS)
     if strong_count == 2:
-        scores['strong_fingers'] = 1.0    # Both strong fingers
+        scores['weak'] = 1.0    # 2 keys typed with 1-2 strong fingers
     elif strong_count == 1:
-        scores['strong_fingers'] = 0.5    # One strong finger
+        scores['weak'] = 0.5    # 1 key typed with 1 strong finger
     else:
-        scores['strong_fingers'] = 0.0    # Both weak fingers
+        scores['weak'] = 0.0    # 0 keys typed with strong finger
 
-    # 5. Finger lanes - favor fingers staying in their designated columns
-    in_column1 = is_finger_in_column(char1, finger1, hand1)
-    in_column2 = is_finger_in_column(char2, finger2, hand2)
-    
-    if in_column1 and in_column2:
-        scores['columns'] = 1.0       # Both in correct columns
-    elif in_column1 or in_column2:
-        scores['columns'] = 0.5       # One in correct column
-    else:
-        scores['columns'] = 0.0       # Neither in correct column
-    
-    # 7. Same row - favor staying in same row
+    # 7. Outward direction: Finger sequence away from the thumb
+    #    1.0: inward roll, or opposite hands
+    #    0.0: outward roll, or same finger
     if hand1 != hand2:
-        scores['same_row'] = 1.0  # Different hands always score well
-    else:
-        # Check for same row
-        if row1 == row2:
-            scores['same_row'] = 1.0  # Same row is best
-        # Check for reaching (adjacent rows)
-        elif (row1 == 1 and row2 == 2) or (row1 == 2 and row2 == 1) or \
-             (row1 == 2 and row2 == 3) or (row1 == 3 and row2 == 2):
-            scores['same_row'] = 0.5  # Adjacent rows
-        # Check for hurdling (top to bottom or bottom to top, skipping home)
-        elif (row1 == 1 and row2 == 3) or (row1 == 3 and row2 == 1):
-            scores['same_row'] = 0.0  # Hurdling over home row
-
-    # 8. Home row - favor using home row
-    #home_count = sum(1 for row in [row1, row2] if row == HOME_ROW)
-    home_count = sum(1 for homekey in [homekey1, homekey2] if homekey == 1)
-    if home_count == 2:
-        scores['home_row'] = 1.0      # Both in home row
-    elif home_count == 1:
-        scores['home_row'] = 0.5      # One in home row
-    else:
-        scores['home_row'] = 0.0      # Neither in home row
-    
-    # 9. Strum - favor inward rolls (outer to inner fingers)
-    if hand1 != hand2:
-        scores['strum'] = 1.0         # Different hands get full score
+        scores['outward'] = 1.0             # opposite hands always score well
     elif finger1 == finger2:
-        scores['strum'] = 0.0         # Same finger gets zero
+        scores['outward'] = 0.0             # same finger scores zero
     else:
-        # Inward roll: from higher finger number to lower (4→3→2→1)
         if finger1 > finger2:
-            scores['strum'] = 1.0     # Inward roll
+            scores['outward'] = 1.0         # inward roll
         else:
-            scores['strum'] = 0.0     # Outward roll
-    
+            scores['outward'] = 0.0         # outward roll
+
     return scores
 
 def get_all_qwerty_keys():
@@ -241,50 +251,48 @@ def generate_all_key_pairs():
     return key_pairs
 
 def compute_key_pair_scores():
-    """Compute Dvorak-9 scores for all key-pairs."""
+    """Compute Dvorak-7 scores for all key-pairs."""
     key_pairs = generate_all_key_pairs()
     results = {}
     
     # Initialize results for overall and individual criteria
     results['overall'] = []
-    criteria = [#'hands', 
-                'fingers', 
-                'skip_fingers', 
-                #'no_hurdling', 
-                'same_row', 
-                'home_row', 
-                'columns', 
-                'strum', 
-                'strong_fingers']
+    criteria = ['repetition', 
+                'adjacent', 
+                'vertical', 
+                'movement', 
+                'horizontal', 
+                'outward', 
+                'weak']
     
     for criterion in criteria:
         results[criterion] = []
-    
-    print(f"Computing Dvorak-9 scores for {len(key_pairs)} key-pairs...")
-    
+
+    print(f"Computing Dvorak-7 scores for {len(key_pairs)} key-pairs...")
+
     for i, key_pair in enumerate(key_pairs):
         if i % 100 == 0:
             print(f"  Progress: {i}/{len(key_pairs)} ({i/len(key_pairs)*100:.1f}%)")
         
-        # Compute individual Dvorak-9 criteria scores using the scorer's function
-        bigram_scores = score_bigram_dvorak9(key_pair)
+        # Compute individual Dvorak-7 criteria scores using the scorer's function
+        bigram_scores = score_bigram_dvorak7(key_pair)
         
-        # Calculate unweighted average (baseline Dvorak-9 score)
-        dvorak9_score = sum(bigram_scores.values()) / len(bigram_scores)
+        # Calculate unweighted average (baseline Dvorak-7 score)
+        dvorak7_score = sum(bigram_scores.values()) / len(bigram_scores)
         
         # Store overall score
         results['overall'].append({
             'key_pair': key_pair,
-            'dvorak9_score': dvorak9_score
+            'dvorak7_score': dvorak7_score
         })
-        
+    
         # Store individual criterion scores
         for criterion in criteria:
             results[criterion].append({
                 'key_pair': key_pair,
-                f'dvorak9_{criterion}': bigram_scores[criterion]
+                f'dvorak7_{criterion}': bigram_scores[criterion]
             })
-    
+
     return results
 
 def save_all_score_files(results, output_dir="../tables"):
@@ -294,27 +302,25 @@ def save_all_score_files(results, output_dir="../tables"):
     Path(output_dir).mkdir(parents=True, exist_ok=True)
     
     # Save overall scores
-    overall_file = f"{output_dir}/keypair_dvorak9_scores.csv"
+    overall_file = f"{output_dir}/keypair_dvorak7_scores.csv"
     overall_results = sorted(results['overall'], key=lambda x: x['key_pair'])
     
     with open(overall_file, 'w', newline='', encoding='utf-8') as f:
-        writer = csv.DictWriter(f, fieldnames=['key_pair', 'dvorak9_score'])
+        writer = csv.DictWriter(f, fieldnames=['key_pair', 'dvorak7_score'])
         writer.writeheader()
         writer.writerows(overall_results)
     
     print(f"✅ Saved overall scores to: {overall_file}")
     
     # Save individual criterion scores
-    criteria = [#'hands', 
-                'fingers', 'skip_fingers', #'no_hurdling', 
-                'same_row', 'home_row', 'columns', 'strum', 'strong_fingers']
+    criteria = ['repetition', 'adjacent', 'vertical', 'movement', 'horizontal', 'outward', 'weak']
     
     for criterion in criteria:
-        criterion_file = f"{output_dir}/keypair_dvorak9_{criterion}_scores.csv"
+        criterion_file = f"{output_dir}/keypair_dvorak7_{criterion}_scores.csv"
         criterion_results = sorted(results[criterion], key=lambda x: x['key_pair'])
         
         with open(criterion_file, 'w', newline='', encoding='utf-8') as f:
-            writer = csv.DictWriter(f, fieldnames=['key_pair', f'dvorak9_{criterion}'])
+            writer = csv.DictWriter(f, fieldnames=['key_pair', f'dvorak7_{criterion}'])
             writer.writeheader()
             writer.writerows(criterion_results)
         
@@ -324,14 +330,14 @@ def validate_output(output_dir="../tables"):
     """
     Validation with comprehensive accuracy checking.
     
-    This function performs extensive validation of the generated Dvorak-9 scores,
+    This function performs extensive validation of the generated Dvorak-7 scores,
     including mathematical verification of scoring criteria and edge case testing.
     """
     import csv
     import random
     from pathlib import Path
     
-    overall_file = f"{output_dir}/keypair_dvorak9_scores.csv"
+    overall_file = f"{output_dir}/keypair_dvorak7_scores.csv"
     
     if not Path(overall_file).exists():
         print(f"❌ Overall output file not found: {overall_file}")
@@ -346,7 +352,7 @@ def validate_output(output_dir="../tables"):
     print(f"   Total key-pairs: {len(rows)}")
     
     # Statistical validation
-    scores = [float(row['dvorak9_score']) for row in rows]
+    scores = [float(row['dvorak7_score']) for row in rows]
     min_score, max_score = min(scores), max(scores)
     avg_score = sum(scores) / len(scores)
     
@@ -361,10 +367,10 @@ def validate_output(output_dir="../tables"):
     
     for row in random_samples:
         key_pair = row['key_pair']
-        csv_score = float(row['dvorak9_score'])
+        csv_score = float(row['dvorak7_score'])
         
         # Recalculate score using the same logic
-        calculated_scores = score_bigram_dvorak9(key_pair)
+        calculated_scores = score_bigram_dvorak7(key_pair)
         calculated_avg = sum(calculated_scores.values()) / len(calculated_scores)
         
         if abs(calculated_avg - csv_score) > 0.0001:
@@ -375,12 +381,10 @@ def validate_output(output_dir="../tables"):
     
     # Validate individual criterion files
     print(f"\n📁 Individual Criterion Files:")
-    criteria = [#'hands', 
-                'fingers', 'skip_fingers', #'no_hurdling', 
-                'same_row', 'home_row', 'columns', 'strum', 'strong_fingers']
+    criteria = ['repetition', 'adjacent', 'vertical', 'movement', 'horizontal', 'outward', 'weak']
     
     for criterion in criteria:
-        criterion_file = f"{output_dir}/keypair_dvorak9_{criterion}_scores.csv"
+        criterion_file = f"{output_dir}/keypair_dvorak7_{criterion}_scores.csv"
         if Path(criterion_file).exists():
             with open(criterion_file, 'r', encoding='utf-8') as f:
                 reader = csv.DictReader(f)
@@ -404,7 +408,7 @@ def validate_output(output_dir="../tables"):
         for pair in test_pairs:
             row = next((r for r in rows if r['key_pair'] == pair), None)
             if row:
-                test_scores.append(float(row['dvorak9_score']))
+                test_scores.append(float(row['dvorak7_score']))
         
         all_pass = all(score_check(score) for score in test_scores)
         print(f"   {test_name}: {'✅' if all_pass else '❌'} ({len([s for s in test_scores if score_check(s)])}/{len(test_scores)})")
@@ -430,17 +434,17 @@ def validate_perfect_scores(output_dir="../tables"):
     """Specifically validate that perfect scores are mathematically correct."""
     import csv
     
-    overall_file = f"{output_dir}/keypair_dvorak9_scores.csv"
+    overall_file = f"{output_dir}/keypair_dvorak7_scores.csv"
     
     with open(overall_file, 'r', encoding='utf-8') as f:
         reader = csv.DictReader(f)
-        perfect_pairs = [row for row in reader if float(row['dvorak9_score']) == 1.0]
+        perfect_pairs = [row for row in reader if float(row['dvorak7_score']) == 1.0]
     
     print(f"\n🏆 Perfect Score Verification ({len(perfect_pairs)} pairs):")
     
     for row in perfect_pairs:
         key_pair = row['key_pair']
-        scores = score_bigram_dvorak9(key_pair)
+        scores = score_bigram_dvorak7(key_pair)
         
         all_ones = all(score == 1.0 for score in scores.values())
         print(f"   {key_pair}: All criteria = 1.0? {'✅' if all_ones else '❌'}")
@@ -452,7 +456,7 @@ def validate_perfect_scores(output_dir="../tables"):
 
 def main():
     """Main entry point."""
-    print("Prepare Dvorak-9 key-pair scores (overall + individual criteria)")
+    print("Prepare Dvorak-7 key-pair scores (overall + individual criteria)")
     print("=" * 70)
     
     # Load QWERTY keys to show what we're working with
@@ -473,9 +477,9 @@ def main():
     validate_output(output_dir)
     validate_perfect_scores(output_dir)
 
-    print(f"\n✅ Dvorak-9 key-pair score generation complete!")
-    print(f"   Overall scores: {output_dir}/keypair_dvorak9_scores.csv")
-    print(f"   Individual criteria: {output_dir}/keypair_dvorak9_*_scores.csv")
+    print(f"\n✅ Dvorak-7 key-pair score generation complete!")
+    print(f"   Overall scores: {output_dir}/keypair_dvorak7_scores.csv")
+    print(f"   Individual criteria: {output_dir}/keypair_dvorak7_*_scores.csv")
 
 if __name__ == "__main__":
     main()
