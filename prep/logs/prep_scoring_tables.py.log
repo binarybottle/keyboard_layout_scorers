@@ -63,7 +63,7 @@ Applying smart normalization to score columns:
     Added distance_score_normalized (range: 0.000000 - 1.000000)
   time_score: Symmetric distribution detected
     Added time_score_normalized (range: 0.000000 - 1.000000)
-  dvorak9_score: Symmetric distribution detected
+  dvorak9_score: Using robust scaling
     Added dvorak9_score_normalized (range: 0.000000 - 1.000000)
   dvorak9_hands: Sparse distribution detected
     Added dvorak9_hands_normalized (range: 0.000000 - 1.000000)
@@ -95,18 +95,18 @@ Sample statistics:
   distance_score_normalized: 0.000000 - 1.000000 (mean: 0.528612)
   time_score: 421.693039 - 887.250000 (mean: 592.719768)
   time_score_normalized: 0.000000 - 1.000000 (mean: 0.367359)
-  dvorak9_score: 0.055556 - 1.000000 (mean: 0.619141)
-  dvorak9_score_normalized: 0.000000 - 1.000000 (mean: 0.596737)
+  dvorak9_score: 0.055556 - 1.000000 (mean: 0.662543)
+  dvorak9_score_normalized: 0.000000 - 1.000000 (mean: 0.661328)
   dvorak9_hands: 0.000000 - 1.000000 (mean: 0.498047)
   dvorak9_hands_normalized: 0.000000 - 1.000000 (mean: 0.498047)
   dvorak9_fingers: 0.000000 - 1.000000 (mean: 0.861328)
   dvorak9_fingers_normalized: 0.000000 - 1.000000 (mean: 0.861328)
-  dvorak9_skip_fingers: 0.000000 - 1.000000 (mean: 0.650391)
-  dvorak9_skip_fingers_normalized: 0.000000 - 1.000000 (mean: 0.650391)
+  dvorak9_skip_fingers: 0.000000 - 1.000000 (mean: 0.708984)
+  dvorak9_skip_fingers_normalized: 0.000000 - 1.000000 (mean: 0.708984)
   dvorak9_dont_cross_home: 0.000000 - 1.000000 (mean: 0.892578)
   dvorak9_dont_cross_home_normalized: 0.000000 - 1.000000 (mean: 0.892578)
-  dvorak9_same_row: 0.000000 - 1.000000 (mean: 0.333984)
-  dvorak9_same_row_normalized: 0.000000 - 1.000000 (mean: 0.333984)
+  dvorak9_same_row: 0.000000 - 1.000000 (mean: 0.666016)
+  dvorak9_same_row_normalized: 0.000000 - 1.000000 (mean: 0.666016)
   dvorak9_home_row: 0.000000 - 1.000000 (mean: 0.343750)
   dvorak9_home_row_normalized: 0.000000 - 1.000000 (mean: 0.437191)
   dvorak9_columns: 0.000000 - 1.000000 (mean: 0.750000)

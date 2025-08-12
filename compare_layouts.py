@@ -15,7 +15,9 @@ python compare_layouts.py --tables layout_scores.csv
 python compare_layouts.py --tables scores1.csv scores2.csv
 
 # With output file
-python compare_layouts.py --tables scores.csv --output comparison
+python compare_layouts.py --tables scores.csv# This creates a CSV file with layout_name,scorer,weighted_score,raw_score
+poetry run python3 score_layouts.py --compare moo_layout_1:"xpou'\"dsmwgiae,.tnrckjyh-?lfbvqz" moo_layout_2:"xpou'\"dsmbgiae,.tnrckjyh-?lfvwqz" moo_layout_3:"kpou'\"dsmwgiae,.tnrcxjyh-?lfvbqz" moo_layout_4:"kpou'\"lscwgiae,.tnrfxjyh-?dmvbqz" moo_layout_5:"xpou'\"lscbgiae,.tnrmkjyh-?dfvwqz" moo_layout_6:"kpou'\"lscbgiae,.tnrmxjyh-?dfvwqz" moo_layout_7:"kpou'\"dscwgiae,.tnrmxjyh-?lfvbqz" moo_layout_8:"kuod'\"csmwpiae,.tnrgxjyh-?lfvbqz" moo_layout_9:"juod'\"lsmbpiae,.tnrfkxyh-?cgvwqz" moo_layout_10:"juod'\"csmbpiae,.tnrfkxyh-?lgvwqz" moo_layout_11:"kuod'\"csmbpiae,.tnrfxjyh-?lgvwqz" moo_layout_12:"xpou'\"lnfghiae,.tsrckjyd-?mbvwqz" moo_layout_13:"yuod'\"csmbpiae,.tnrfkjgh-?lwvxqz" moo_layout_14:"kpou'\"mrgbhiae,.tnscxjyd-?lfvwqz" moo_layout_15:"kpou'\"mrcbhiae,.tnsgxjyd-?lfvwqz" moo_layout_16:"ypou'\"mrgbdiae,.tnscxjkh-?lfvwqz" moo_layout_17:"xpou'\"mrgbdiae,.tnsckjyh-?lfvwqz" moo_layout_18:"ypou'\"lsmbgiae,.tnrcxjkh-?dfvwqz" moo_layout_19:"xpou'\"dscwgiae,.tnrmkjyh-?lfbvqz" moo_layout_20:"kmil'\"cnfwuroe,.taspxjyh-?dgvbqz" moo_layout_21:"kuil'\"cnmbproe,.tasfxjyh-?dgvwqz" moo_layout_22:"kuil'\"cnmwproe,.tasfxjyh-?dgvbqz" moo_layout_23:"kuil'\"dnfwmroe,.taspxjyh-?cgvbqz" moo_layout_24:"kmil'\"dnfguroe,.taspxjyh-?cwvbqz" moo_layout_25:"yuil'\"cnfbmroe,.taspkjwh-?dgxvqz" moo_layout_26:"kuil'\"cnfwmroe,.taspxjyh-?dgvbqz" moo_layout_27:"kuil'\"dngwmroe,.taspxjyh-?cfvbqz" moo_layout_28:"kmil'\"dngwuroe,.taspxjyh-?cfvbqz" moo_layout_29:"kuid'\"cnmbfsae,.torpwjyh-?lgxvqz" moo_layout_30:"kgil'\"dnfwuroe,.tasmxjyh-?cpbvqz" moo_layout_31:"wuid'\"cnmbfsae,.torpkjyh-?lgxvqz" moo_layout_32:"ymil'\"dngwuroe,.taspxjkh-?cfvbqz" moo_layout_33:"kuid'\"cnmbfsae,.torpyjwh-?lgxvqz" moo_layout_34:"kpio'\"dnlwghae,.tsrcxjyu-?mfvbqz" moo_layout_35:"xpou'\"mrcbhiae,.tnsgkjyd-?lfvwqz" moo_layout_36:"ymil'\"cnfburoe,.taspkjwh-?dgxvqz" moo_layout_37:"yuid'\"cnmbfsae,.torpkjwh-?lgxvqz" moo_layout_38:"kgio'\"dnlwphae,.tsrcxjyu-?mfvbqz" moo_layout_39:"kpou'\"lscbhiae,.tnrgxjyd-?mfvwqz" moo_layout_40:"ypou'\"lsmbgiae,.tnrcjxkh-?dfvwqz" moo_layout_41:"kuil'\"cnfbmroe,.taspwjyh-?dgxvqz" moo_layout_42:"kpou'\"lngfhiae,.tsrcxjyd-?mwvbqz" moo_layout_43:"klio'\"dncwghae,.tsrpxjyu-?mfvbqz" moo_layout_44:"xpou'\"mrgbhiae,.tnsckjyd-?lfvwqz" moo_layout_45:"xpou'\"lnfghiae,.tsrckjyd-?mwvbqz" moo_layout_46:"xpou'\"lngfhiae,.tsrckjyd-?mbvwqz" moo_layout_47:"yuil'\"cnmbproe,.tasfkjwh-?dgxvqz" moo_layout_48:"xpou'\"lngfhiae,.tsrckjyd-?mwvbqz" moo_layout_49:"kpou'\"lngwhiae,.tsrcxjyd-?mfvbqz" moo_layout_50:"xpou'\"lngwhiae,.tsrckjyd-?mfvbqz" moo_layout_51:"xpou'\"lscbhiae,.tnrgkjyd-?mfvwqz" moo_layout_52:"yuod'\"csmbpiae,.tnrfkjgh-?lwxvqz" moo_layout_53:"xpou'\"csmbdiae,.tnrgkjyh-?lfvwqz" moo_layout_54:"xpou'\"dscwgiae,.tnrmkjyh-?lfvbqz" moo_layout_55:"juod'\"csmbpiae,.tnrgkxyh-?lfvwqz" moo_layout_56:"kuod'\"csmbpiae,.tnrgxjyh-?lfvwqz" moo_layout_57:"ywil'\"dngfuroe,.tasmxjkh-?cpbvqz" moo_layout_58:"kuod'\"csmwpiae,.tnrfxjyh-?lgvbqz" moo_layout_59:"whif'\"lsmbpnae,.torckjyu-?dgxvqz" moo_layout_60:"kpou'\"csmbdiae,.tnrgxjyh-?lfvwqz" moo_layout_61:"whif'\"lsmbunae,.torckjyp-?dgxvqz" moo_layout_62:"xpou'\"lsmbgiae,.tnrckjyh-?dfvwqz" moo_layout_63:"kpou'\"lsmbgiae,.tnrcxjyh-?dfvwqz" moo_layout_64:"xpou'\"dsmwgiae,.tnrckjyh-?lfvbqz" moo_layout_65:"kmil'\"dnfwuroe,.taspxjyh-?cgvbqz" moo_layout_66:"xpou'\"lscbgiae,.tnrfkjyh-?dmvwqz" moo_layout_67:"kuil'\"dnfgmroe,.taspxjyh-?cwvbqz" moo_layout_68:"kpou'\"lscbgiae,.tnrfxjyh-?dmvwqz" moo_layout_69:"kgio'\"dncwphae,.tsrlxjyu-?mfvbqz" --csv-output > moo_layout_scores.csv
+
 
 # Use raw scores instead of weighted scores
 python compare_layouts.py --tables scores.csv --use-raw
@@ -165,9 +167,9 @@ def find_available_metrics(dfs: List[pd.DataFrame], verbose: bool = False) -> Li
 def normalize_data(dfs: List[pd.DataFrame], metrics: List[str]) -> List[pd.DataFrame]:
     """Normalize all data across tables for fair comparison."""
     """Return data as-is since scores are already normalized."""
-    return dfs  # No normalization needed!
+    #return dfs  # No normalization needed!
 
-    """
+    
     # Combine all data to get global min/max for each metric
     all_data = pd.concat(dfs, ignore_index=True)
     
@@ -195,7 +197,7 @@ def normalize_data(dfs: List[pd.DataFrame], metrics: List[str]) -> List[pd.DataF
         normalized_dfs.append(normalized_df)
     
     return normalized_dfs
-    """
+    
 
 def get_colors(num_tables: int) -> List[str]:
     """Get color scheme based on number of tables."""
