@@ -1024,23 +1024,122 @@ def print_results(results: Dict[str, float], format_type: str = 'detailed', scor
         print(f"Frequency coverage (% English frequency that layout covers): {results['frequency_coverage']:.1%}")
     
 def print_comparison_summary(comparison_results, format_type='detailed', quiet=False, use_raw=False, verbose=False):
-    """Print summary with apostrophe-safe CSV output."""
+    """Print summary with complete format support."""
+    
     if format_type == 'csv_output':
         print("layout_name,scorer,weighted_score,raw_score")
         
         for layout_name, layout_results in comparison_results.items():
             for scorer, results in layout_results.items():
                 # Ensure strings are properly escaped
-                safe_layout_name = str(layout_name).replace('"', '""')  # Escape quotes
+                safe_layout_name = str(layout_name).replace('"', '""')
                 safe_scorer = str(scorer).replace('"', '""')
                 
-                weighted_score = results['average_score']
-                raw_score = results.get('raw_average_score', results['average_score'])
+                weighted_score = float(results['average_score'])
+                raw_score = float(results.get('raw_average_score', results['average_score']))
                 
                 # Use quoted strings to preserve special characters
                 print(f'"{safe_layout_name}","{safe_scorer}",{weighted_score:.6f},{raw_score:.6f}')
         return
     
+    elif format_type == 'score_only':
+        # Just print scores, one per line
+        for layout_name, layout_results in comparison_results.items():
+            for scorer, results in layout_results.items():
+                score = float(results['average_score'])
+                print(f"{score:.6f}")
+        return
+    
+    elif format_type in ['table', 'detailed']:
+        # Table format - compact comparison
+        
+        if not comparison_results:
+            print("No results to display.")
+            return
+        
+        # Get all scorers from first layout (should be consistent across layouts)
+        first_layout = list(comparison_results.values())[0]
+        all_scorers = sorted(first_layout.keys())
+        
+        # Get layout names
+        layout_names = list(comparison_results.keys())
+        
+        if len(layout_names) == 1:
+            # Single layout - detailed view
+            layout_name = layout_names[0]
+            layout_results = comparison_results[layout_name]
+            
+            print(f"\n{layout_name.upper()} RESULTS:")
+            print("=" * 50)
+            
+            # Get common stats from first scorer
+            first_scorer_results = list(layout_results.values())[0]
+            pair_count = int(first_scorer_results['pair_count'])
+            coverage = float(first_scorer_results['coverage'])
+            
+            print(f"Pair count: {pair_count}")
+            print(f"Coverage: {coverage:.1%}")
+            
+            if 'frequency_coverage' in first_scorer_results:
+                freq_coverage = float(first_scorer_results['frequency_coverage'])
+                print(f"Frequency coverage: {freq_coverage:.1%}")
+            
+            print(f"\n{'Scorer':<20} {'Score':<10}")
+            print("-" * 35)
+            
+            for scorer in all_scorers:
+                if scorer in layout_results:
+                    score = float(layout_results[scorer]['average_score'])
+                    print(f"{scorer:<20} {score:<10.6f}")
+        
+        else:
+            # Multiple layouts - comparison table
+            print(f"\nLAYOUT COMPARISON:")
+            print("=" * 60)
+            
+            # Show header
+            header = f"{'Scorer':<20}"
+            for layout_name in layout_names:
+                header += f"{layout_name:<12}"
+            print(header)
+            print("-" * (20 + 12 * len(layout_names)))
+            
+            # Show scores for each scorer
+            for scorer in all_scorers:
+                row = f"{scorer:<20}"
+                for layout_name in layout_names:
+                    if scorer in comparison_results[layout_name]:
+                        score = float(comparison_results[layout_name][scorer]['average_score'])
+                        row += f"{score:<12.6f}"
+                    else:
+                        row += f"{'N/A':<12}"
+                print(row)
+            
+            # Show summary stats
+            if not quiet:
+                print(f"\nSummary:")
+                first_layout_results = comparison_results[layout_names[0]]
+                first_scorer_results = list(first_layout_results.values())[0]
+                
+                pair_counts = []
+                coverages = []
+                
+                for layout_name, layout_results in comparison_results.items():
+                    if layout_results:
+                        first_result = list(layout_results.values())[0]
+                        pair_counts.append(int(first_result['pair_count']))
+                        coverages.append(float(first_result['coverage']))
+                
+                if pair_counts:
+                    print(f"Average pair count: {sum(pair_counts)/len(pair_counts):.0f}")
+                    print(f"Average coverage: {sum(coverages)/len(coverages):.1%}")
+        
+        return
+    
+    else:
+        print(f"Warning: Unsupported format type '{format_type}'. Using detailed format.")
+        print_comparison_summary(comparison_results, 'detailed', quiet, use_raw, verbose)
+
 def save_detailed_comparison_csv(comparison_results: Dict[str, Dict[str, Dict[str, float]]], 
                                filename: str, layout_mappings: Dict[str, Dict[str, str]] = None, 
                                use_raw: bool = False):
@@ -1184,7 +1283,7 @@ dvorak7-speed provides both pure and empirically-weighted Dvorak-7 scores based 
         '--scorers',
         help="Run multiple scorers (comma-separated or 'all')"
     )
-    scorer_group.add_argument(
+    parser.add_argument(
         '--compare',
         nargs='+',
         help="Compare layouts (e.g., qwerty:qwertyuiop dvorak:',.pyfgcrl)"
