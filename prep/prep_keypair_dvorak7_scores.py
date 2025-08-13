@@ -277,8 +277,8 @@ def compute_key_pair_scores():
         # Compute individual Dvorak-7 criteria scores using the scorer's function
         bigram_scores = score_bigram_dvorak7(key_pair)
         
-        # Calculate unweighted average (baseline Dvorak-7 score)
-        dvorak7_score = sum(bigram_scores.values()) / len(bigram_scores)
+        # Calculate sum (baseline Dvorak-7 score)
+        dvorak7_score = sum(bigram_scores.values())
         
         # Store overall score
         results['overall'].append({
@@ -358,7 +358,8 @@ def validate_output(output_dir="../tables"):
     
     print(f"   Score range: {min_score:.4f} to {max_score:.4f}")
     print(f"   Average score: {avg_score:.4f}")
-    print(f"   Valid range (0-1): {'✅' if 0 <= min_score and max_score <= 1 else '❌'}")
+    # Now checking for 0-7 range instead of 0-1
+    print(f"   Valid range (0-7): {'✅' if 0 <= min_score and max_score <= 7 else '❌'}")
     
     # Test mathematical accuracy on random samples
     print(f"\n🧮 Mathematical Accuracy Check:")
@@ -371,10 +372,11 @@ def validate_output(output_dir="../tables"):
         
         # Recalculate score using the same logic
         calculated_scores = score_bigram_dvorak7(key_pair)
-        calculated_avg = sum(calculated_scores.values()) / len(calculated_scores)
+        # Use raw sum instead of normalized average
+        calculated_sum = sum(calculated_scores.values())
         
-        if abs(calculated_avg - csv_score) > 0.0001:
-            print(f"   ❌ Accuracy error: {key_pair} - CSV: {csv_score:.4f}, Calc: {calculated_avg:.4f}")
+        if abs(calculated_sum - csv_score) > 0.0001:
+            print(f"   ❌ Accuracy error: {key_pair} - CSV: {csv_score:.4f}, Calc: {calculated_sum:.4f}")
             accuracy_errors += 1
     
     print(f"   Accuracy check: {len(random_samples) - accuracy_errors}/{len(random_samples)} samples correct")
@@ -397,10 +399,10 @@ def validate_output(output_dir="../tables"):
     print(f"\n🔍 Criteria-Specific Validation:")
     
     criteria_tests = [
-        #("Perfect scores", ['FJ', 'FK', 'DJ', 'DK'], lambda s: s == 1.0),
-        ("Same key repetition", ['AA', 'SS', 'FF'], lambda s: 0.2 <= s <= 0.8),
-        ("Worst cases", ['QZ', '/[', 'ZW'], lambda s: s <= 0.4),
-        ("Alternating hands", ['FJ', 'AK', 'TN'], lambda s: s >= 0.5)
+        # Updated score ranges for raw 0-7 values
+        ("Same key repetition", ['AA', 'SS', 'FF'], lambda s: 1.0 <= s <= 5.0),
+        ("Worst cases", ['QZ', '/[', 'ZW'], lambda s: s <= 3.0),
+        ("Alternating hands", ['FJ', 'AK', 'TN'], lambda s: s >= 3.5)
     ]
     
     for test_name, test_pairs, score_check in criteria_tests:
@@ -415,8 +417,8 @@ def validate_output(output_dir="../tables"):
     
     # Distribution analysis
     print(f"\n📈 Score Distribution:")
-    ranges = [(0.0, 0.2, "Very Poor"), (0.2, 0.4, "Poor"), (0.4, 0.6, "Fair"), 
-              (0.6, 0.8, "Good"), (0.8, 1.0, "Excellent")]
+    ranges = [(0.0, 1.4, "Very Poor"), (1.4, 2.8, "Poor"), (2.8, 4.2, "Fair"), 
+              (4.2, 5.6, "Good"), (5.6, 7.0, "Excellent")]
     
     for min_val, max_val, label in ranges:
         count = len([s for s in scores if min_val <= s < max_val])
@@ -424,8 +426,8 @@ def validate_output(output_dir="../tables"):
         print(f"   {label} ({min_val}-{max_val}): {count} pairs ({percentage:.1f}%)")
     
     # Perfect scores count
-    perfect_count = len([s for s in scores if s == 1.0])
-    print(f"   Perfect (1.0): {perfect_count} pairs ({perfect_count/len(scores)*100:.1f}%)")
+    perfect_count = len([s for s in scores if s == 7.0])
+    print(f"   Perfect (7.0): {perfect_count} pairs ({perfect_count/len(scores)*100:.1f}%)")
     
     print(f"\n✅ Validation complete!")
     return accuracy_errors == 0
@@ -438,7 +440,8 @@ def validate_perfect_scores(output_dir="../tables"):
     
     with open(overall_file, 'r', encoding='utf-8') as f:
         reader = csv.DictReader(f)
-        perfect_pairs = [row for row in reader if float(row['dvorak7_score']) == 1.0]
+        # Look for 7.0 instead of 1.0
+        perfect_pairs = [row for row in reader if float(row['dvorak7_score']) == 7.0]
     
     print(f"\n🏆 Perfect Score Verification ({len(perfect_pairs)} pairs):")
     
@@ -446,11 +449,14 @@ def validate_perfect_scores(output_dir="../tables"):
         key_pair = row['key_pair']
         scores = score_bigram_dvorak7(key_pair)
         
-        all_ones = all(score == 1.0 for score in scores.values())
-        print(f"   {key_pair}: All criteria = 1.0? {'✅' if all_ones else '❌'}")
+        # Check if sum equals 7.0, not if all individual scores are 1.0
+        total_score = sum(scores.values())
+        is_perfect = total_score == 7.0
+        print(f"   {key_pair}: Total = 7.0? {'✅' if is_perfect else '❌'}")
         
-        if not all_ones:
+        if not is_perfect:
             print(f"      Individual scores: {scores}")
+            print(f"      Sum: {total_score}")
     
     return True
 

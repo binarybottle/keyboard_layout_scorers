@@ -8,11 +8,11 @@ Scoring methods include engram, comfort, comfort-key, distance, time, dvorak7, a
 Setup:
 1. Generate individual score files (keypair_*_scores.csv) using your scoring scripts
 2. Run: python prep_scoring_tables.py --input-dir tables/
-   This creates: tables/keypair_scores.csv and tables/key_scores.csv
+   This creates: tables/keypair_scores_detailed.csv and tables/key_scores.csv
 3. Run this script to score layouts using all available methods
 
 Default behavior:
-- Score table: tables/keypair_scores.csv (created by prep_scoring_tables.py)
+- Score table: tables/keypair_scores_detailed.csv (created by prep_scoring_tables.py)
 - Key scores: tables/key_scores.csv (created by prep_scoring_tables.py)  
 - Frequency data: input/english-letter-pair-frequencies-google-ngrams.csv
 - Letter frequencies: input/english-letter-frequencies-google-ngrams.csv
@@ -425,6 +425,12 @@ class LayoutScorer:
         """Score layout using empirical Dvorak-7 speed weights."""
         # Import the canonical scoring function
         try:
+            import sys
+            from pathlib import Path
+            # Add prep/ directory to path
+            prep_dir = Path(__file__).parent / "prep"
+            if str(prep_dir) not in sys.path:
+                sys.path.insert(0, str(prep_dir))
             from prep_keypair_dvorak7_scores import score_bigram_dvorak7
         except ImportError:
             raise ValueError("prep_keypair_dvorak7_scores module not found - required for dvorak7-speed scoring")
@@ -460,8 +466,12 @@ class LayoutScorer:
                 if letter1 in layout_mapping and letter2 in layout_mapping:
                     try:
                         # Get Dvorak-7 individual criteria scores
-                        criteria_scores = score_bigram_dvorak7(letter_pair)
-                        
+                        letter1, letter2 = letter_pair[0], letter_pair[1]
+                        key1 = layout_mapping[letter1]  # T → D
+                        key2 = layout_mapping[letter2]  # H → X  
+                        key_pair = key1 + key2          # "DX"
+                        criteria_scores = score_bigram_dvorak7(key_pair)  # Scores "DX"
+
                         # Calculate pure Dvorak-7 score (simple average)
                         pure_score = sum(criteria_scores.values()) / len(criteria_scores)
                         pure_scores.append(pure_score)
@@ -693,9 +703,20 @@ class LayoutScorer:
         
         # Use actual English bigrams from frequency data
         if self.bigram_frequencies:
-            letter_pairs2 = list(self.bigram_frequencies.keys())
+            all_letter_pairs = list(self.bigram_frequencies.keys())
         else:
-            raise ValueError("Bigram frequencies required for table-based scoring methods")
+            raise ValueError("Bigram frequencies required for comfort-key scoring")
+        
+        # Filter to only letter-pairs where both letters exist in this layout
+        valid_letter_pairs = []
+        for letter_pair in all_letter_pairs:
+            if len(letter_pair) == 2:
+                letter1, letter2 = letter_pair[0], letter_pair[1]
+                if letter1 in layout_mapping and letter2 in layout_mapping:
+                    valid_letter_pairs.append(letter_pair)
+        
+        if self.verbose:
+            print(f"Comfort-key: Processing {len(valid_letter_pairs)} valid pairs out of {len(all_letter_pairs)} total")
                 
         # Initialize scoring variables
         raw_total_score = 0.0
@@ -707,7 +728,7 @@ class LayoutScorer:
         frequency_coverage = 0.0
         use_frequency = self.bigram_frequencies is not None and not self.use_raw
         
-        for letter_pair in letter_pairs2:
+        for letter_pair in valid_letter_pairs:
             comfort_key_score = self._compute_comfort_key_score(letter_pair, layout_mapping)
             
             if comfort_key_score is not None:
@@ -722,8 +743,6 @@ class LayoutScorer:
                     total_frequency += frequency
                     if frequency > 0:
                         frequency_coverage += frequency
-            else:
-                raise ValueError(f"Comfort-key score not available for letter pair: {letter_pair}")
         
         # Calculate results
         raw_average = raw_total_score / raw_count if raw_count > 0 else 0.0
@@ -738,7 +757,7 @@ class LayoutScorer:
                 'raw_average_score': raw_average,  # Secondary 
                 'raw_total_score': raw_total_score,
                 'pair_count': raw_count,
-                'coverage': raw_count / len(letter_pairs2) if letter_pairs2 else 0.0,
+                'coverage': raw_count / len(all_letter_pairs) if all_letter_pairs else 0.0,
                 'total_frequency': total_frequency,
                 'frequency_coverage': frequency_coverage / sum(self.bigram_frequencies.values()) if self.bigram_frequencies else 0.0
             }
@@ -748,7 +767,7 @@ class LayoutScorer:
                 'average_score': raw_average,  # Primary score
                 'total_score': raw_total_score,
                 'pair_count': raw_count,
-                'coverage': raw_count / len(letter_pairs2) if letter_pairs2 else 0.0
+                'coverage': raw_count / len(all_letter_pairs) if all_letter_pairs else 0.0
             }
         
         return results
@@ -776,9 +795,20 @@ class LayoutScorer:
         
         # Use actual English bigrams from frequency data
         if self.bigram_frequencies:
-            letter_pairs2 = list(self.bigram_frequencies.keys())
+            all_letter_pairs = list(self.bigram_frequencies.keys())
         else:
-            raise ValueError("Bigram frequencies required for table-based scoring methods")
+            raise ValueError("Bigram frequencies required for engram scoring")
+        
+        # Filter to only letter-pairs where both letters exist in this layout
+        valid_letter_pairs = []
+        for letter_pair in all_letter_pairs:
+            if len(letter_pair) == 2:
+                letter1, letter2 = letter_pair[0], letter_pair[1]
+                if letter1 in layout_mapping and letter2 in layout_mapping:
+                    valid_letter_pairs.append(letter_pair)
+        
+        if self.verbose:
+            print(f"Engram: Processing {len(valid_letter_pairs)} valid pairs out of {len(all_letter_pairs)} total")
         
         # Initialize scoring variables
         raw_total_score = 0.0
@@ -790,44 +820,36 @@ class LayoutScorer:
         frequency_coverage = 0.0
         use_frequency = self.bigram_frequencies is not None and not self.use_raw
         
-        for letter_pair in letter_pairs2:
-            if len(letter_pair) == 2:
-                letter1, letter2 = letter_pair[0], letter_pair[1]
+        for letter_pair in valid_letter_pairs:
+            letter1, letter2 = letter_pair[0], letter_pair[1]
+            
+            key1 = layout_mapping[letter1]
+            key2 = layout_mapping[letter2]
+            key_pair = key1 + key2
+            
+            # Get comfort score from table
+            if key_pair in self.score_table.index:
+                comfort_score = self.score_table.loc[key_pair, comfort_col]
                 
-                if letter1 in layout_mapping and letter2 in layout_mapping:
-                    key1 = layout_mapping[letter1]
-                    key2 = layout_mapping[letter2]
-                    key_pair = key1 + key2
+                # Get comfort-key score
+                comfort_key_score = self._compute_comfort_key_score(letter_pair, layout_mapping)
+                
+                if comfort_key_score is not None:
+                    # Compute engram score
+                    engram_score = comfort_score * comfort_key_score
                     
-                    # Get comfort score from table
-                    if key_pair in self.score_table.index:
-                        comfort_score = self.score_table.loc[key_pair, comfort_col]
-                        
-                        # Get comfort-key score
-                        comfort_key_score = self._compute_comfort_key_score(letter_pair, layout_mapping)
-                        
-                        if comfort_key_score is not None:
-                            # Compute engram score
-                            engram_score = comfort_score * comfort_key_score
-                            
-                            # Raw scoring (treat all letter-pairs equally)
-                            raw_total_score += engram_score
-                            raw_count += 1
-                            
-                            # Frequency-weighted scoring (if enabled)
-                            if use_frequency:
-                                frequency = self.bigram_frequencies.get(letter_pair, 0.0)
-                                weighted_total_score += engram_score * frequency
-                                total_frequency += frequency
-                                if frequency > 0:
-                                    frequency_coverage += frequency
-                        else:
-                            raise ValueError(f"Comfort-key score not available for letter pair: {letter_pair}")
-                    else:
-                        raise ValueError(f"Comfort score not available for key pair: {key_pair}")
-                else:
-                    # Letter not in layout mapping
-                    raise ValueError(f"Letter pair '{letter_pair}' contains letters not in layout mapping: {letter1}, {letter2}")
+                    # Raw scoring (treat all letter-pairs equally)
+                    raw_total_score += engram_score
+                    raw_count += 1
+                    
+                    # Frequency-weighted scoring (if enabled)
+                    if use_frequency:
+                        frequency = self.bigram_frequencies.get(letter_pair, 0.0)
+                        weighted_total_score += engram_score * frequency
+                        total_frequency += frequency
+                        if frequency > 0:
+                            frequency_coverage += frequency
+            # Note: We skip pairs where key_pair is not in score_table instead of erroring
 
         # Calculate results
         raw_average = raw_total_score / raw_count if raw_count > 0 else 0.0
@@ -842,7 +864,7 @@ class LayoutScorer:
                 'raw_average_score': raw_average,  # Secondary 
                 'raw_total_score': raw_total_score,
                 'pair_count': raw_count,
-                'coverage': raw_count / len(letter_pairs2) if letter_pairs2 else 0.0,
+                'coverage': raw_count / len(all_letter_pairs) if all_letter_pairs else 0.0,
                 'total_frequency': total_frequency,
                 'frequency_coverage': frequency_coverage / sum(self.bigram_frequencies.values()) if self.bigram_frequencies else 0.0
             }
@@ -852,7 +874,7 @@ class LayoutScorer:
                 'average_score': raw_average,  # Primary score
                 'total_score': raw_total_score,
                 'pair_count': raw_count,
-                'coverage': raw_count / len(letter_pairs2) if letter_pairs2 else 0.0
+                'coverage': raw_count / len(all_letter_pairs) if all_letter_pairs else 0.0
             }
         
         return results
@@ -1116,7 +1138,7 @@ def create_cli_parser() -> argparse.ArgumentParser:
         epilog="""
 Examples:
 
-  # Basic usage (uses default files: tables/keypair_scores.csv and input/english-letter-pair-frequencies-google-ngrams.csv)
+  # Basic usage (uses default files: tables/keypair_scores_detailed.csv and input/english-letter-pair-frequencies-google-ngrams.csv)
   # Note: Run 'python prep_scoring_tables.py --input-dir tables/' first to create required tables
   python score_layouts.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ"
   
@@ -1145,7 +1167,7 @@ Examples:
   python score_layouts.py --compare qwerty:"qwerty" dvorak:"',.py" --csv results.csv
 
 Default behavior:
-- Uses tables/keypair_scores.csv for key-pair scoring data (created by prep_scoring_tables.py)
+- Uses tables/keypair_scores_detailed.csv for key-pair scoring data (created by prep_scoring_tables.py)
 - Uses tables/key_scores.csv for individual key comfort scores (created by prep_scoring_tables.py)
 - Uses input/english-letter-pair-frequencies-google-ngrams.csv for frequency weighting (if it exists)
 - Uses input/english-letter-frequencies-google-ngrams.csv for letter frequencies (if it exists)
@@ -1165,8 +1187,8 @@ dvorak7-speed provides both pure and empirically-weighted Dvorak-7 scores based 
     # Required arguments (now optional with defaults)
     parser.add_argument(
         '--score-table',
-        default="tables/keypair_scores.csv",
-        help="Path to unified score table CSV file (default: tables/keypair_scores.csv)"
+        default="tables/keypair_scores_detailed.csv",
+        help="Path to unified score table CSV file (default: tables/keypair_scores_detailed.csv)"
     )
     
     # Optional frequency weighting (with default)
@@ -1380,10 +1402,72 @@ def main() -> int:
                         print("=" * 50)
                     print_results(results[scorer_name], args.format, scorer_name, args.raw, args.verbose)
                 else:
-                    # Multiple scorers
-                    comparison_results = {layout_name: results}
-                    print_comparison_summary(comparison_results, args.format, args.quiet, args.raw, args.verbose)
-        
+                    # Multiple scorers - FIX: Handle this case properly
+                    if not args.quiet and args.format != 'csv_output':
+                        print(f"\nLayout: {layout_name}")
+                        print(f"\nMulti-scorer results:")
+                        print("=" * 50)
+                    
+                    # Handle different output formats
+                    if args.format == 'csv_output':
+                        # CSV output format
+                        print("layout_name,scorer,weighted_score,raw_score")
+                        for scorer_name, scorer_results in results.items():
+                            weighted_score = scorer_results['average_score']
+                            raw_score = scorer_results.get('raw_average_score', scorer_results['average_score'])
+                            print(f'"{layout_name}","{scorer_name}",{weighted_score:.6f},{raw_score:.6f}')
+                    
+                    elif args.format == 'csv':
+                        # Detailed CSV format
+                        rows = []
+                        for scorer_name, scorer_results in results.items():
+                            row = {
+                                'layout_name': layout_name,
+                                'scorer': scorer_name,
+                                'average_score': scorer_results['average_score'],
+                                'total_score': scorer_results['total_score'],
+                                'pair_count': scorer_results['pair_count'],
+                                'coverage': scorer_results['coverage']
+                            }
+                            
+                            # Add frequency-weighted vs raw details if available
+                            if not args.raw and 'raw_average_score' in scorer_results:
+                                row.update({
+                                    'raw_average_score': scorer_results['raw_average_score'],
+                                    'raw_total_score': scorer_results['raw_total_score'],
+                                    'total_frequency': scorer_results.get('total_frequency', 0),
+                                    'frequency_coverage': scorer_results.get('frequency_coverage', 0.0)
+                                })
+                            rows.append(row)
+                        
+                        # Print CSV headers and data
+                        if rows:
+                            fieldnames = list(rows[0].keys())
+                            print(','.join(fieldnames))
+                            for row in rows:
+                                values = [f"{row[field]:.6f}" if isinstance(row[field], float) else str(row[field]) 
+                                         for field in fieldnames]
+                                print(','.join(values))
+                    
+                    elif args.format == 'score_only':
+                        # Score-only format - print one score per line
+                        for scorer_name, scorer_results in results.items():
+                            print(f"{scorer_results['average_score']:.6f}")
+                    
+                    elif args.format == 'table' or args.format == 'detailed':
+                        # Table/detailed format - show each scorer's results
+                        for scorer_name, scorer_results in results.items():
+                            print(f"\n{scorer_name.upper()} results:")
+                            print("-" * 40)
+                            print_results(scorer_results, 'detailed', scorer_name, args.raw, args.verbose)
+                    
+                    else:
+                        # Default: detailed format for each scorer
+                        for scorer_name, scorer_results in results.items():
+                            print(f"\n{scorer_name.upper()} results:")
+                            print("-" * 40)
+                            print_results(scorer_results, 'detailed', scorer_name, args.raw, args.verbose)
+
         return 0
         
     except Exception as e:

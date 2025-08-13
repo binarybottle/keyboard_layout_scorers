@@ -1,60 +1,60 @@
 > poetry run python3 prep_keypair_comfort_scores.py
 Generate Complete QWERTY Key-pair Comfort Scores
 ============================================================
-📖 Loaded 288 existing key-pair scores from input/engram/comfort_keypair_scores_24keys.csv
+📖 Loaded 288 existing key-pair scores from input/comfort_keypair_scores_24keys.csv
 📊 Analyzing scores for 24 existing keys
-2025-08-08 23:01:59,867 - INFO - 🔄 Generating missing scores with validation...
-2025-08-08 23:01:59,867 - INFO -    Phase 1: Same-hand pairs with one lateral stretch key
-2025-08-08 23:01:59,867 - WARNING - Phase 1: Low score diversity (21/192 unique)
-2025-08-08 23:01:59,867 - INFO -       Generated 192 Phase 1 scores ✅
-2025-08-08 23:01:59,867 - INFO -    Phase 2: Same-hand pairs with two lateral stretch keys
-2025-08-08 23:01:59,868 - WARNING - Phase 2: Low score diversity (1/34 unique)
-2025-08-08 23:01:59,868 - INFO -       Generated 34 Phase 2 scores ✅
-2025-08-08 23:01:59,868 - INFO -    Updating statistics for Phase 3...
-2025-08-08 23:01:59,868 - INFO -    Phase 3: Different-hand pairs
-2025-08-08 23:01:59,868 - WARNING - Phase 3: Low score diversity (78/510 unique)
-2025-08-08 23:01:59,868 - INFO -       Generated 510 Phase 3 scores ✅
-2025-08-08 23:01:59,868 - INFO - ✅ Successfully generated 736 missing scores
+2025-08-12 19:04:11,968 - INFO - 🔄 Generating missing scores with validation...
+2025-08-12 19:04:11,968 - INFO -    Phase 1: Same-hand pairs with one lateral stretch key
+2025-08-12 19:04:11,969 - WARNING - Phase 1: Low score diversity (21/192 unique)
+2025-08-12 19:04:11,969 - INFO -       Generated 192 Phase 1 scores ✅
+2025-08-12 19:04:11,969 - INFO -    Phase 2: Same-hand pairs with two lateral stretch keys
+2025-08-12 19:04:11,969 - WARNING - Phase 2: Low score diversity (1/34 unique)
+2025-08-12 19:04:11,969 - INFO -       Generated 34 Phase 2 scores ✅
+2025-08-12 19:04:11,969 - INFO -    Updating statistics for Phase 3...
+2025-08-12 19:04:11,970 - INFO -    Phase 3: Different-hand pairs
+2025-08-12 19:04:11,970 - WARNING - Phase 3: Low score diversity (78/510 unique)
+2025-08-12 19:04:11,970 - INFO -       Generated 510 Phase 3 scores ✅
+2025-08-12 19:04:11,970 - INFO - ✅ Successfully generated 736 missing scores
 💾 Saved 1024 total key-pair scores to: tables/keypair_comfort_scores.csv
-2025-08-08 23:01:59,870 - INFO - 🔍 Performing comprehensive output validation...
-2025-08-08 23:01:59,871 - INFO -    Score statistics:
-2025-08-08 23:01:59,871 - INFO -      Mean: -0.801
-2025-08-08 23:01:59,871 - INFO -      Std:  0.353
-2025-08-08 23:01:59,871 - INFO -      Range: -1.442 to -0.061
-2025-08-08 23:01:59,872 - INFO -    Uncertainty pattern:
-2025-08-08 23:01:59,872 - INFO -      Existing with uncertainty: 288
-2025-08-08 23:01:59,872 - INFO -      Generated with uncertainty: 0
-2025-08-08 23:01:59,872 - INFO - ✅ Output validation completed successfully
-2025-08-08 23:01:59,872 - INFO - 📝 Generating validation examples...
-2025-08-08 23:01:59,873 - INFO - 📋 Validation examples by category:
-2025-08-08 23:01:59,873 - INFO - 
+2025-08-12 19:04:11,972 - INFO - 🔍 Performing comprehensive output validation...
+2025-08-12 19:04:11,973 - INFO -    Score statistics:
+2025-08-12 19:04:11,973 - INFO -      Mean: -0.801
+2025-08-12 19:04:11,973 - INFO -      Std:  0.353
+2025-08-12 19:04:11,973 - INFO -      Range: -1.442 to -0.061
+2025-08-12 19:04:11,973 - INFO -    Uncertainty pattern:
+2025-08-12 19:04:11,973 - INFO -      Existing with uncertainty: 288
+2025-08-12 19:04:11,973 - INFO -      Generated with uncertainty: 0
+2025-08-12 19:04:11,974 - INFO - ✅ Output validation completed successfully
+2025-08-12 19:04:11,974 - INFO - 📝 Generating validation examples...
+2025-08-12 19:04:11,975 - INFO - 📋 Validation examples by category:
+2025-08-12 19:04:11,975 - INFO - 
    EXISTING examples:
-2025-08-08 23:01:59,873 - INFO -      ,,: -0.8325 (same hand, unc=0.0945705229505314)
-2025-08-08 23:01:59,873 - INFO -      ,.: -1.0937 (same hand, unc=0.0580767911567327)
-2025-08-08 23:01:59,873 - INFO -      ,/: -1.0790 (same hand, unc=0.0583279601248588)
-2025-08-08 23:01:59,873 - INFO -      ,;: -0.9951 (same hand, unc=0.0670292186533918)
-2025-08-08 23:01:59,873 - INFO -      ,A: -0.5443 (diff hand, unc=null)
-2025-08-08 23:01:59,873 - INFO - 
+2025-08-12 19:04:11,975 - INFO -      ,,: -0.8325 (same hand, unc=0.0945705229505314)
+2025-08-12 19:04:11,975 - INFO -      ,.: -1.0937 (same hand, unc=0.0580767911567327)
+2025-08-12 19:04:11,975 - INFO -      ,/: -1.0790 (same hand, unc=0.0583279601248588)
+2025-08-12 19:04:11,975 - INFO -      ,;: -0.9951 (same hand, unc=0.0670292186533918)
+2025-08-12 19:04:11,975 - INFO -      ,A: -0.5443 (diff hand, unc=null)
+2025-08-12 19:04:11,975 - INFO - 
    PHASE1 examples:
-2025-08-08 23:01:59,873 - INFO -      ',: -1.3097 (same hand, unc=null)
-2025-08-08 23:01:59,873 - INFO -      '.: -1.3638 (same hand, unc=null)
-2025-08-08 23:01:59,873 - INFO -      '/: -1.4286 (same hand, unc=null)
-2025-08-08 23:01:59,873 - INFO -      ';: -1.1086 (same hand, unc=null)
-2025-08-08 23:01:59,873 - INFO -      'I: -1.2510 (same hand, unc=null)
-2025-08-08 23:01:59,873 - INFO - 
+2025-08-12 19:04:11,975 - INFO -      ',: -1.3097 (same hand, unc=null)
+2025-08-12 19:04:11,975 - INFO -      '.: -1.3638 (same hand, unc=null)
+2025-08-12 19:04:11,975 - INFO -      '/: -1.4286 (same hand, unc=null)
+2025-08-12 19:04:11,975 - INFO -      ';: -1.1086 (same hand, unc=null)
+2025-08-12 19:04:11,975 - INFO -      'I: -1.2510 (same hand, unc=null)
+2025-08-12 19:04:11,975 - INFO - 
    PHASE2 examples:
-2025-08-08 23:01:59,873 - INFO -      '': -1.4423 (same hand, unc=null)
-2025-08-08 23:01:59,873 - INFO -      'H: -1.4423 (same hand, unc=null)
-2025-08-08 23:01:59,873 - INFO -      'N: -1.4423 (same hand, unc=null)
-2025-08-08 23:01:59,873 - INFO -      'Y: -1.4423 (same hand, unc=null)
-2025-08-08 23:01:59,873 - INFO -      '[: -1.4423 (same hand, unc=null)
-2025-08-08 23:01:59,873 - INFO - 
+2025-08-12 19:04:11,975 - INFO -      '': -1.4423 (same hand, unc=null)
+2025-08-12 19:04:11,975 - INFO -      'H: -1.4423 (same hand, unc=null)
+2025-08-12 19:04:11,975 - INFO -      'N: -1.4423 (same hand, unc=null)
+2025-08-12 19:04:11,975 - INFO -      'Y: -1.4423 (same hand, unc=null)
+2025-08-12 19:04:11,975 - INFO -      '[: -1.4423 (same hand, unc=null)
+2025-08-12 19:04:11,975 - INFO - 
    PHASE3 examples:
-2025-08-08 23:01:59,873 - INFO -      'A: -0.5870 (diff hand, unc=null)
-2025-08-08 23:01:59,873 - INFO -      'B: -0.8366 (diff hand, unc=null)
-2025-08-08 23:01:59,873 - INFO -      'C: -0.7939 (diff hand, unc=null)
-2025-08-08 23:01:59,873 - INFO -      'D: -0.5213 (diff hand, unc=null)
-2025-08-08 23:01:59,873 - INFO -      'E: -0.5890 (diff hand, unc=null)
+2025-08-12 19:04:11,975 - INFO -      'A: -0.5870 (diff hand, unc=null)
+2025-08-12 19:04:11,975 - INFO -      'B: -0.8366 (diff hand, unc=null)
+2025-08-12 19:04:11,975 - INFO -      'C: -0.7939 (diff hand, unc=null)
+2025-08-12 19:04:11,975 - INFO -      'D: -0.5213 (diff hand, unc=null)
+2025-08-12 19:04:11,975 - INFO -      'E: -0.5890 (diff hand, unc=null)
 
 🏆 VALIDATION COMPLETED SUCCESSFULLY!
    ✅ Generation logic: PASSED
@@ -62,4 +62,4 @@ Generate Complete QWERTY Key-pair Comfort Scores
    ✅ Statistical checks: PASSED
    📊 Total scores generated: 1024
    📁 Output file: tables/keypair_comfort_scores.csv
-2025-08-08 23:01:59,873 - INFO - All validations passed. Data is ready for production use.
+2025-08-12 19:04:11,975 - INFO - All validations passed. Data is ready for production use.

@@ -15,7 +15,7 @@ Usage:
     python prep_keypair_distance_scores.py --output ../tables/keypair_distance_scores.csv
     
 Output:
-    ../tables/keypair_distance_scores_detailed.csv - CSV with distance breakdown
+    ../tables/keypair_distance_scores.csv - CSV with distance breakdown
 """
 
 import argparse
@@ -243,7 +243,7 @@ def compute_all_key_pair_scores():
     
     return results
 
-def save_key_pair_scores(results, output_file="../tables/keypair_distance_scores_detailed.csv"):
+def save_key_pair_scores(results, output_file="../tables/keypair_distance_scores.csv"):
     """Save key-pair scores to CSV file."""
     
     # Create output directory if it doesn't exist
@@ -299,7 +299,7 @@ def verify_detailed_calculation_model():
     print(f"\n🎯 Model verification complete!")
     return True
 
-def validate_detailed_output(output_file="../tables/keypair_distance_scores_detailed.csv"):
+def validate_detailed_output(output_file="../tables/keypair_distance_scores.csv"):
     """Validate the output file."""
     
     if not os.path.exists(output_file):
@@ -380,7 +380,7 @@ This version computes distance breakdowns with four components:
 Perfect for analyzing different aspects of typing motion.
         """
     )
-    parser.add_argument('--output', default='../tables/keypair_distance_scores_detailed.csv',
+    parser.add_argument('--output', default='../tables/keypair_distance_scores.csv',
                         help='Output CSV file path')
     
     args = parser.parse_args()
