@@ -35,9 +35,6 @@ Usage:
     # Compare multiple layouts  
     python score_layouts.py --compare qwerty:"qwertyuiop" dvorak:"',.pyfgcrl" colemak:"qwfpgjluy;"
     
-    # Pure vs speed-weighted Dvorak-7 comparison
-    python score_layouts.py --compare qwerty:"qwertyuiop" dvorak:"',.pyfgcrl" --scorer dvorak7-speed
-    
     # Both pure and speed-weighted Dvorak-7
     python score_layouts.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --scorers dvorak7,dvorak7-speed
     
@@ -46,9 +43,6 @@ Usage:
     
     # Minimal CSV output for scripts/automation
     python score_layouts.py --compare qwerty:"qwerty" dvorak:"dvorak" --csv-output
-    
-    # Single scoring method only
-    python score_layouts.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --scorer distance
     
     # Save detailed results to file
     python score_layouts.py --compare qwerty:"qwerty" dvorak:"dvorak" --csv results.csv
@@ -278,11 +272,6 @@ class LayoutScorer:
             if len(letter) == 1:
                 frequencies[letter] = freq
                 total_count += freq
-        
-        ## Normalize frequencies to proportions (sum to 1.0)
-        #if total_count > 0:
-        #    for letter in frequencies:
-        #        frequencies[letter] = frequencies[letter] / total_count
         
         if self.verbose:
             print(f"Loaded and normalized letter frequencies for {len(frequencies)} letters")
@@ -1014,46 +1003,19 @@ def print_results(results: Dict[str, float], format_type: str = 'detailed', scor
                     f"{results['pair_count']},{results['coverage']:.6f},{results['frequency_coverage']:.6f}")
         return
     
-    # Detailed format
-    if scorer_name == 'dvorak7-speed':
-        print("=" * 60)
-        print("EMPIRICAL DVORAK-7 SPEED ANALYSIS")
-        print("=" * 60)
-        
-        print(f"Speed-weighted score:     {results['speed_weighted_score']:.6f}")
-        print(f"Pure Dvorak-7 score:      {results['pure_dvorak7_score']:.6f}")
-        print(f"Improvement ratio:        {results['improvement_ratio']:.3f}x")
-        
-        improvement = (results['improvement_ratio'] - 1) * 100
-        if improvement > 0:
-            print(f"→ Speed weighting improves score by {improvement:.1f}%")
-        elif improvement < 0:
-            print(f"→ Speed weighting reduces score by {abs(improvement):.1f}%")
-        else:
-            print(f"→ Speed weighting has no net effect")
-        
-        print(f"\nLayout Analysis:")
-        print(f"  Letters in layout:      {results['letters_in_layout']}")
-        print(f"  Bigrams scored:         {results['bigrams_scored']}")
-        print(f"  Coverage:               {results['coverage']:.1%}")
-        
-        if 'frequency_coverage' in results:
-            print(f"  Frequency coverage:     {results['frequency_coverage']:.1%}")
-        
-        print(f"\nBased on 19.4M empirical bigrams")
-        print(f"Weights from actual typing speed correlations")
-        print(f"Using full 32-key layout weights")
+    if use_raw:
+        print(f"Average bigram score: {results['average_score']:.6f}")
+        print(f"Total score: {results['total_score']:.6f}")
     else:
-        # Standard detailed output for other scorers
-        if use_raw:
-            print(f"Average bigram score: {results['average_score']:.6f}")
-            print(f"Total score: {results['total_score']:.6f}")
+        if scorer_name == 'dvorak7-speed':
+            print(f"Speed-weighted score:     {results['speed_weighted_score']:.6f}")
+            print(f"Pure Dvorak-7 score:      {results['pure_dvorak7_score']:.6f}")
         else:
             print(f"Frequency-weighted average bigram score: {results['average_score']:.6f}")
-            
-            # Show raw scores if verbose
-            if verbose:
-                print(f"Raw average bigram score: {results['raw_average_score']:.6f}")
+
+        # Show raw scores if verbose
+        if verbose:
+            print(f"Raw average bigram score: {results['raw_average_score']:.6f}")
     
     print(f"Pair count: {results['pair_count']}")
     print(f"Coverage (% letter-pairs with precomputed scores): {results['coverage']:.1%}")
@@ -1402,7 +1364,7 @@ def main() -> int:
                         print("=" * 50)
                     print_results(results[scorer_name], args.format, scorer_name, args.raw, args.verbose)
                 else:
-                    # Multiple scorers - FIX: Handle this case properly
+                    # Multiple scorers
                     if not args.quiet and args.format != 'csv_output':
                         print(f"\nLayout: {layout_name}")
                         print(f"\nMulti-scorer results:")
@@ -1454,20 +1416,52 @@ def main() -> int:
                         for scorer_name, scorer_results in results.items():
                             print(f"{scorer_results['average_score']:.6f}")
                     
-                    elif args.format == 'table' or args.format == 'detailed':
-                        # Table/detailed format - show each scorer's results
-                        for scorer_name, scorer_results in results.items():
-                            print(f"\n{scorer_name.upper()} results:")
-                            print("-" * 40)
-                            print_results(scorer_results, 'detailed', scorer_name, args.raw, args.verbose)
-                    
                     else:
-                        # Default: detailed format for each scorer
-                        for scorer_name, scorer_results in results.items():
-                            print(f"\n{scorer_name.upper()} results:")
-                            print("-" * 40)
-                            print_results(scorer_results, 'detailed', scorer_name, args.raw, args.verbose)
-
+                        # Get common stats from first scorer (they're all the same)
+                        first_scorer = list(results.values())[0]
+                        pair_count = first_scorer['pair_count']
+                        coverage = first_scorer['coverage']
+                        
+                        # Show common statistics once
+                        print(f"Pair count: {pair_count}")
+                        print(f"Coverage (% letter-pairs with precomputed scores): {coverage:.1%}")
+                        
+                        # Show frequency coverage if available
+                        if 'frequency_coverage' in first_scorer:
+                            freq_coverage = first_scorer['frequency_coverage']
+                            print(f"Frequency coverage (% English frequency that layout covers): {freq_coverage:.1%}")
+                        
+                        # Show scoring mode
+                        if args.raw:
+                            print(f"\nRaw (unweighted) average bigram scores:")
+                        else:
+                            print(f"\nFrequency-weighted average bigram scores:")
+                        
+                        # Sort scorers for consistent output
+                        sorted_scorers = sorted(results.items())
+                        
+                        # Find the longest scorer name for alignment
+                        max_name_length = max(len(name) for name, _ in sorted_scorers)
+                        
+                        # Show scores in compact format
+                        for scorer_name, scorer_results in sorted_scorers:
+                            score = scorer_results['average_score']
+                            
+                            # Special handling for dvorak7-speed
+                            if scorer_name == 'dvorak7-speed':
+                                print(f"{scorer_name:<{max_name_length}}: {score:.6f} (speed-weighted)")
+                                pure_score = scorer_results.get('pure_dvorak7_score', scorer_results.get('raw_average_score', score))
+                                print(f"{'dvorak7-pure':<{max_name_length}}: {pure_score:.6f} (traditional)")
+                            else:
+                                print(f"{scorer_name:<{max_name_length}}: {score:.6f}")
+                        
+                        # Optional: Show raw scores if verbose and not using raw mode
+                        if args.verbose and not args.raw:
+                            print(f"\nRaw (unweighted) scores for comparison:")
+                            for scorer_name, scorer_results in sorted_scorers:
+                                if 'raw_average_score' in scorer_results:
+                                    raw_score = scorer_results['raw_average_score']
+                                    print(f"{scorer_name:<{max_name_length}}: {raw_score:.6f}")
         return 0
         
     except Exception as e:
