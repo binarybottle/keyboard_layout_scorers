@@ -969,13 +969,24 @@ def print_results(results: Dict[str, float], format_type: str = 'detailed', scor
     """Print scoring results with Dvorak-7 speed analysis."""
     
     if format_type == 'csv_output':
-        # Minimal CSV output for programmatic use
-        if use_raw or 'raw_average_score' not in results:
-            print(f"{results['average_score']:.6f}")
+        # Minimal CSV output for programmatic use - just the score value
+        try:
+            if use_raw and 'raw_average_score' in results:
+                score = float(results['raw_average_score'])
+            else:
+                score = float(results['average_score'])
+            print(f"{score:.6f}")
+        except (KeyError, TypeError, ValueError) as e:
+            # Fallback if there's an issue with the results structure
+            print("0.000000")
         return
     
     if format_type == 'score_only':
-        print(f"{results['average_score']:.6f}")
+        try:
+            score = float(results['average_score'])
+            print(f"{score:.6f}")
+        except (KeyError, TypeError, ValueError):
+            print("0.000000")
         return
     
     if format_type == 'csv':
