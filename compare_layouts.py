@@ -11,16 +11,15 @@ python compare_layouts.py --tables layout_scores.csv
 
 # Specific metrics in custom order
 python compare_layouts.py --tables layout_scores.csv --metrics engram comfort comfort-key dvorak7 time_total distance_total
-# Detailed output:
-python3 compare_layouts.py --tables layout_scores.csv --metrics engram comfort comfort-key dvorak7 dvorak7_repetition dvorak7_movement dvorak7_vertical dvorak7_horizontal dvorak7_adjacent dvorak7_weak dvorak7_outward time_total time_setup time_interval time_return distance_total distance_setup distance_interval distance_return
+python compare_layouts.py --tables layout_scores.csv --metrics engram comfort comfort-key dvorak7 dvorak7_repetition dvorak7_movement dvorak7_vertical dvorak7_horizontal dvorak7_adjacent dvorak7_weak dvorak7_outward time_total time_setup time_interval time_return distance_total distance_setup distance_interval distance_return
 
-# Compare multiple tables with filtered metrics
-python compare_layouts.py --tables layout_scores.csv moo_layout_scores.csv --metrics engram comfort comfort-key dvorak7 time_total distance_total
-# Detailed output:
-python3 compare_layouts.py --tables layout_scores.csv moo_layout_scores.csv --metrics engram comfort comfort-key dvorak7 dvorak7_repetition dvorak7_movement dvorak7_vertical dvorak7_horizontal dvorak7_adjacent dvorak7_weak dvorak7_outward time_total time_setup time_interval time_return distance_total distance_setup distance_interval distance_return
+# Compare multiple tables with filtered metrics and output file
+poetry run python3 compare_layouts.py --tables output/layout_scores.csv output/moo_layout_scores.csv --metrics engram comfort comfort-key dvorak7 time_total distance_total --output output/layout_comparison.png
+poetry run python3 compare_layouts.py --tables output/layout_scores.csv output/moo_layout_scores.csv --metrics engram comfort comfort-key dvorak7 dvorak7_repetition dvorak7_movement dvorak7_vertical dvorak7_horizontal dvorak7_adjacent dvorak7_weak dvorak7_outward time_total time_setup time_interval time_return distance_total distance_setup distance_interval distance_return --output output/layout_comparison_detailed.png
 
-# With output file
-python compare_layouts.py --tables layout_scores.csv --metrics engram comfort dvorak7 --output custom_comparison.png
+# Get layout rankings for the metrics
+poetry run python3 compare_layouts_filtered.py --tables output/layout_scores.csv output/moo_layout_scores.csv --metrics engram comfort comfort-key dvorak7 time_total distance_total --rankings output/layout_rankings_basic.csv
+poetry run python3 compare_layouts_filtered.py --tables output/layout_scores.csv output/moo_layout_scores.csv --metrics engram comfort comfort-key dvorak7 dvorak7_repetition dvorak7_movement dvorak7_vertical dvorak7_horizontal dvorak7_adjacent dvorak7_weak dvorak7_outward time_total time_setup time_interval time_return distance_total distance_setup distance_interval distance_return --rankings output/layout_rankings_detailed.csv
 """
 
 import argparse
@@ -174,9 +173,6 @@ def filter_and_order_metrics(dfs: List[pd.DataFrame], requested_metrics: Optiona
 
 def normalize_data(dfs: List[pd.DataFrame], metrics: List[str]) -> List[pd.DataFrame]:
     """Normalize all data across tables for fair comparison."""
-    
-    return dfs 
-
     # Combine all data to get global min/max for each metric
     all_data = pd.concat(dfs, ignore_index=True)
     
@@ -430,6 +426,107 @@ def create_parallel_plot(dfs: List[pd.DataFrame], table_names: List[str],
     else:
         plt.show()
 
+def create_rankings_table(dfs: List[pd.DataFrame], table_names: List[str], 
+                         metrics: List[str], use_raw: bool, rankings_output: str) -> None:
+    """Create a rankings table and save to CSV."""
+    
+    all_rankings = []
+    
+    for df, table_name in zip(dfs, table_names):
+        # Create a copy for ranking
+        ranking_df = df.copy()
+        
+        # Check if we have the layout column
+        if 'layout' not in ranking_df.columns:
+            print(f"Warning: No 'layout' column found in {table_name}, skipping rankings")
+            continue
+        
+        # Filter to only include layouts with sufficient data
+        valid_layouts = []
+        for _, row in ranking_df.iterrows():
+            valid_count = sum(1 for metric in metrics if metric in row and pd.notna(row[metric]))
+            if valid_count >= len(metrics) * 0.5:  # Need at least 50% valid data
+                valid_layouts.append(row.name)
+        
+        if not valid_layouts:
+            print(f"Warning: No layouts with sufficient data in {table_name}")
+            continue
+        
+        ranking_df = ranking_df.loc[valid_layouts].copy()
+        
+        # Rank each metric (lower rank = better performance)
+        # Since higher scores are better, we rank in descending order
+        rank_columns = []
+        for metric in metrics:
+            if metric in ranking_df.columns:
+                rank_col = f"{metric}_rank"
+                # rank(method='min', ascending=False) gives rank 1 to highest score
+                ranking_df[rank_col] = ranking_df[metric].rank(method='min', ascending=False)
+                rank_columns.append(rank_col)
+            else:
+                # If metric is missing, assign worst possible rank
+                rank_col = f"{metric}_rank"
+                ranking_df[rank_col] = len(ranking_df) + 1
+                rank_columns.append(rank_col)
+        
+        # Calculate total rank sum (lower is better)
+        ranking_df['total_rank_sum'] = ranking_df[rank_columns].sum(axis=1)
+        
+        # Sort by total rank sum (best layouts first)
+        ranking_df = ranking_df.sort_values('total_rank_sum')
+        
+        # Prepare output columns
+        output_columns = ['layout'] + metrics + rank_columns + ['total_rank_sum']
+        available_columns = [col for col in output_columns if col in ranking_df.columns]
+        
+        # Add table identifier if multiple tables
+        if len(dfs) > 1:
+            ranking_df['table'] = table_name
+            available_columns.insert(1, 'table')
+        
+        # Select and store rankings
+        table_rankings = ranking_df[available_columns].copy()
+        all_rankings.append(table_rankings)
+    
+    if not all_rankings:
+        print("No valid rankings data found")
+        return
+    
+    # Combine all tables
+    combined_rankings = pd.concat(all_rankings, ignore_index=True)
+    
+    # If multiple tables, we might want to rank across all tables or keep separate
+    if len(dfs) == 1:
+        # Single table - rankings are already calculated
+        final_rankings = combined_rankings
+    else:
+        # Multiple tables - provide both per-table and global rankings
+        # For now, keep the per-table rankings but sort globally by total_rank_sum
+        final_rankings = combined_rankings.sort_values('total_rank_sum')
+    
+    # Round rank sums to remove floating point precision issues
+    if 'total_rank_sum' in final_rankings.columns:
+        final_rankings['total_rank_sum'] = final_rankings['total_rank_sum'].round(1)
+    
+    # Save to CSV
+    final_rankings.to_csv(rankings_output, index=False)
+    
+    print(f"\nRankings saved to {rankings_output}")
+    print(f"Best performing layouts (by rank sum):")
+    
+    # Show top 10 layouts
+    display_cols = ['layout']
+    if 'table' in final_rankings.columns:
+        display_cols.append('table')
+    display_cols.extend(['total_rank_sum'])
+    
+    top_layouts = final_rankings[display_cols].head(10)
+    for i, (_, row) in enumerate(top_layouts.iterrows(), 1):
+        if 'table' in row:
+            print(f"  {i:2d}. {row['layout']} ({row['table']}) - Rank Sum: {row['total_rank_sum']}")
+        else:
+            print(f"  {i:2d}. {row['layout']} - Rank Sum: {row['total_rank_sum']}")
+
 def print_summary_stats(dfs: List[pd.DataFrame], table_names: List[str], metrics: List[str]) -> None:
     """Print summary statistics for the loaded data."""
     print("\n" + "="*60)
@@ -466,15 +563,22 @@ Examples:
   # Specific metrics in custom order
   python compare_layouts_filtered.py --tables layout_scores.csv --metrics engram comfort comfort-key dvorak7 distance_total time_total
   
-  # Multiple tables with filtered metrics
-  python compare_layouts_filtered.py --tables scores1.csv scores2.csv --metrics comfort distance_total
+  # Create rankings table only (no plots)
+  python compare_layouts_filtered.py --tables layout_scores.csv --metrics engram comfort dvorak7 --rankings layout_rankings.csv
   
-  # With output file
-  python compare_layouts_filtered.py --tables scores.csv --metrics engram comfort dvorak7 --output custom_comparison.png
+  # Create both plots and rankings
+  python compare_layouts_filtered.py --tables layout_scores.csv --metrics engram comfort comfort-key dvorak7 distance_total time_total --output comparison.png --rankings rankings.csv
+  
+  # Multiple tables with filtered metrics and rankings
+  python compare_layouts_filtered.py --tables scores1.csv scores2.csv --metrics comfort distance_total --rankings combined_rankings.csv
 
 Input format:
   CSV files should be output from: score_layouts.py --csv-output
   Expected columns: layout_name,scorer,weighted_score,raw_score
+
+Rankings output:
+  CSV with columns: layout, [metric_values], [metric_ranks], total_rank_sum
+  Layouts ordered by total rank sum (lower = better overall performance)
         """
     )
     
@@ -486,6 +590,8 @@ Input format:
                        help='Use raw scores instead of weighted scores (if available)')
     parser.add_argument('--output', '-o', 
                        help='Output file path (if not specified, plots are shown)')
+    parser.add_argument('--rankings', 
+                       help='Create rankings table and save to CSV file (e.g., --rankings rankings.csv)')
     parser.add_argument('--verbose', '-v', action='store_true',
                        help='Print detailed information')
     
@@ -527,20 +633,27 @@ Input format:
     if args.verbose:
         print_summary_stats(dfs, table_names, metrics)
     
-    # Create plots
-    if args.verbose:
-        print(f"\nCreating visualization plots...")
-        print(f"Tables: {len(dfs)}")
-        print(f"Total layouts: {sum(len(df) for df in dfs)}")
-        print(f"Metrics to plot: {len(metrics)} - {', '.join(metrics)}")
-        score_type = "raw" if args.use_raw else "weighted"
-        print(f"Using {score_type} scores")
+    # Create rankings table if requested
+    if args.rankings:
+        if args.verbose:
+            print(f"\nCreating rankings table...")
+        create_rankings_table(dfs, table_names, metrics, args.use_raw, args.rankings)
     
-    # Generate parallel coordinates plot
-    create_parallel_plot(dfs, table_names, metrics, args.use_raw, args.output)
+    # Create plots (unless only rankings requested)
+    if args.output is not None or not args.rankings:
+        if args.verbose:
+            print(f"\nCreating visualization plots...")
+            print(f"Tables: {len(dfs)}")
+            print(f"Total layouts: {sum(len(df) for df in dfs)}")
+            print(f"Metrics to plot: {len(metrics)} - {', '.join(metrics)}")
+            score_type = "raw" if args.use_raw else "weighted"
+            print(f"Using {score_type} scores")
+        
+        # Generate parallel coordinates plot
+        create_parallel_plot(dfs, table_names, metrics, args.use_raw, args.output)
 
-    # Generate heatmap plot  
-    create_heatmap_plot(dfs, table_names, metrics, args.use_raw, args.output)
+        # Generate heatmap plot  
+        create_heatmap_plot(dfs, table_names, metrics, args.use_raw, args.output)
 
 if __name__ == "__main__":
     main()
