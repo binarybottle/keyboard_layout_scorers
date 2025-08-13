@@ -1,53 +1,26 @@
 #!/usr/bin/env python3
 """
-Keyboard layout comparison
+Keyboard layout comparison with metric filtering
 
-Creates parallel coordinates and heatmap plots comparing keyboard layouts across performance metrics.
-
-This version expects CSV files in the format:
-layout_name,scorer,weighted_score,raw_score
+Creates parallel coordinates and heatmap plots comparing keyboard layouts 
+across performance metrics, and allows filtering to specific metrics in a specified order.
 
 Usage:
-# Single table - sorts all layouts by performance
+# All available metrics (alphabetical order)
 python compare_layouts.py --tables layout_scores.csv
 
-# Multiple tables - sorts within each table, maintains grouping  
-python compare_layouts.py --tables scores1.csv scores2.csv
+# Specific metrics in custom order
+python compare_layouts.py --tables layout_scores.csv --metrics engram comfort comfort-key dvorak7 time_total distance_total
+# Detailed output:
+python3 compare_layouts.py --tables layout_scores.csv --metrics engram comfort comfort-key dvorak7 dvorak7_repetition dvorak7_movement dvorak7_vertical dvorak7_horizontal dvorak7_adjacent dvorak7_weak dvorak7_outward time_total time_setup time_interval time_return distance_total distance_setup distance_interval distance_return
+
+# Compare multiple tables with filtered metrics
+python compare_layouts.py --tables layout_scores.csv moo_layout_scores.csv --metrics engram comfort comfort-key dvorak7 time_total distance_total
+# Detailed output:
+python3 compare_layouts.py --tables layout_scores.csv moo_layout_scores.csv --metrics engram comfort comfort-key dvorak7 dvorak7_repetition dvorak7_movement dvorak7_vertical dvorak7_horizontal dvorak7_adjacent dvorak7_weak dvorak7_outward time_total time_setup time_interval time_return distance_total distance_setup distance_interval distance_return
 
 # With output file
-python compare_layouts.py --tables scores.csv# This creates a CSV file with layout_name,scorer,weighted_score,raw_score
-poetry run python3 score_layouts.py --compare moo_layout_1:"xpou'\"dsmwgiae,.tnrckjyh-?lfbvqz" moo_layout_2:"xpou'\"dsmbgiae,.tnrckjyh-?lfvwqz" moo_layout_3:"kpou'\"dsmwgiae,.tnrcxjyh-?lfvbqz" moo_layout_4:"kpou'\"lscwgiae,.tnrfxjyh-?dmvbqz" moo_layout_5:"xpou'\"lscbgiae,.tnrmkjyh-?dfvwqz" moo_layout_6:"kpou'\"lscbgiae,.tnrmxjyh-?dfvwqz" moo_layout_7:"kpou'\"dscwgiae,.tnrmxjyh-?lfvbqz" moo_layout_8:"kuod'\"csmwpiae,.tnrgxjyh-?lfvbqz" moo_layout_9:"juod'\"lsmbpiae,.tnrfkxyh-?cgvwqz" moo_layout_10:"juod'\"csmbpiae,.tnrfkxyh-?lgvwqz" moo_layout_11:"kuod'\"csmbpiae,.tnrfxjyh-?lgvwqz" moo_layout_12:"xpou'\"lnfghiae,.tsrckjyd-?mbvwqz" moo_layout_13:"yuod'\"csmbpiae,.tnrfkjgh-?lwvxqz" moo_layout_14:"kpou'\"mrgbhiae,.tnscxjyd-?lfvwqz" moo_layout_15:"kpou'\"mrcbhiae,.tnsgxjyd-?lfvwqz" moo_layout_16:"ypou'\"mrgbdiae,.tnscxjkh-?lfvwqz" moo_layout_17:"xpou'\"mrgbdiae,.tnsckjyh-?lfvwqz" moo_layout_18:"ypou'\"lsmbgiae,.tnrcxjkh-?dfvwqz" moo_layout_19:"xpou'\"dscwgiae,.tnrmkjyh-?lfbvqz" moo_layout_20:"kmil'\"cnfwuroe,.taspxjyh-?dgvbqz" moo_layout_21:"kuil'\"cnmbproe,.tasfxjyh-?dgvwqz" moo_layout_22:"kuil'\"cnmwproe,.tasfxjyh-?dgvbqz" moo_layout_23:"kuil'\"dnfwmroe,.taspxjyh-?cgvbqz" moo_layout_24:"kmil'\"dnfguroe,.taspxjyh-?cwvbqz" moo_layout_25:"yuil'\"cnfbmroe,.taspkjwh-?dgxvqz" moo_layout_26:"kuil'\"cnfwmroe,.taspxjyh-?dgvbqz" moo_layout_27:"kuil'\"dngwmroe,.taspxjyh-?cfvbqz" moo_layout_28:"kmil'\"dngwuroe,.taspxjyh-?cfvbqz" moo_layout_29:"kuid'\"cnmbfsae,.torpwjyh-?lgxvqz" moo_layout_30:"kgil'\"dnfwuroe,.tasmxjyh-?cpbvqz" moo_layout_31:"wuid'\"cnmbfsae,.torpkjyh-?lgxvqz" moo_layout_32:"ymil'\"dngwuroe,.taspxjkh-?cfvbqz" moo_layout_33:"kuid'\"cnmbfsae,.torpyjwh-?lgxvqz" moo_layout_34:"kpio'\"dnlwghae,.tsrcxjyu-?mfvbqz" moo_layout_35:"xpou'\"mrcbhiae,.tnsgkjyd-?lfvwqz" moo_layout_36:"ymil'\"cnfburoe,.taspkjwh-?dgxvqz" moo_layout_37:"yuid'\"cnmbfsae,.torpkjwh-?lgxvqz" moo_layout_38:"kgio'\"dnlwphae,.tsrcxjyu-?mfvbqz" moo_layout_39:"kpou'\"lscbhiae,.tnrgxjyd-?mfvwqz" moo_layout_40:"ypou'\"lsmbgiae,.tnrcjxkh-?dfvwqz" moo_layout_41:"kuil'\"cnfbmroe,.taspwjyh-?dgxvqz" moo_layout_42:"kpou'\"lngfhiae,.tsrcxjyd-?mwvbqz" moo_layout_43:"klio'\"dncwghae,.tsrpxjyu-?mfvbqz" moo_layout_44:"xpou'\"mrgbhiae,.tnsckjyd-?lfvwqz" moo_layout_45:"xpou'\"lnfghiae,.tsrckjyd-?mwvbqz" moo_layout_46:"xpou'\"lngfhiae,.tsrckjyd-?mbvwqz" moo_layout_47:"yuil'\"cnmbproe,.tasfkjwh-?dgxvqz" moo_layout_48:"xpou'\"lngfhiae,.tsrckjyd-?mwvbqz" moo_layout_49:"kpou'\"lngwhiae,.tsrcxjyd-?mfvbqz" moo_layout_50:"xpou'\"lngwhiae,.tsrckjyd-?mfvbqz" moo_layout_51:"xpou'\"lscbhiae,.tnrgkjyd-?mfvwqz" moo_layout_52:"yuod'\"csmbpiae,.tnrfkjgh-?lwxvqz" moo_layout_53:"xpou'\"csmbdiae,.tnrgkjyh-?lfvwqz" moo_layout_54:"xpou'\"dscwgiae,.tnrmkjyh-?lfvbqz" moo_layout_55:"juod'\"csmbpiae,.tnrgkxyh-?lfvwqz" moo_layout_56:"kuod'\"csmbpiae,.tnrgxjyh-?lfvwqz" moo_layout_57:"ywil'\"dngfuroe,.tasmxjkh-?cpbvqz" moo_layout_58:"kuod'\"csmwpiae,.tnrfxjyh-?lgvbqz" moo_layout_59:"whif'\"lsmbpnae,.torckjyu-?dgxvqz" moo_layout_60:"kpou'\"csmbdiae,.tnrgxjyh-?lfvwqz" moo_layout_61:"whif'\"lsmbunae,.torckjyp-?dgxvqz" moo_layout_62:"xpou'\"lsmbgiae,.tnrckjyh-?dfvwqz" moo_layout_63:"kpou'\"lsmbgiae,.tnrcxjyh-?dfvwqz" moo_layout_64:"xpou'\"dsmwgiae,.tnrckjyh-?lfvbqz" moo_layout_65:"kmil'\"dnfwuroe,.taspxjyh-?cgvbqz" moo_layout_66:"xpou'\"lscbgiae,.tnrfkjyh-?dmvwqz" moo_layout_67:"kuil'\"dnfgmroe,.taspxjyh-?cwvbqz" moo_layout_68:"kpou'\"lscbgiae,.tnrfxjyh-?dmvwqz" moo_layout_69:"kgio'\"dncwphae,.tsrlxjyu-?mfvbqz" --csv-output > moo_layout_scores.csv
-
-
-# Use raw scores instead of weighted scores
-python compare_layouts.py --tables scores.csv --use-raw
-
-# Verbose mode
-python compare_layouts.py --tables scores.csv --verbose
-
-Example input format (from score_layouts.py --csv-output):
-layout_name,scorer,weighted_score,raw_score
-qwerty,distance,0.756234,0.742156
-qwerty,comfort,0.623451,0.618923
-dvorak,distance,0.834567,0.821234
-dvorak,comfort,0.712345,0.708912
-...
-
-For reference:
-- Halmak 2.2	     wlrbz;qudjshnt,.aeoifmvc/gpxky['
-- Hieamtsrn	       byou'kdclphiea,mtsrnx-".?wgfjzqv
-- Colemak-DH	     qwfpbjluy;arstgmneiozxcdvkh,./['
-- Norman	         qwdfkjurl;asetgyniohzxcvbpm,./['
-- Workman	         qdrwbjfup;ashtgyneoizxmcvkl,./['
-- MTGAP 2.0	       ,fhdkjcul.oantgmseriqxbpzyw'v;['
-- QGMLWB	         qgmlwbyuv;dstnriaeohzxcfjkp,./['
-- Colemak	         qwfpgjluy;arstdhneiozxcvbkm,./['
-- Asset	           qwfgjypul;asetdhniorzxcvbkm,./['
-- Capewell-Dvorak	 ',.pyqfgrkoaeiudhtnszxcvjlmwb;['
-- Klausler	       k,uypwlmfcoaeidrnthsq.';zxvgbj['
-- Dvorak	         ',.pyfgcrlaoeuidhtns;qjkxbmwvz['
-- QWERTY	         qwertyuiopasdfghjkl;zxcvbnm,./['
-
+python compare_layouts.py --tables layout_scores.csv --metrics engram comfort dvorak7 --output custom_comparison.png
 """
 
 import argparse
@@ -154,27 +127,58 @@ def find_available_metrics(dfs: List[pd.DataFrame], verbose: bool = False) -> Li
             if col != 'layout' and pd.api.types.is_numeric_dtype(df[col]):
                 all_metrics.add(col)
     
-    # Convert to sorted list
+    # Convert to sorted list (alphabetical order)
     available_metrics = sorted(list(all_metrics))
     
     if verbose:
-        print(f"\nFound {len(available_metrics)} scorer metrics to plot:")
+        print(f"\nFound {len(available_metrics)} scorer metrics available:")
         for i, metric in enumerate(available_metrics):
             print(f"  {i+1:2d}. {metric}")
     
     return available_metrics
 
+def filter_and_order_metrics(dfs: List[pd.DataFrame], requested_metrics: Optional[List[str]] = None, 
+                           verbose: bool = False) -> List[str]:
+    """Filter and order metrics based on user specification."""
+    # Get all available metrics
+    available_metrics = find_available_metrics(dfs, verbose)
+    
+    if not requested_metrics:
+        # Return all available metrics in alphabetical order
+        return available_metrics
+    
+    # Filter to only requested metrics that are available
+    filtered_metrics = []
+    missing_metrics = []
+    
+    for metric in requested_metrics:
+        if metric in available_metrics:
+            filtered_metrics.append(metric)
+        else:
+            missing_metrics.append(metric)
+    
+    if missing_metrics and verbose:
+        print(f"\nWarning: Requested metrics not found in data: {', '.join(missing_metrics)}")
+    
+    if not filtered_metrics:
+        print("Error: None of the requested metrics were found in the data")
+        print(f"Available metrics: {', '.join(available_metrics)}")
+        sys.exit(1)
+    
+    if verbose:
+        print(f"\nUsing {len(filtered_metrics)} metrics in specified order:")
+        for i, metric in enumerate(filtered_metrics):
+            print(f"  {i+1:2d}. {metric}")
+    
+    return filtered_metrics
+
 def normalize_data(dfs: List[pd.DataFrame], metrics: List[str]) -> List[pd.DataFrame]:
     """Normalize all data across tables for fair comparison."""
-    """Return data as-is since scores are already normalized."""
-    #return dfs  # No normalization needed!
-
     
+    return dfs 
+
     # Combine all data to get global min/max for each metric
     all_data = pd.concat(dfs, ignore_index=True)
-    
-    # For scorer outputs, higher scores are generally better
-    # No need to invert since score_layouts.py already handles this
     
     normalized_dfs = []
     
@@ -197,7 +201,6 @@ def normalize_data(dfs: List[pd.DataFrame], metrics: List[str]) -> List[pd.DataF
         normalized_dfs.append(normalized_df)
     
     return normalized_dfs
-    
 
 def get_colors(num_tables: int) -> List[str]:
     """Get color scheme based on number of tables."""
@@ -453,15 +456,21 @@ def print_summary_stats(dfs: List[pd.DataFrame], table_names: List[str], metrics
 
 def main():
     parser = argparse.ArgumentParser(
-        description='Create parallel coordinates plots and heatmaps comparing keyboard layouts from score_layouts.py output',
+        description='Create parallel coordinates plots and heatmaps comparing keyboard layouts with metric filtering',
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  python compare_layouts.py --tables layout_scores.csv
-  python compare_layouts.py --tables scores1.csv scores2.csv
-  python compare_layouts.py --tables scores.csv --use-raw
-  python compare_layouts.py --tables scores.csv --output comparison.png
-  python compare_layouts.py --tables scores.csv --verbose
+  # All available metrics (alphabetical order)
+  python compare_layouts_filtered.py --tables layout_scores.csv
+  
+  # Specific metrics in custom order
+  python compare_layouts_filtered.py --tables layout_scores.csv --metrics engram comfort comfort-key dvorak7 distance_total time_total
+  
+  # Multiple tables with filtered metrics
+  python compare_layouts_filtered.py --tables scores1.csv scores2.csv --metrics comfort distance_total
+  
+  # With output file
+  python compare_layouts_filtered.py --tables scores.csv --metrics engram comfort dvorak7 --output custom_comparison.png
 
 Input format:
   CSV files should be output from: score_layouts.py --csv-output
@@ -471,6 +480,8 @@ Input format:
     
     parser.add_argument('--tables', nargs='+', required=True,
                        help='One or more CSV files containing layout scoring data from score_layouts.py')
+    parser.add_argument('--metrics', nargs='*',
+                       help='Specific metrics to include (in order). If not specified, all available metrics are used alphabetically.')
     parser.add_argument('--use-raw', action='store_true',
                        help='Use raw scores instead of weighted scores (if available)')
     parser.add_argument('--output', '-o', 
@@ -505,11 +516,11 @@ Input format:
         print("Error: No valid data found in any table")
         sys.exit(1)
     
-    # Find available metrics (scorers)
-    metrics = find_available_metrics(dfs, args.verbose)
+    # Filter and order metrics based on user specification
+    metrics = filter_and_order_metrics(dfs, args.metrics, args.verbose)
     
     if not metrics:
-        print("Error: No scorer metrics found in the data")
+        print("Error: No valid metrics found")
         sys.exit(1)
     
     # Print summary
@@ -521,7 +532,7 @@ Input format:
         print(f"\nCreating visualization plots...")
         print(f"Tables: {len(dfs)}")
         print(f"Total layouts: {sum(len(df) for df in dfs)}")
-        print(f"Scorer metrics to plot: {len(metrics)}")
+        print(f"Metrics to plot: {len(metrics)} - {', '.join(metrics)}")
         score_type = "raw" if args.use_raw else "weighted"
         print(f"Using {score_type} scores")
     
