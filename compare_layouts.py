@@ -5,21 +5,41 @@ Keyboard layout comparison with metric filtering
 Creates parallel coordinates and heatmap plots comparing keyboard layouts 
 across performance metrics, and allows filtering to specific metrics in a specified order.
 
-Usage:
-# All available metrics (alphabetical order)
-python compare_layouts.py --tables layout_scores.csv
+Examples:
+    # All available metrics (alphabetical order)
+    poetry run python3 compare_layouts.py --tables layout_scores.csv
 
-# Specific metrics in custom order
-python compare_layouts.py --tables layout_scores.csv --metrics engram comfort comfort-key dvorak7 time_total distance_total
-python compare_layouts.py --tables layout_scores.csv --metrics engram comfort comfort-key dvorak7 dvorak7_repetition dvorak7_movement dvorak7_vertical dvorak7_horizontal dvorak7_adjacent dvorak7_weak dvorak7_outward time_total time_setup time_interval time_return distance_total distance_setup distance_interval distance_return
+    # Specific metrics in custom order (1 table)
+    poetry run python3 compare_layouts.py --metrics engram comfort comfort-key dvorak7 time_total distance_total --tables layout_scores.csv
+    poetry run python3 compare_layouts.py --metrics engram comfort comfort-key dvorak7 dvorak7_repetition dvorak7_movement dvorak7_vertical dvorak7_horizontal dvorak7_adjacent dvorak7_weak dvorak7_outward time_total time_setup time_interval time_return distance_total distance_setup distance_interval distance_return --tables layout_scores.csv
 
-# Compare multiple tables with filtered metrics and output file
-poetry run python3 compare_layouts.py --tables output/layout_scores.csv output/moo_layout_scores.csv --metrics engram comfort comfort-key dvorak7 time_total distance_total --output output/layout_comparison.png
-poetry run python3 compare_layouts.py --tables output/layout_scores.csv output/moo_layout_scores.csv --metrics engram comfort comfort-key dvorak7 dvorak7_repetition dvorak7_movement dvorak7_vertical dvorak7_horizontal dvorak7_adjacent dvorak7_weak dvorak7_outward time_total time_setup time_interval time_return distance_total distance_setup distance_interval distance_return --output output/layout_comparison_detailed.png
+    # Create both plots and rankings with rank-based coloring (1 table)
+    poetry run python3 compare_layouts.py --metrics engram comfort comfort-key dvorak7 distance_total time_total --output comparison.png --rankings rankings.csv --tables layout_scores.csv 
 
-# Get layout rankings for the metrics applied to the layouts in one table
-poetry run python3 compare_layouts.py --tables output/moo_layout_scores.csv --metrics comfort comfort-key dvorak7 time_total distance_total --rankings output/layout_rankings.csv --output output/layout_comparison.csv
-poetry run python3 compare_layouts.py --tables output/moo_layout_scores.csv --metrics comfort comfort-key dvorak7 dvorak7_repetition dvorak7_movement dvorak7_vertical dvorak7_horizontal dvorak7_adjacent dvorak7_weak dvorak7_outward time_total time_setup time_interval time_return distance_total distance_setup distance_interval distance_return --rankings output/layout_rankings_detailed.csv --output output/layout_comparison_detailed.csv
+    # Compare multiple tables with filtered metrics and output file
+    poetry run python3 compare_layouts.py --metrics engram comfort comfort-key dvorak7 time_total distance_total --output output/layout_comparison.png --tables layout_scores.csv moo_layout_scores.csv
+    poetry run python3 compare_layouts.py --metrics engram comfort comfort-key dvorak7 dvorak7_repetition dvorak7_movement dvorak7_vertical dvorak7_horizontal dvorak7_adjacent dvorak7_weak dvorak7_outward time_total time_setup time_interval time_return distance_total distance_setup distance_interval distance_return --output output/layout_comparison_detailed.png --tables layout_scores.csv moo_layout_scores.csv
+
+    # Get layout rankings and plots for the metrics applied to the layouts (1 table)
+    poetry run python3 compare_layouts.py --metrics comfort comfort-key dvorak7 time_total distance_total --rankings output/layout_rankings.csv --output output/layout_comparison.csv --tables moo_layout_scores.csv
+    poetry run python3 compare_layouts.py --metrics comfort comfort-key dvorak7 dvorak7_repetition dvorak7_movement dvorak7_vertical dvorak7_horizontal dvorak7_adjacent dvorak7_weak dvorak7_outward time_total time_setup time_interval time_return distance_total distance_setup distance_interval distance_return --rankings output/layout_rankings_detailed.csv --output output/layout_comparison_detailed.csv --tables moo_layout_scores.csv
+
+Input format:
+  CSV files should be output from: score_layouts.py --csv-output
+  Expected columns: layout_name,scorer,weighted_score,raw_score
+  Optional: layout_string (enables additional layout analysis columns)
+
+Rankings output:
+  CSV with columns: layout, [letters, positions, qwerty_letters, qwerty_positions], [metric_ranks], total_rank_sum, [metric_values]
+  - letters: layout letters in keyboard order
+  - positions: corresponding QWERTY positions for layout letters  
+  - qwerty_letters: what letter is at each QWERTY position
+  - qwerty_positions: QWERTY reference positions
+  Layouts ordered by total rank sum (lower = better overall performance)
+  
+Rank-based coloring:
+  When --rankings is used, parallel plot lines are colored from dark red (best) to light red (worst) based on total rank sum.
+
 """
 
 import argparse
@@ -30,6 +50,7 @@ import matplotlib.colors as mcolors
 from pathlib import Path
 import sys
 from typing import List, Dict, Tuple, Optional
+import matplotlib.cm as cm
 
 def parse_layout_string(layout_string: str) -> tuple:
     """Parse layout string to extract letters and their positions."""
@@ -387,23 +408,50 @@ def create_heatmap_plot(dfs: List[pd.DataFrame], table_names: List[str],
         plt.show()
 
 def create_parallel_plot(dfs: List[pd.DataFrame], table_names: List[str], 
-                        metrics: List[str], use_raw: str, output_path: Optional[str] = None) -> None:
-    """Create parallel coordinates plot."""
+                        metrics: List[str], use_raw: str, output_path: Optional[str] = None,
+                        rankings_df: Optional[pd.DataFrame] = None) -> None:
+    """Create parallel coordinates plot with optional rank-based coloring."""
     # Normalize data across all tables
     normalized_dfs = normalize_data(dfs, metrics)
     
     # Set up the plot
     fig, ax = plt.subplots(figsize=(max(12, len(metrics) * 1.2), 10))
     
-    # Get colors
-    colors = get_colors(len(dfs))
+    # Determine coloring scheme
+    use_ranking_colors = rankings_df is not None and len(rankings_df) > 0
+    
+    if use_ranking_colors:
+        # Create rank-based color mapping
+        layout_to_rank = {}
+        for idx, (_, row) in enumerate(rankings_df.iterrows()):
+            layout_name = row['layout']
+            # Use the index (0-based) as the rank position for coloring
+            layout_to_rank[layout_name] = idx
+        
+        total_layouts = len(layout_to_rank)
+        
+        # Create red color gradient: dark red (best) to light red (worst)
+        red_colormap = cm.Reds
+        
+        # Define color range (avoid pure white, use darker range of reds)
+        min_color_val = 0.3  # Light red
+        max_color_val = 1.0  # Dark red
+        
+        print(f"Using ranking-based coloring for {total_layouts} layouts")
+    else:
+        # Use original table-based coloring
+        colors = get_colors(len(dfs))
     
     # Plot parameters
     x_positions = range(len(metrics))
     
     # Plot each table's data
-    for i, (df, table_name, color) in enumerate(zip(normalized_dfs, table_names, colors)):
+    for i, (df, table_name) in enumerate(zip(normalized_dfs, table_names)):
         valid_layout_count = 0
+        
+        if not use_ranking_colors:
+            color = colors[i] if i < len(colors) else colors[-1]
+        
         for _, row in df.iterrows():
             y_values = [row.get(metric, 0) for metric in metrics]
             
@@ -415,11 +463,30 @@ def create_parallel_plot(dfs: List[pd.DataFrame], table_names: List[str],
             # Replace NaN values with 0
             y_values = [val if pd.notna(val) else 0 for val in y_values]
             
-            ax.plot(x_positions, y_values, color=color, alpha=0.6, linewidth=1.5)
+            # Determine line color
+            if use_ranking_colors:
+                layout_name = row.get('layout', '')
+                if layout_name in layout_to_rank:
+                    # Calculate color based on rank position
+                    rank_position = layout_to_rank[layout_name]
+                    # Invert so best rank (0) gets darkest color
+                    color_intensity = max_color_val - (rank_position / (total_layouts - 1)) * (max_color_val - min_color_val)
+                    color = red_colormap(color_intensity)
+                else:
+                    # Fallback color for layouts not in rankings
+                    color = 'gray'
+            # else: color already set above for table-based coloring
+            
+            ax.plot(x_positions, y_values, color=color, alpha=0.7, linewidth=1.5)
             valid_layout_count += 1
         
-        # Add a single legend entry for this table
-        ax.plot([], [], color=color, linewidth=3, label=f"{table_name} ({valid_layout_count} layouts)")
+        # Add legend entry (only for table-based coloring or first table)
+        if not use_ranking_colors:
+            ax.plot([], [], color=color, linewidth=3, label=f"{table_name} ({valid_layout_count} layouts)")
+        elif i == 0:  # Only add one legend entry for ranking-based coloring
+            # Create legend showing color gradient
+            ax.plot([], [], color=red_colormap(max_color_val), linewidth=3, label=f"Best ranked layouts")
+            ax.plot([], [], color=red_colormap(min_color_val), linewidth=3, label=f"Worst ranked layouts")
 
     # Customize the plot
     ax.set_xlim(-0.5, len(metrics) - 0.5)
@@ -452,11 +519,17 @@ def create_parallel_plot(dfs: List[pd.DataFrame], table_names: List[str],
     
     # Title and legend
     score_type = "raw scores" if use_raw else "weighted scores"
-    ax.set_title(f'Keyboard Layout Comparison ({score_type})\n'
-                f'Parallel coordinates across {len(metrics)} scoring methods', 
+    
+    if use_ranking_colors:
+        title_suffix = f'\nRank-ordered visualization: dark red = best, light red = worst'
+    else:
+        title_suffix = f'\nParallel coordinates across {len(metrics)} scoring methods'
+    
+    ax.set_title(f'Keyboard Layout Comparison ({score_type}){title_suffix}', 
                 fontsize=16, fontweight='bold', pad=20)
 
-    if len(dfs) > 1 or len(dfs[0]) <= 10:
+    # Show legend
+    if len(dfs) > 1 or len(dfs[0]) <= 10 or use_ranking_colors:
         ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left', fontsize=10)
     
     plt.tight_layout()
@@ -475,8 +548,8 @@ def create_parallel_plot(dfs: List[pd.DataFrame], table_names: List[str],
         plt.show()
 
 def create_rankings_table(dfs: List[pd.DataFrame], table_names: List[str], 
-                         metrics: List[str], use_raw: bool, rankings_output: str) -> None:
-    """Create a rankings table and save to CSV."""
+                         metrics: List[str], use_raw: bool, rankings_output: str) -> pd.DataFrame:
+    """Create a rankings table, save to CSV, and return the rankings DataFrame."""
     
     all_rankings = []
     
@@ -562,7 +635,7 @@ def create_rankings_table(dfs: List[pd.DataFrame], table_names: List[str],
     
     if not all_rankings:
         print("No valid rankings data found")
-        return
+        return pd.DataFrame()  # Return empty DataFrame
     
     # Combine all tables
     combined_rankings = pd.concat(all_rankings, ignore_index=True)
@@ -598,6 +671,8 @@ def create_rankings_table(dfs: List[pd.DataFrame], table_names: List[str],
             print(f"  {i:2d}. {row['layout']} ({row['table']}) - Rank Sum: {row['total_rank_sum']}")
         else:
             print(f"  {i:2d}. {row['layout']} - Rank Sum: {row['total_rank_sum']}")
+    
+    return final_rankings  # NEW: Return the rankings DataFrame
 
 def print_summary_stats(dfs: List[pd.DataFrame], table_names: List[str], metrics: List[str]) -> None:
     """Print summary statistics for the loaded data."""
@@ -630,19 +705,19 @@ def main():
         epilog="""
 Examples:
   # All available metrics (alphabetical order)
-  python compare_layouts_filtered.py --tables layout_scores.csv
+  python compare_layouts.py --tables layout_scores.csv
   
   # Specific metrics in custom order
-  python compare_layouts_filtered.py --tables layout_scores.csv --metrics engram comfort comfort-key dvorak7 distance_total time_total
+  python compare_layouts.py --tables layout_scores.csv --metrics engram comfort comfort-key dvorak7 distance_total time_total
   
   # Create rankings table only (no plots)
-  python compare_layouts_filtered.py --tables layout_scores.csv --metrics engram comfort dvorak7 --rankings layout_rankings.csv
+  python compare_layouts.py --tables layout_scores.csv --metrics engram comfort dvorak7 --rankings layout_rankings.csv
   
-  # Create both plots and rankings
-  python compare_layouts_filtered.py --tables layout_scores.csv --metrics engram comfort comfort-key dvorak7 distance_total time_total --output comparison.png --rankings rankings.csv
+  # Create both plots and rankings with rank-based coloring
+  python compare_layouts.py --tables layout_scores.csv --metrics engram comfort comfort-key dvorak7 distance_total time_total --output comparison.png --rankings rankings.csv
   
   # Multiple tables with filtered metrics and rankings
-  python compare_layouts_filtered.py --tables scores1.csv scores2.csv --metrics comfort distance_total --rankings combined_rankings.csv
+  python compare_layouts.py --tables scores1.csv scores2.csv --metrics comfort distance_total --rankings combined_rankings.csv
 
 Input format:
   CSV files should be output from: score_layouts.py --csv-output
@@ -656,6 +731,9 @@ Rankings output:
   - qwerty_letters: what letter is at each QWERTY position
   - qwerty_positions: QWERTY reference positions
   Layouts ordered by total rank sum (lower = better overall performance)
+  
+Rank-based coloring:
+  When --rankings is used, parallel plot lines are colored from dark red (best) to light red (worst) based on total rank sum.
         """
     )
     
@@ -711,10 +789,11 @@ Rankings output:
         print_summary_stats(dfs, table_names, metrics)
     
     # Create rankings table if requested
+    rankings_df = None
     if args.rankings:
         if args.verbose:
             print(f"\nCreating rankings table...")
-        create_rankings_table(dfs, table_names, metrics, args.use_raw, args.rankings)
+        rankings_df = create_rankings_table(dfs, table_names, metrics, args.use_raw, args.rankings)
     
     # Create plots (unless only rankings requested)
     if args.output is not None or not args.rankings:
@@ -725,11 +804,13 @@ Rankings output:
             print(f"Metrics to plot: {len(metrics)} - {', '.join(metrics)}")
             score_type = "raw" if args.use_raw else "weighted"
             print(f"Using {score_type} scores")
+            if rankings_df is not None and len(rankings_df) > 0:
+                print(f"Using rank-based coloring for parallel plot")
         
-        # Generate parallel coordinates plot
-        create_parallel_plot(dfs, table_names, metrics, args.use_raw, args.output)
+        # Generate parallel coordinates plot with optional rankings
+        create_parallel_plot(dfs, table_names, metrics, args.use_raw, args.output, rankings_df)
 
-        # Generate heatmap plot  
+        # Generate heatmap plot (unchanged)
         create_heatmap_plot(dfs, table_names, metrics, args.use_raw, args.output)
 
 if __name__ == "__main__":
