@@ -144,9 +144,14 @@ def display_html(layout, letters, positions, output_file="keyboard_layout.html")
             margin-right: 0;
         }
         
-        .row-bottom {
-            margin-left: 20px;
+        .row-home {
+            margin-left: 10px;
         }
+
+        .row-bottom {
+            margin-left: 34px;
+        }
+
     </style>
 </head>
 <body>
@@ -154,7 +159,12 @@ def display_html(layout, letters, positions, output_file="keyboard_layout.html")
     
     # Generate rows
     for row_idx, row in enumerate(layout):
-        row_class = "row-bottom" if row_idx == 2 else ""
+        if row_idx == 1:
+            row_class = "row-home"
+        elif row_idx == 2:
+            row_class = "row-bottom"
+        else:
+            row_class = ""
         html_content += f'\n        <div class="row {row_class}">'
         
         for key in row:
