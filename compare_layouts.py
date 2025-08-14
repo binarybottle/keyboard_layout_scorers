@@ -18,8 +18,8 @@ poetry run python3 compare_layouts.py --tables output/layout_scores.csv output/m
 poetry run python3 compare_layouts.py --tables output/layout_scores.csv output/moo_layout_scores.csv --metrics engram comfort comfort-key dvorak7 dvorak7_repetition dvorak7_movement dvorak7_vertical dvorak7_horizontal dvorak7_adjacent dvorak7_weak dvorak7_outward time_total time_setup time_interval time_return distance_total distance_setup distance_interval distance_return --output output/layout_comparison_detailed.png
 
 # Get layout rankings for the metrics
-poetry run python3 compare_layouts_filtered.py --tables output/layout_scores.csv output/moo_layout_scores.csv --metrics engram comfort comfort-key dvorak7 time_total distance_total --rankings output/layout_rankings_basic.csv
-poetry run python3 compare_layouts_filtered.py --tables output/layout_scores.csv output/moo_layout_scores.csv --metrics engram comfort comfort-key dvorak7 dvorak7_repetition dvorak7_movement dvorak7_vertical dvorak7_horizontal dvorak7_adjacent dvorak7_weak dvorak7_outward time_total time_setup time_interval time_return distance_total distance_setup distance_interval distance_return --rankings output/layout_rankings_detailed.csv
+poetry run python3 compare_layouts.py --tables output/moo_layout_scores.csv --metrics comfort comfort-key dvorak7 time_total distance_total --rankings output/layout_rankings_basic.csv
+poetry run python3 compare_layouts.py --tables output/moo_layout_scores.csv --metrics comfort comfort-key dvorak7 dvorak7_repetition dvorak7_movement dvorak7_vertical dvorak7_horizontal dvorak7_adjacent dvorak7_weak dvorak7_outward time_total time_setup time_interval time_return distance_total distance_setup distance_interval distance_return --rankings output/layout_rankings_detailed.csv
 """
 
 import argparse
@@ -30,6 +30,45 @@ import matplotlib.colors as mcolors
 from pathlib import Path
 import sys
 from typing import List, Dict, Tuple, Optional
+
+def parse_layout_string(layout_string: str) -> tuple:
+    """Parse layout string to extract letters and their positions."""
+    if pd.isna(layout_string) or not layout_string:
+        return "", ""
+    
+    # QWERTY reference positions
+    qwerty_positions = "QWERTYUIOPASDFGHJKL;ZXCVBNM,./['"
+    qwerty_letters = "QWERTYUIOPASDFGHJKL;ZXCVBNM,./['"
+    
+    # Extract letters from layout string (should be same length as QWERTY)
+    layout_letters = layout_string.strip('"').replace('\\', '')  # Clean up quotes and escapes
+    
+    if len(layout_letters) != len(qwerty_positions):
+        # Try to pad or truncate to match QWERTY length
+        if len(layout_letters) < len(qwerty_positions):
+            layout_letters = layout_letters + ' ' * (len(qwerty_positions) - len(layout_letters))
+        else:
+            layout_letters = layout_letters[:len(qwerty_positions)]
+    
+    # Create mapping from layout position to letter
+    position_to_letter = {}
+    letter_to_position = {}
+    
+    for i, (pos, letter) in enumerate(zip(qwerty_positions, layout_letters)):
+        position_to_letter[pos] = letter
+        letter_to_position[letter] = pos
+    
+    # Create strings for the 4 columns
+    letters = layout_letters  # Letters in layout order
+    positions = qwerty_positions  # Corresponding QWERTY positions
+    
+    # Letters in QWERTY order (what letter is at each QWERTY position)
+    qwerty_order_letters = ''.join(position_to_letter.get(pos, ' ') for pos in qwerty_positions)
+    
+    # QWERTY positions (reference)
+    qwerty_order_positions = qwerty_positions
+    
+    return letters, positions, qwerty_order_letters, qwerty_order_positions
 
 def load_and_pivot_data(file_path: str, use_raw: bool = False, verbose: bool = False) -> pd.DataFrame:
     """Load CSV data from score_layouts.py output and pivot to layout x scorer format."""
@@ -103,10 +142,19 @@ def load_and_pivot_data(file_path: str, use_raw: bool = False, verbose: bool = F
             pivoted = pivoted.reset_index()
             pivoted = pivoted.rename(columns={'layout_name': 'layout'})
             
+            # If layout_string column exists, preserve it
+            if 'layout_string' in df.columns:
+                # Get unique layout strings for each layout name
+                layout_strings = df.groupby('layout_name')['layout_string'].first()
+                pivoted = pivoted.merge(layout_strings.reset_index().rename(columns={'layout_name': 'layout'}), 
+                                      on='layout', how='left')
+            
             if verbose:
                 print(f"Pivoted data shape: {pivoted.shape}")
                 print(f"Layouts: {len(pivoted)}")
                 print(f"Metrics (scorers): {len(pivoted.columns) - 1}")
+                if 'layout_string' in pivoted.columns:
+                    print("Layout strings preserved in data")
             
             return pivoted
             
@@ -441,6 +489,16 @@ def create_rankings_table(dfs: List[pd.DataFrame], table_names: List[str],
             print(f"Warning: No 'layout' column found in {table_name}, skipping rankings")
             continue
         
+        # Parse layout strings if available
+        has_layout_strings = 'layout_string' in ranking_df.columns
+        if has_layout_strings:
+            # Parse layout strings to create the 4 new columns
+            parsed_data = ranking_df['layout_string'].apply(parse_layout_string)
+            ranking_df['letters'] = [x[0] for x in parsed_data]
+            ranking_df['positions'] = [x[1] for x in parsed_data]
+            ranking_df['qwerty_letters'] = [x[2] for x in parsed_data]
+            ranking_df['qwerty_positions'] = [x[3] for x in parsed_data]
+        
         # Filter to only include layouts with sufficient data
         valid_layouts = []
         for _, row in ranking_df.iterrows():
@@ -475,14 +533,28 @@ def create_rankings_table(dfs: List[pd.DataFrame], table_names: List[str],
         # Sort by total rank sum (best layouts first)
         ranking_df = ranking_df.sort_values('total_rank_sum')
         
-        # Prepare output columns
-        output_columns = ['layout'] + metrics + rank_columns + ['total_rank_sum']
-        available_columns = [col for col in output_columns if col in ranking_df.columns]
+        # Prepare output columns in requested order:
+        # layout_name, letters, positions, qwerty_letters, qwerty_positions, ranks, then original metrics
+        output_columns = ['layout']
+        
+        # Add layout string columns if available
+        if has_layout_strings:
+            output_columns.extend(['letters', 'positions', 'qwerty_letters', 'qwerty_positions'])
+        
+        # Add rank columns
+        output_columns.extend(rank_columns)
+        output_columns.append('total_rank_sum')
+        
+        # Add original metric columns
+        output_columns.extend(metrics)
         
         # Add table identifier if multiple tables
         if len(dfs) > 1:
             ranking_df['table'] = table_name
-            available_columns.insert(1, 'table')
+            output_columns.insert(1, 'table')  # Insert after layout name
+        
+        # Select available columns only
+        available_columns = [col for col in output_columns if col in ranking_df.columns]
         
         # Select and store rankings
         table_rankings = ranking_df[available_columns].copy()
@@ -575,9 +647,14 @@ Examples:
 Input format:
   CSV files should be output from: score_layouts.py --csv-output
   Expected columns: layout_name,scorer,weighted_score,raw_score
+  Optional: layout_string (enables additional layout analysis columns)
 
 Rankings output:
-  CSV with columns: layout, [metric_values], [metric_ranks], total_rank_sum
+  CSV with columns: layout, [letters, positions, qwerty_letters, qwerty_positions], [metric_ranks], total_rank_sum, [metric_values]
+  - letters: layout letters in keyboard order
+  - positions: corresponding QWERTY positions for layout letters  
+  - qwerty_letters: what letter is at each QWERTY position
+  - qwerty_positions: QWERTY reference positions
   Layouts ordered by total rank sum (lower = better overall performance)
         """
     )

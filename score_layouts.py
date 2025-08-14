@@ -68,7 +68,6 @@ import pandas as pd
 import numpy as np
 from pathlib import Path
 from typing import Dict, List, Tuple, Optional, Set
-from collections import defaultdict
 
 class LayoutScorer:
     """Unified layout scorer using pre-computed score table."""
@@ -907,17 +906,21 @@ def parse_layout_string(layout_str: str) -> Dict[str, str]:
     else:
         return layout_str.strip()
 
-def parse_layout_compare(compare_args: List[str]) -> Dict[str, Dict[str, str]]:
+def parse_layout_compare(compare_args: List[str]) -> Tuple[Dict[str, Dict[str, str]], Dict[str, str]]:
     """Parse layout comparison arguments."""
     layouts = {}
+    layout_strings = {}  # Store original layout strings
     
     for arg in compare_args:
         if ':' not in arg:
             raise ValueError(f"Layout comparison format should be 'name:layout'. Got: {arg}")
         
         name, layout_str = arg.split(':', 1)
-        name = str(name).strip()  # Force to string
-        layout_str = str(layout_str).strip()  # Force to string
+        name = str(name).strip()
+        layout_str = str(layout_str).strip()
+        
+        # Store the original layout string
+        layout_strings[name] = layout_str  # NEW
         
         # Create mapping from layout string to QWERTY positions
         qwerty_positions = "QWERTYUIOPASDFGHJKL;ZXCVBNM,./['"
@@ -944,7 +947,7 @@ def parse_layout_compare(compare_args: List[str]) -> Dict[str, Dict[str, str]]:
         
         layouts[name] = mapping
     
-    return layouts
+    return layouts, layout_strings
 
 def create_layout_mapping(letters: str, positions: str) -> Dict[str, str]:
     """Create mapping from letters to QWERTY positions."""
@@ -1034,11 +1037,11 @@ def print_results(results: Dict[str, float], format_type: str = 'detailed', scor
     if not use_raw and 'frequency_coverage' in results:
         print(f"Frequency coverage (% English frequency that layout covers): {results['frequency_coverage']:.1%}")
     
-def print_comparison_summary(comparison_results, format_type='detailed', quiet=False, use_raw=False, verbose=False):
+def print_comparison_summary(comparison_results, layout_strings=None, format_type='detailed', quiet=False, use_raw=False, verbose=False):
     """Print summary with complete format support."""
     
     if format_type == 'csv_output':
-        print("layout_name,scorer,weighted_score,raw_score")
+        print("layout_name,scorer,weighted_score,raw_score,layout_string")
         
         for layout_name, layout_results in comparison_results.items():
             for scorer, results in layout_results.items():
@@ -1049,8 +1052,12 @@ def print_comparison_summary(comparison_results, format_type='detailed', quiet=F
                 weighted_score = float(results['average_score'])
                 raw_score = float(results.get('raw_average_score', results['average_score']))
                 
+                # Get layout string if available
+                layout_string = layout_strings.get(layout_name, "") if layout_strings else ""
+                safe_layout_string = str(layout_string).replace('"', '""')
+                
                 # Use quoted strings to preserve special characters
-                print(f'"{safe_layout_name}","{safe_scorer}",{weighted_score:.6f},{raw_score:.6f}')
+                print(f'"{safe_layout_name}","{safe_scorer}",{weighted_score:.6f},{raw_score:.6f},"{safe_layout_string}"')
         return
     
     elif format_type == 'score_only':
@@ -1149,11 +1156,11 @@ def print_comparison_summary(comparison_results, format_type='detailed', quiet=F
     
     else:
         print(f"Warning: Unsupported format type '{format_type}'. Using detailed format.")
-        print_comparison_summary(comparison_results, 'detailed', quiet, use_raw, verbose)
+        print_comparison_summary(comparison_results, layout_strings, 'detailed', quiet, use_raw, verbose)
 
 def save_detailed_comparison_csv(comparison_results: Dict[str, Dict[str, Dict[str, float]]], 
                                filename: str, layout_mappings: Dict[str, Dict[str, str]] = None, 
-                               use_raw: bool = False):
+                               use_raw: bool = False, layout_strings: Dict[str, str] = None):
     """Save detailed comparison results to CSV."""
     
     rows = []
@@ -1176,6 +1183,10 @@ def save_detailed_comparison_csv(comparison_results: Dict[str, Dict[str, Dict[st
                     'total_frequency': results.get('total_frequency', 0),
                     'frequency_coverage': results.get('frequency_coverage', 0.0)
                 })
+            
+            # Add layout string if available
+            if layout_strings and layout_name in layout_strings:
+                row['layout_string'] = layout_strings[layout_name]
             
             # Add layout mapping if available
             if layout_mappings and layout_name in layout_mappings:
@@ -1371,7 +1382,7 @@ def main() -> int:
         
         if args.compare:
             # Layout comparison mode
-            layouts = parse_layout_compare(args.compare)
+            layouts, layout_strings = parse_layout_compare(args.compare)  # NEW: Get both
             
             # Determine which scorers to run
             if args.scorer:
@@ -1408,13 +1419,13 @@ def main() -> int:
             
             # Handle output
             if args.csv:
-                save_detailed_comparison_csv(results, args.csv, layouts, args.raw)
+                save_detailed_comparison_csv(results, args.csv, layouts, args.raw, layout_strings)  # NEW: Pass layout_strings
                 if not args.quiet and args.format != 'csv_output':
                     print(f"Detailed comparison saved to: {args.csv}")
             else:
                 if not args.quiet and args.format != 'csv_output':
                     print(f"\n=== RESULTS ===")
-                print_comparison_summary(results, args.format, args.quiet, args.raw, args.verbose)
+                print_comparison_summary(results, layout_strings, args.format, args.quiet, args.raw, args.verbose)  # NEW: Pass layout_strings
 
         else:
             # Single layout mode
@@ -1459,7 +1470,8 @@ def main() -> int:
                 # Convert to comparison format
                 comparison_results = {layout_name: results}
                 layout_mappings_for_csv = {layout_name: layout_mapping}
-                save_detailed_comparison_csv(comparison_results, args.csv, layout_mappings_for_csv, args.raw)
+                layout_strings_for_csv = {layout_name: args.letters}  # NEW: Use letters as layout string
+                save_detailed_comparison_csv(comparison_results, args.csv, layout_mappings_for_csv, args.raw, layout_strings_for_csv)  # NEW: Pass layout_strings
                 if not args.quiet and args.format != 'csv_output':
                     print(f"Results saved to: {args.csv}")
             else:
@@ -1483,11 +1495,14 @@ def main() -> int:
                     # Handle different output formats
                     if args.format == 'csv_output':
                         # CSV output format
-                        print("layout_name,scorer,weighted_score,raw_score")
+                        print("layout_name,scorer,weighted_score,raw_score,layout_string")  # NEW: Added layout_string
                         for scorer_name, scorer_results in results.items():
                             weighted_score = scorer_results['average_score']
                             raw_score = scorer_results.get('raw_average_score', scorer_results['average_score'])
-                            print(f'"{layout_name}","{scorer_name}",{weighted_score:.6f},{raw_score:.6f}')
+                            # For single layout mode, we can use the letters as layout string
+                            layout_string = args.letters if args.letters else ""
+                            safe_layout_string = str(layout_string).replace('"', '""')
+                            print(f'"{layout_name}","{scorer_name}",{weighted_score:.6f},{raw_score:.6f},"{safe_layout_string}"')
                     
                     elif args.format == 'csv':
                         # Detailed CSV format
@@ -1501,6 +1516,9 @@ def main() -> int:
                                 'pair_count': scorer_results['pair_count'],
                                 'coverage': scorer_results['coverage']
                             }
+                            
+                            # Add layout string for single layout mode
+                            row['layout_string'] = args.letters if args.letters else ""
                             
                             # Add frequency-weighted vs raw details if available
                             if not args.raw and 'raw_average_score' in scorer_results:
@@ -1583,6 +1601,6 @@ def main() -> int:
             import traceback
             traceback.print_exc()
         return 1
-
+    
 if __name__ == "__main__":
     sys.exit(main())
