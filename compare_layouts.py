@@ -17,9 +17,9 @@ python compare_layouts.py --tables layout_scores.csv --metrics engram comfort co
 poetry run python3 compare_layouts.py --tables output/layout_scores.csv output/moo_layout_scores.csv --metrics engram comfort comfort-key dvorak7 time_total distance_total --output output/layout_comparison.png
 poetry run python3 compare_layouts.py --tables output/layout_scores.csv output/moo_layout_scores.csv --metrics engram comfort comfort-key dvorak7 dvorak7_repetition dvorak7_movement dvorak7_vertical dvorak7_horizontal dvorak7_adjacent dvorak7_weak dvorak7_outward time_total time_setup time_interval time_return distance_total distance_setup distance_interval distance_return --output output/layout_comparison_detailed.png
 
-# Get layout rankings for the metrics
-poetry run python3 compare_layouts.py --tables output/moo_layout_scores.csv --metrics comfort comfort-key dvorak7 time_total distance_total --rankings output/layout_rankings_basic.csv
-poetry run python3 compare_layouts.py --tables output/moo_layout_scores.csv --metrics comfort comfort-key dvorak7 dvorak7_repetition dvorak7_movement dvorak7_vertical dvorak7_horizontal dvorak7_adjacent dvorak7_weak dvorak7_outward time_total time_setup time_interval time_return distance_total distance_setup distance_interval distance_return --rankings output/layout_rankings_detailed.csv
+# Get layout rankings for the metrics applied to the layouts in one table
+poetry run python3 compare_layouts.py --tables output/moo_layout_scores.csv --metrics comfort comfort-key dvorak7 time_total distance_total --rankings output/layout_rankings.csv --output output/layout_comparison.csv
+poetry run python3 compare_layouts.py --tables output/moo_layout_scores.csv --metrics comfort comfort-key dvorak7 dvorak7_repetition dvorak7_movement dvorak7_vertical dvorak7_horizontal dvorak7_adjacent dvorak7_weak dvorak7_outward time_total time_setup time_interval time_return distance_total distance_setup distance_interval distance_return --rankings output/layout_rankings_detailed.csv --output output/layout_comparison_detailed.csv
 """
 
 import argparse

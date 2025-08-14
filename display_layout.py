@@ -6,14 +6,28 @@ This script takes letters and their corresponding QWERTY positions
 and displays them on a 32-key keyboard layout (3 rows: 11+11+10 keys).
 
 Usage:
-    python display_layout.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ"
-    python display_layout.py --letters "hello" --positions "HJKLO" --ascii
+
+    # Display ASCII keyboard layout with letters and positions:
+    python display_layout.py --letters "kgio'\"dncwphae,.tsrlxjyu-?mfvbqz"
+
+    # The above is in Qwerty order, so it is the same as:
+    python display_layout.py --letters "kgio'\"dncwphae,.tsrlxjyu-?mfvbqz" \
+        --positions "QWERTYUIOPASDFGHJKL;ZXCVBNM,./['"
+
+    # To generate a realistic HTML image:
     python display_layout.py --letters "test" --positions "RTSG" --html
+
+    # Arbitrary letters and positions:
+    python display_layout.py --letters "abc" --positions "P;/"
+
 """
 
 import argparse
+from ast import arg
 import sys
 import os
+
+QWERTY_ORDER = "QWERTYUIOPASDFGHJKL;ZXCVBNM,./['"
 
 def create_32key_layout():
     """
@@ -47,25 +61,11 @@ def create_qwerty_mapping():
     }
     return qwerty_positions
 
-def display_simple(layout, letters, positions):
-    """Display simple monospace grid layout"""
-    print("\n32-KEY KEYBOARD LAYOUT")
-    print("=" * 30)
-    
-    # Display the layout as a simple grid
-    for i, row in enumerate(layout):
-        if i == 2:  # Bottom row is shorter, so add spacing
-            print(" " + " ".join(row))
-        else:
-            print(" ".join(row))
-    
-    print("\nMapping:", " ".join([f"{l}->{p}" for l, p in zip(letters, positions)]))
-    print(f"Letters: {len(letters)}/32 keys used")
-
-def display_ascii(layout, letters, positions):
+def display_ascii(layout, letters, positions, quiet=False):
     """Display keyboard with unicode box-drawing characters"""
-    print("\n32-KEY KEYBOARD LAYOUT (ASCII ART)")
-    print("=" * 60)
+
+    if not quiet:
+        print("\nLetters → Qwerty keys:\n{letters}\n{positions}\n".format(letters=letters, positions=positions))
     
     # Row 1 (11 keys)
     print("┌───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┐")
@@ -78,14 +78,13 @@ def display_ascii(layout, letters, positions):
     print(row2)
     
     # Row 3 (10 keys - shorter)
-    print("├───┼───┼───┼───┼───┼───┼───┼───┼───┼───┤   │")
-    row3 = "│ " + " │ ".join([f"{key}" for key in layout[2]]) + " │   │"
+    print("├───┼───┼───┼───┼───┼───┼───┼───┼───┼───┤───┘")
+    row3 = "│ " + " │ ".join([f"{key}" for key in layout[2]]) + " │"
     print(row3)
-    print("└───┴───┴───┴───┴───┴───┴───┴───┴───┴───┘   │")
-    print("                                        └───┘")
-    
-    print(f"\nLetters placed: {len(letters)}/32")
-    print("Mapping:", " ".join([f"{l}→{p}" for l, p in zip(letters, positions)]))
+    print("└───┴───┴───┴───┴───┴───┴───┴───┴───┴───┘    ")
+
+    if not quiet:
+        print(f"\n\n")
 
 def display_html(layout, letters, positions, output_file="keyboard_layout.html"):
     """Generate clean HTML file with realistic keyboard layout"""
@@ -179,20 +178,11 @@ def display_html(layout, letters, positions, output_file="keyboard_layout.html")
 def validate_inputs(letters, positions):
     """Validate the input letters and positions"""
     if len(letters) != len(positions):
-        print(f"Error: Number of letters ({len(letters)}) must match number of positions ({len(positions)})")
+        print(f"Error: Number of characters ({len(letters)}) must match number of positions ({len(positions)})")
         return False
     
-    if len(letters) > 26:
-        print(f"Error: Maximum 26 letters allowed, got {len(letters)}")
-        return False
-    
-    if len(letters) > 32:
-        print(f"Error: Maximum 32 keys available, got {len(letters)} letters")
-        return False
-    
-    # Check for duplicate letters
-    if len(set(letters.lower())) != len(letters):
-        print("Error: Duplicate letters found")
+    if len(letters) > 32:  # Remove the 26 limit
+        print(f"Error: Maximum 32 keys available, got {len(letters)} characters")
         return False
     
     # Check for duplicate positions
@@ -209,27 +199,23 @@ def main():
         epilog="""
 Display modes:
   (default)  Unicode box-drawing keyboard
-  --simple   Simple monospace display  
   --html     Generate clean HTML keyboard
 
 Examples:
   python display_layout.py --letters "etaoin" --positions "FDESGH"
-  python display_layout.py --letters "hello" --positions "HJKLO" --simple
   python display_layout.py --letters "test" --positions "RTSG" --html
         """
     )
     
     parser.add_argument('--letters', 
                        required=True,
-                       help='Letters to place on keyboard (up to 26 characters)')
-    
-    parser.add_argument('--positions', 
-                       required=True,
+                       help='Characters to place on keyboard (up to 32 characters)')
+
+    parser.add_argument('--positions',      
+                       required=False,
                        help='Corresponding QWERTY positions (e.g., "QWERTY" for top row)')
     
     # Display mode options
-    parser.add_argument('--simple', action='store_true',
-                       help='Simple monospace display')
     parser.add_argument('--html', action='store_true',
                        help='Generate clean HTML file')
     
@@ -238,12 +224,16 @@ Examples:
     
     parser.add_argument('--show-empty', action='store_true',
                        help='Show positions of empty keys')
+
+    parser.add_argument('--quiet', action='store_true',
+                       help='Only show keyboard layout')
     
     args = parser.parse_args()
     
-    letters = args.letters.lower()
-    positions = args.positions.upper()
-    
+    quiet = args.quiet
+    letters = args.letters.upper()
+    positions = args.positions.upper() if args.positions else QWERTY_ORDER[:len(letters)]
+
     # Validate inputs
     if not validate_inputs(letters, positions):
         sys.exit(1)
@@ -275,12 +265,10 @@ Examples:
     # Choose display mode
     if args.html:
         display_html(layout, letters, positions, args.output)
-    elif args.simple:
-        display_simple(layout, letters, positions)
     else:  # Default to ASCII
-        display_ascii(layout, letters, positions)
+        display_ascii(layout, letters, positions, quiet)
     
-    # Show empty keys if requested (not for HTML mode)
+    # Show empty keys if requested (ASCII mode only)
     if args.show_empty and not args.html:
         print(f"\nEMPTY KEY POSITIONS:")
         print("-" * 40)
