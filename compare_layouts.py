@@ -1,28 +1,39 @@
 #!/usr/bin/env python3
 """
-Keyboard layout comparison with metric filtering
+Keyboard layout comparison with metric filtering and ranking
 
 Creates parallel coordinates and heatmap plots comparing keyboard layouts 
 across performance metrics, and allows filtering to specific metrics in a specified order.
 
+Core metrics are recommended by default. Experimental distance/efficiency 
+and time/speed metrics can be included but have significant limitations:
+- Distance metrics oversimplify biomechanics (ignore lateral stretching, finger strength, etc.)
+- Time metrics contain QWERTY practice bias from empirical data
+
 Examples:
-    # All available metrics (alphabetical order)
+    # All available metrics (includes core biomechanical metrics by default)
     poetry run python3 compare_layouts.py --tables layout_scores.csv
 
-    # Specific metrics in custom order (1 table)
-    poetry run python3 compare_layouts.py --metrics engram comfort comfort-key dvorak7 time_total distance_total --tables layout_scores.csv
-    poetry run python3 compare_layouts.py --metrics engram comfort comfort-key dvorak7 dvorak7_repetition dvorak7_movement dvorak7_vertical dvorak7_horizontal dvorak7_adjacent dvorak7_weak dvorak7_outward time_total time_setup time_interval time_return distance_total distance_setup distance_interval distance_return --tables layout_scores.csv
+    # Core biomechanical metrics only (recommended)
+    poetry run python3 compare_layouts.py --metrics engram comfort comfort-key dvorak7 --tables layout_scores.csv
+
+    # Include experimental distance/time metrics (caution: limitations noted above)
+    poetry run python3 compare_layouts.py --metrics engram comfort comfort-key dvorak7 efficiency_total speed_total --tables layout_scores.csv
 
     # Create both plots and rankings with rank-based coloring (1 table)
-    poetry run python3 compare_layouts.py --metrics engram comfort comfort-key dvorak7 distance_total time_total --output comparison.png --rankings rankings.csv --tables layout_scores.csv 
+    poetry run python3 compare_layouts.py --metrics engram comfort comfort-key dvorak7 --output comparison.png --rankings rankings.csv --tables layout_scores.csv 
 
-    # Compare multiple tables with filtered metrics and output file
-    poetry run python3 compare_layouts.py --metrics engram comfort comfort-key dvorak7 time_total distance_total --output output/layout_comparison.png --tables layout_scores.csv moo_layout_scores.csv
-    poetry run python3 compare_layouts.py --metrics engram comfort comfort-key dvorak7 dvorak7_repetition dvorak7_movement dvorak7_vertical dvorak7_horizontal dvorak7_adjacent dvorak7_weak dvorak7_outward time_total time_setup time_interval time_return distance_total distance_setup distance_interval distance_return --output output/layout_comparison_detailed.png --tables layout_scores.csv moo_layout_scores.csv
+    # Compare multiple tables with core metrics
+    poetry run python3 compare_layouts.py --metrics engram comfort comfort-key dvorak7 --output output/layout_comparison.png --tables layout_scores.csv moo_layout_scores.csv
 
-    # Get layout rankings and plots for the metrics applied to the layouts (1 table)
-    poetry run python3 compare_layouts.py --metrics comfort comfort-key dvorak7 time_total distance_total --rankings output/layout_rankings.csv --output output/layout_comparison.csv --tables moo_layout_scores.csv
-    poetry run python3 compare_layouts.py --metrics comfort comfort-key dvorak7 dvorak7_repetition dvorak7_movement dvorak7_vertical dvorak7_horizontal dvorak7_adjacent dvorak7_weak dvorak7_outward time_total time_setup time_interval time_return distance_total distance_setup distance_interval distance_return --rankings output/layout_rankings_detailed.csv --output output/layout_comparison_detailed.csv --tables moo_layout_scores.csv
+    # Detailed comparison with Dvorak-7 breakdown (biomechanical focus)
+    poetry run python3 compare_layouts.py --metrics engram comfort comfort-key dvorak7 dvorak7_repetition dvorak7_movement dvorak7_vertical dvorak7_horizontal dvorak7_adjacent dvorak7_weak dvorak7_outward --output output/layout_comparison_detailed.png --tables layout_scores.csv moo_layout_scores.csv
+
+    # Get layout rankings and plots for core metrics (1 table)
+    poetry run python3 compare_layouts.py --metrics comfort comfort-key dvorak7 engram --rankings output/layout_rankings.csv --output output/layout_comparison.csv --tables moo_layout_scores.csv
+
+    # Experimental metrics comparison (use with caution due to limitations)
+    poetry run python3 compare_layouts.py --metrics engram comfort efficiency_total speed_total --output output/layout_comparison_experimental.png --tables layout_scores.csv
 
 Input format:
   CSV files should be output from: score_layouts.py --csv-output
@@ -200,8 +211,31 @@ def find_available_metrics(dfs: List[pd.DataFrame], verbose: bool = False) -> Li
     
     if verbose:
         print(f"\nFound {len(available_metrics)} scorer metrics available:")
-        for i, metric in enumerate(available_metrics):
-            print(f"  {i+1:2d}. {metric}")
+        
+        # Categorize metrics for better display
+        core_metrics = []
+        experimental_metrics = []
+        
+        for metric in available_metrics:
+            metric_lower = metric.lower()
+            if (metric_lower.startswith('distance') or metric_lower.startswith('efficiency') or
+                metric_lower.startswith('time') or metric_lower.startswith('speed') or
+                metric_lower == 'distance' or metric_lower == 'efficiency' or
+                metric_lower == 'time' or metric_lower == 'speed' or
+                'dvorak7-speed' in metric_lower):
+                experimental_metrics.append(metric)
+            else:
+                core_metrics.append(metric)
+        
+        if core_metrics:
+            print(f"  Core biomechanical metrics ({len(core_metrics)}):")
+            for i, metric in enumerate(core_metrics):
+                print(f"    {i+1:2d}. {metric}")
+        
+        if experimental_metrics:
+            print(f"  Experimental metrics ({len(experimental_metrics)}) - use with caution:")
+            for i, metric in enumerate(experimental_metrics):
+                print(f"    {i+1:2d}. {metric}")
     
     return available_metrics
 
@@ -704,20 +738,23 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  # All available metrics (alphabetical order)
+  # All available metrics (core biomechanical metrics by default)
   python compare_layouts.py --tables layout_scores.csv
   
-  # Specific metrics in custom order
-  python compare_layouts.py --tables layout_scores.csv --metrics engram comfort comfort-key dvorak7 distance_total time_total
+  # Core biomechanical metrics only (recommended)
+  python compare_layouts.py --tables layout_scores.csv --metrics engram comfort comfort-key dvorak7
+  
+  # Include experimental distance/time metrics (caution: limitations)
+  python compare_layouts.py --tables layout_scores.csv --metrics engram comfort efficiency_total speed_total
   
   # Create rankings table only (no plots)
   python compare_layouts.py --tables layout_scores.csv --metrics engram comfort dvorak7 --rankings layout_rankings.csv
   
   # Create both plots and rankings with rank-based coloring
-  python compare_layouts.py --tables layout_scores.csv --metrics engram comfort comfort-key dvorak7 distance_total time_total --output comparison.png --rankings rankings.csv
+  python compare_layouts.py --tables layout_scores.csv --metrics engram comfort comfort-key dvorak7 --output comparison.png --rankings rankings.csv
   
   # Multiple tables with filtered metrics and rankings
-  python compare_layouts.py --tables scores1.csv scores2.csv --metrics comfort distance_total --rankings combined_rankings.csv
+  python compare_layouts.py --tables scores1.csv scores2.csv --metrics comfort engram --rankings combined_rankings.csv
 
 Input format:
   CSV files should be output from: score_layouts.py --csv-output
@@ -734,6 +771,14 @@ Rankings output:
   
 Rank-based coloring:
   When --rankings is used, parallel plot lines are colored from dark red (best) to light red (worst) based on total rank sum.
+
+Core vs Experimental Metrics:
+  Core biomechanical metrics (recommended): engram, comfort, comfort-key, dvorak7
+  Experimental metrics (use with caution): efficiency_*, speed_*, dvorak7-speed
+  
+  Experimental metrics have significant limitations:
+  - Distance/efficiency metrics oversimplify biomechanics (ignore lateral stretching, finger strength, etc.)
+  - Time/speed metrics contain QWERTY practice bias from empirical data
         """
     )
     

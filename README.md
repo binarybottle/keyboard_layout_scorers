@@ -1,20 +1,35 @@
 # Keyboard Layout Scorer
 A comprehensive framework for evaluating keyboard layouts using precomputed scoring tables
 
-**Repository**: https://github.com/binarybottle/keyboard_layout_scorers.git  
-**Author**: Arno Klein (arnoklein.info)  
-**License**: MIT License (see LICENSE)
+Repository: https://github.com/binarybottle/keyboard_layout_scorers.git  
+Author: Arno Klein (arnoklein.info)  
+License: MIT License (see LICENSE)
 
 This framework provides fast keyboard layout evaluation using precomputed scoring tables across multiple metrics. It uses a two-phase approach: first generate comprehensive scoring tables for all possible key-pair combinations, then use those tables for rapid layout scoring and comparison.
 
 ## Scoring Methods
 
-The framework supports four main scoring approaches:
+The framework supports biomechanically-grounded scoring approaches by default, with experimental metrics available separately:
 
-- **Distance Scorer**: Physical finger travel distance analysis with per-finger distance tracking
-- **Time Scorer**: Typing time analysis based on empirical data from CSV typing datasets
-- **Comfort Scorer**: Key comfort analysis based on finger ergonomics and key positions
-- **Dvorak-7 Scorer**: Implementation of Dvorak's 9 theoretical typing principles with individual criterion breakdown
+### Core metrics (default)
+- Dvorak-7 scorer: Implementation of Dvorak's 7 theoretical typing principles
+- Comfort scorer: Frequency-weighted key-pair comfort analysis based on Typing Preference Study data
+- Comfort-key scorer: Frequency-weighted key comfort analysis based on Typing Preference Study data
+- Engram scorer: Composite (key and key-pair) comfort score
+
+### Experimental metrics (--experimental-metrics)
+- Efficiency scorer: Physical finger travel distance analysis (oversimplifies biomechanics)
+- Speed scorer: Typing time analysis based on empirical data (contains QWERTY practice bias)
+- Dvorak-7 speed: Speed-weighted Dvorak-7 (also contains QWERTY bias)
+
+Experimental metrics are disabled by default due to significant limitations:
+  - Distance/efficiency metrics limitations:
+    - Oversimplifies biomechanics: ignores lateral finger stretching vs. comfortable curling motions
+    - Misses finger strength differences: treats pinky and index finger movements as equivalent
+    - Uniform movement assumption: all finger movements treated as biomechanically equivalent
+  - Time/speed metrics limitations:
+    - Qwerty practice bias: empirical timing data reflects years of Qwerty-specific training
+    - Unfair disadvantages: Alternative layouts map to less-practiced key combinations
 
 ## Installation
 
@@ -30,7 +45,7 @@ poetry install
 
 ### Phase 1: Generate Scoring Tables
 
-First, generate the precomputed scoring tables (this only needs to be done once):
+First, generate the precomputed scoring tables (already provided, language-independent):
 
 ```bash
 # Generate individual scoring tables
@@ -48,29 +63,26 @@ python prep_scoring_tables.py --input-dir tables/ --verbose
 Once tables are generated, score layouts quickly:
 
 ```bash
-# Score a single layout using all available methods
+# Score using core biomechanical metrics (recommended)
 python score_layouts.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ"
 
-# Compare multiple layouts
+# Include experimental distance/time metrics (caution: limitations noted above)
+python score_layouts.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --experimental-metrics
+
+# Compare multiple layouts with core metrics (recommended)
 python score_layouts.py --compare qwerty:"qwertyuiopasdfghjkl;zxcvbnm,./" dvorak:"',.pyfgcrlaoeuidhtns;qjkxbmwvz" colemak:"qwfpgjluy;arstdhneiozxcvbkm,./"
 
-# Generate comparison visualizations
+# Compare with experimental metrics (use with caution)
+python score_layouts.py --compare qwerty:"qwertyuiop" dvorak:"',.pyfgcrl" --experimental-metrics
+
+# Generate comparison visualizations (core metrics)
 python compare_layouts.py --tables layout_scores.csv --output comparison
 
-# CSV output for automation
+# Include experimental metrics in visualizations (caution)
+python compare_layouts.py --metrics engram comfort efficiency_total speed_total --tables layout_scores.csv --output comparison_exp
+
+# CSV output for automation (core metrics)
 python score_layouts.py --compare qwerty:"qwertyuiop" dvorak:"',.pyfgcrl" --csv-output
-```
-
-### Automated Workflow
-
-Generate ready-to-run commands for standard layout comparison:
-
-```bash
-# Generate workflow commands
-python generate_command.py
-
-# Run the complete workflow
-./output/compare_standard_layouts.sh
 ```
 
 ## Architecture
@@ -78,19 +90,18 @@ python generate_command.py
 ```
 keyboard_layout_scorers/
 ├── README.md                          # This file
-├── 
+│ 
 ├── # Table Generation (Phase 1)
 ├── prep_keypair_distance_scores.py    # Generate distance scoring table
 ├── prep_keypair_time_scores.py        # Generate time scoring table  
 ├── prep_keypair_comfort_scores.py     # Generate comfort scoring table
 ├── prep_keypair_dvorak7_scores.py     # Generate Dvorak-7 scoring table
 ├── prep_scoring_tables.py             # Combine tables with normalization
-├──
+│
 ├── # Layout Scoring (Phase 2)
 ├── score_layouts.py                   # Main layout scoring tool
 ├── compare_layouts.py                 # Visualization and comparison
-├── generate_command.py                # Workflow automation
-├──
+│
 ├── # Data Directories
 ├── tables/                            # Generated scoring tables
 │   ├── keypair_scores.csv             # Unified scoring table
@@ -99,7 +110,7 @@ keyboard_layout_scorers/
 │   ├── keypair_time_scores.csv        # Time scoring data
 │   ├── keypair_comfort_scores.csv     # Comfort scoring data
 │   └── keypair_dvorak7_scores.csv     # Dvorak-7 scoring data
-├──
+│
 ├── input/                             # Input data files
 │   ├── english-letter-pair-frequencies-google-ngrams.csv
 │   ├── english-letter-frequencies-google-ngrams.csv
@@ -111,191 +122,186 @@ keyboard_layout_scorers/
 
 ### Phase 1: Table Generation
 
-**Distance Scores** (`prep_keypair_distance_scores.py`):
-- Computes theoretical distances for all 1024 QWERTY key-pairs
-- Processes text files to find real-world usage patterns
-- Uses finger tracking with proper reset logic
-- Outputs: `keypair_distance_scores.csv`
-
-**Time Scores** (`prep_keypair_time_scores.py`):
-- Analyzes CSV typing data for key-to-key timing
-- Uses comprehensive fallback strategy for missing data
-- Calculates timing components (key1_time + transition_time)
-- Outputs: `keypair_time_scores.csv`
-
 **Comfort Scores** (`prep_keypair_comfort_scores.py`):
 - Generates comfort scores for all key-pairs using rule-based approach
 - Handles same-hand vs different-hand transitions
 - Outputs: `keypair_comfort_scores.csv`
 
 **Dvorak-7 Scores** (`prep_keypair_dvorak7_scores.py`):
-- Implements all 9 Dvorak theoretical principles
+- Implements all 7 Dvorak theoretical principles
 - Generates both overall and individual criterion scores
 - Outputs: `keypair_dvorak7_scores.csv` + individual criterion files
+
+**Distance Scores** (`prep_keypair_distance_scores.py`):
+- Computes theoretical distances for all 1024 Qwerty key-pairs
+- Calculates distance components (setup, transition, return)
+- Uses finger tracking with reset logic
+- Outputs: `keypair_distance_scores.csv`
+- Results inverted to become experimental efficiency metrics
+
+**Time Scores** (`prep_keypair_time_scores.py`):
+- Analyzes CSV typing data for key-to-key timing
+- Calculates timing components (setup, transition, return)
+- Outputs: `keypair_time_scores.csv`
+- Results inverted to become experimental speed metrics
 
 **Table Unification** (`prep_scoring_tables.py`):
 - Combines all individual score files
 - Applies smart normalization with distribution detection
 - Creates unified `keypair_scores.csv` and `key_scores.csv`
 
-### Phase 2: Layout Scoring
+### Phase 2: Layout scoring
 
-**Main Scorer** (`score_layouts.py`):
+**Main scorer** (`score_layouts.py`):
 - Fast lookup-based scoring using precomputed tables
-- Supports frequency weighting using English bigram data
+- Supports frequency weighting using English (or other language) bigram data
 - Multiple output formats: detailed, CSV, score-only
 - Handles single layouts and multi-layout comparisons
+- Default metrics: engram, comfort, comfort-key, dvorak7
+- Experimental metrics: distance/time metrics with `--experimental-metrics`
 
-**Visualization** (`compare_layouts.py`):
-- Creates parallel coordinates plots
-- Generates heatmap visualizations  
-- Sorts layouts by performance
+**Ranking and visualization** (`compare_layouts.py`):
+- Ranks layouts
+- Creates parallel coordinates and heatmap plots  
 - Supports multiple scoring tables
 
 ## Output Formats
 
-### Detailed Output (Default)
+### Detailed output (default)
 Shows comprehensive results with scoring breakdowns:
 ```bash
+# Core biomechanical metrics only
 python score_layouts.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ"
+
+# Include experimental metrics
+python score_layouts.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --experimental-metrics
 ```
 
-### CSV Output for Automation
+### CSV output for automation
 ```bash
-# Minimal CSV (layout_name,scorer,weighted_score,raw_score)
+# Minimal CSV with core metrics (layout_name,scorer,weighted_score,raw_score)
 python score_layouts.py --compare qwerty:"qwertyuiop" dvorak:"',.pyfgcrl" --csv-output
+
+# Include experimental metrics in CSV
+python score_layouts.py --compare qwerty:"qwertyuiop" dvorak:"',.pyfgcrl" --experimental-metrics --csv-output
 
 # Detailed CSV file
 python score_layouts.py --compare layouts... --csv results.csv
 ```
 
-### Visualization Output
+### Visualization output
 ```bash
-# Generate parallel coordinates and heatmap plots
+# Generate parallel coordinates and heatmap plots (core metrics)
 python compare_layouts.py --tables layout_scores.csv --output comparison
 # Creates: comparison_parallel.png and comparison_heatmap.png
+
+# Include experimental metrics in visualization
+python compare_layouts.py --metrics engram comfort efficiency_total speed_total --tables layout_scores.csv --output comparison_experimental
 ```
 
 ## Data Requirements
 
-### Required Files (Phase 1)
+### Required files (Phase 1)
 - `input/english-letter-pair-frequencies-google-ngrams.csv` - English bigram frequencies
 - `input/english-letter-frequencies-google-ngrams.csv` - English letter frequencies  
 - `input/comfort_keypair_scores_24keys.csv` - Base comfort scores for key-pairs
 - Text corpus files (for preparing distance scoring table)
 - CSV typing data directory (for preparing time scoring table)
 
-### Generated Files (Phase 1 Output)
+### Generated files (Phase 1 output)
 - `tables/keypair_scores.csv` - Unified scoring table with normalized scores
 - `tables/key_scores.csv` - Individual key comfort scores
 - Individual scorer tables (`tables/keypair_*_scores.csv`)
 
-### File Formats
+### File formats
 
-**Frequency Files:**
+**Frequency files:**
 ```csv
 letter_pair,normalized_frequency
 th,3.56
 he,3.07
 ```
 
-**Scoring Tables:**
+**Scoring tables:**
 ```csv
 key_pair,distance_score,comfort_score,time_score,dvorak7_score
 QW,45.2,0.7,150.3,0.6
 AS,15.1,0.9,89.2,0.8
 ```
 
-**Layout Comparison Output:**
+**Layout comparison output:**
 ```csv
 layout_name,scorer,weighted_score,raw_score
-qwerty,distance,0.756234,0.742156
-qwerty,comfort,0.623451,0.618923
-dvorak,distance,0.834567,0.821234
+qwerty,comfort,0.756234,0.742156
+qwerty,engram,0.623451,0.618923
+dvorak,comfort,0.834567,0.821234
 ```
 
-## Advanced Features
+## Advanced features
 
-### Frequency Weighting
-Uses English bigram frequencies to weight scoring by real-world usage patterns:
+### Core vs experimental metrics
+Select core biomechanical metrics or include experimental ones:
+
+#### Core metrics (recommended)
 ```bash
-# Frequency-weighted scoring (default)
+# All core metrics (default behavior)
 python score_layouts.py --letters "abc" --positions "ABC"
 
-# Raw unweighted scoring  
-python score_layouts.py --letters "abc" --positions "ABC" --raw
+# Specific core metrics
+python score_layouts.py --scorers engram,comfort --letters "abc" --positions "ABC"
+
+# Single core metric
+python score_layouts.py --scorer comfort-key --letters "abc" --positions "ABC"
 ```
 
-### Multiple Scoring Methods
-Select specific scorers or use all available:
+#### Experimental metrics (use with caution)
 ```bash
-# Single scorer
-python score_layouts.py --scorer distance --letters "abc" --positions "ABC"
+# Include experimental distance/time metrics
+python score_layouts.py --letters "abc" --positions "ABC" --experimental-metrics
 
-# Multiple specific scorers
-python score_layouts.py --scorers distance,comfort --letters "abc" --positions "ABC"
+# Specific experimental metric (requires --experimental-metrics)
+python score_layouts.py --scorer efficiency --letters "abc" --positions "ABC" --experimental-metrics
 
-# All available scorers (default)
-python score_layouts.py --letters "abc" --positions "ABC"
+# Mix core and experimental
+python score_layouts.py --scorers speed,efficiency,dvorak7-speed --letters "abc" --positions "ABC" --experimental-metrics
 ```
 
-### Visualization Options
+### Visualization options
 ```bash
-# Basic visualization
+# Core metrics visualization (recommended)
 python compare_layouts.py --tables scores.csv --output comparison
 
-# Raw scores instead of weighted
-python compare_layouts.py --tables scores.csv --use-raw --output comparison_raw
+# Specific core metrics
+python compare_layouts.py --metrics engram comfort comfort-key dvorak7 --tables scores.csv --output core_comparison
 
-# Verbose output with statistics
+# Include experimental metrics in visualization (caution)
+python compare_layouts.py --metrics engram comfort efficiency_total speed_total --tables scores.csv --output experimental_comparison
+
+# Verbose output with metric categorization
 python compare_layouts.py --tables scores.csv --verbose
 ```
 
-## Standard Layouts Included
-
-The framework includes analysis for 13 standard keyboard layouts:
-
-- **QWERTY** - `qwertyuiopasdfghjkl;zxcvbnm,./['`
-- **Dvorak** - `',.pyfgcrlaoeuidhtns;qjkxbmwvz['`
-- **Colemak** - `qwfpgjluy;arstdhneiozxcvbkm,./['`
-- **Colemak-DH** - `qwfpbjluy;arstgmneiozxcdvkh,./['`
-- **Workman** - `qdrwbjfup;ashtgyneoizxmcvkl,./['`
-- **Norman** - `qwdfkjurl;asetgyniohzxcvbpm,./['`
-- **Halmak 2.2** - `wlrbz;qudjshnt,.aeoifmvc/gpxky['`
-- **Asset** - `qwfgjypul;asetdhniorzxcvbkm,./['`
-- **MTGAP 2.0** - `,fhdkjcul.oantgmseriqxbpzyw'v;['`
-- **QGMLWB** - `qgmlwbyuv;dstnriaeohzxcfjkp,./['`
-- **Capewell-Dvorak** - `',.pyqfgrkoaeiudhtnszxcvjlmwb;['`
-- **Klausler** - `k,uypwlmfcoaeidrnthsq.';zxvgbj['`
-- **Hieamtsrn** - `byou'kdclphiea,mtsrnx-".?wgfjzqv`
-
-## Example Usage
-
-### Complete Standard Layout Analysis
+### Rankings and analysis
 ```bash
-# Generate workflow for standard layouts
-python generate_command.py
+# Core metrics rankings
+python compare_layouts.py --metrics engram comfort comfort-key dvorak7 --rankings core_rankings.csv --tables scores.csv
 
-# Run complete analysis (generates tables if needed, then compares layouts)
-./output/compare_standard_layouts.sh
+# Include experimental metrics in rankings (caution)
+python compare_layouts.py --metrics engram comfort efficiency_total speed_total --rankings exp_rankings.csv --tables scores.csv
 
-# Results: layout_comparison_parallel.png, layout_comparison_heatmap.png, layout_scores.csv
+# Rank-based visualization coloring
+python compare_layouts.py --metrics engram comfort dvorak7 --rankings rankings.csv --output ranked_comparison.png --tables scores.csv
 ```
 
-### Custom Layout Analysis
+### Automation-friendly output
 ```bash
-# Define custom layout
-python score_layouts.py --letters "etaoinshrdlcu" --positions "QWERTYUIOPASD" --verbose
+# Get core metric scores for scripting (CSV format to stdout)
+python score_layouts.py --compare qwerty:"qwertyuiop" dvorak:"',.pyfgcrl" --csv-output > core_results.csv
 
-# Compare custom vs standard
-python score_layouts.py --compare custom:"etaoinshrdlcu" qwerty:"qwertyuiopasdf"
-```
+# Include experimental metrics for comprehensive data collection
+python score_layouts.py --compare qwerty:"qwertyuiop" dvorak:"',.pyfgcrl" --experimental-metrics --csv-output > all_results.csv
 
-### Automation-Friendly Output
-```bash
-# Get scores for scripting (CSV format to stdout)
-python score_layouts.py --compare qwerty:"qwertyuiop" dvorak:"',.pyfgcrl" --csv-output > results.csv
-
-# Process results
-python compare_layouts.py --tables results.csv --output analysis
+# Process results with visualizations
+python compare_layouts.py --tables core_results.csv --output core_analysis
+python compare_layouts.py --tables all_results.csv --metrics engram comfort efficiency_total --output mixed_analysis
 ```

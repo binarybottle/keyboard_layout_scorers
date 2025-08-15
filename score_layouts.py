@@ -3,15 +3,15 @@
 Keyboard Layout Scorer using precomputed score table.
 
 A comprehensive tool for evaluating keyboard layouts using frequency-weighted scoring.
-Scoring methods include engram, comfort, comfort-key, dvorak7, and distance
-(distance scores are automatically inverted and renamed to efficiency).
+Core scoring methods include engram, comfort, comfort-key, and dvorak7.
 
-(Note: experimental time/speed-related metrics (time_*, speed_*, dvorak7-speed) 
-are disabled by default due to QWERTY practice bias in empirical timing data. 
+(Note: experimental distance/efficiency and time/speed metrics are disabled by default.
+Distance metrics oversimplify biomechanical complexity (ignoring lateral stretching,
+finger strength differences, etc.). Time metrics contain QWERTY practice bias.
 Use --experimental-metrics to enable them.)
 
 Setup:
-1. Generate individual score files (keypair_*_scores.csv) using your scoring scripts
+1. Generate individual score files (keypair_*_scores.csv) using scoring scripts in prep/
 2. Run: python prep_scoring_tables.py --input-dir tables/
    This creates: tables/keypair_scores_detailed.csv and tables/key_scores.csv
 3. Run this script to score layouts using all available methods
@@ -22,30 +22,25 @@ Default behavior:
 - Frequency data: input/english-letter-pair-frequencies-google-ngrams.csv
 - Letter frequencies: input/english-letter-frequencies-google-ngrams.csv
 - Scoring mode: Frequency-weighted (prioritizes common English letter combinations)
-- Score mapping: Letter-pair frequencies → Key-pair scores (distance/time inverted and renamed)
-- Metrics: engram, comfort, comfort-key, dvorak7, efficiency 
+- Score mapping: Letter-pair frequencies → Key-pair scores
+- Metrics: engram, comfort, comfort-key, dvorak7
 
-Metrics (default):
+Core metrics (default):
 - engram (composite comfort model)
 - comfort-key (frequency-weighted key comfort)
-- comfort (finger/hand positioning comfort scores)
-- dvorak7 (theoretical model based on typing principles)
-- efficiency_* (distance-based, objective biomechanical measurements)
+- comfort (frequency-weighted key-pair comfort)  
+- dvorak7 (based on Dvorak's 7 typing principles)
 
-Experimental Metrics (--experimental-metrics):
-- speed_* (time-based, renamed from time_*)
-- dvorak7-speed (empirically-weighted Dvorak-7)
-These metrics should be interpreted with caution due to QWERTY training bias.
-
-Scoring Transformations:
-- distance metrics: Inverted (1-score) and renamed to efficiency_*
-- time metrics: Inverted (1-score) and renamed to speed_* (experimental only)
+Experimental metrics (--experimental-metrics) should be interpreted with caution:
+- efficiency_* (inverted (1-score) from distance-based metrics, oversimplifies biomechanics)
+- speed_* (inverted from time-based metrics, contains QWERTY training bias)
+- dvorak7-speed (empirically-weighted Dvorak-7, QWERTY bias)
 
 Usage:
-    # Single layout evaluation (non-time metrics only)
+    # Core biomechanical metrics only (recommended)
     python score_layouts.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ"
     
-    # Include experimental time/speed metrics (with QWERTY bias warning)
+    # Include experimental distance/time metrics (with limitations)
     python score_layouts.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --experimental-metrics
     
     # Force raw (unweighted) scoring
@@ -54,22 +49,28 @@ Usage:
     # Compare multiple layouts (recommended approach)
     python score_layouts.py --compare qwerty:"qwertyuiop" dvorak:"',.pyfgcrl" colemak:"qwfpgjluy;"
     
-    # Compare with experimental metrics (caution: QWERTY bias)
+    # Compare with experimental metrics (caution: limitations noted above)
     python score_layouts.py --compare qwerty:"qwertyuiop" dvorak:"',.pyfgcrl" --experimental-metrics
+    
+    # Specific experimental metrics
+    python score_layouts.py --compare qwerty:"qwertyuiop" dvorak:"',.pyfgcrl" --scorer dvorak7-speed --experimental-metrics
+    
+    # Mix core and experimental metrics
+    python score_layouts.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --scorers engram,comfort,efficiency --experimental-metrics
     
     # Verbose output (shows both weighted and raw scores)
     python score_layouts.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --verbose
     
     # Minimal CSV output for scripts/automation
-    python score_layouts.py --compare qwerty:"qwerty" dvorak:"dvorak" --csv-output
+    python score_layouts.py --compare qwerty:"qwertyuiop" dvorak:"',.pyfgcrl" --csv-output
     
     # Save detailed results to file
-    python score_layouts.py --compare qwerty:"qwerty" dvorak:"dvorak" --csv results.csv
+    python score_layouts.py --compare qwerty:"qwertyuiop" dvorak:"',.pyfgcrl" --csv results.csv
     
     # Custom files (when defaults aren't suitable)
     python score_layouts.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --score-table custom.csv --frequency-file custom_freq.csv
 
-Key features:
+Features:
 - Automatic frequency weighting using English bigram frequencies
 - Letter-pair → Key-pair mapping (e.g., "TH" frequency weights T→H key transition)
 - Multiple output formats: detailed, CSV, minimal CSV, score-only
@@ -305,12 +306,16 @@ class LayoutScorer:
                 scorer_name = col.replace('_normalized', '').replace('_score', '')
                 scorers.append(scorer_name)
         
-        # Filter out time/speed-related metrics unless experimental_metrics is enabled
+        # Filter out experimental metrics unless experimental_metrics is enabled
         if not self.experimental_metrics:
-            filtered_out = [s for s in scorers if self._is_time_speed_metric(s)]
-            scorers = [s for s in scorers if not self._is_time_speed_metric(s)]
+            filtered_time = [s for s in scorers if self._is_time_speed_metric(s)]
+            filtered_distance = [s for s in scorers if self._is_distance_efficiency_metric(s)]
+            filtered_out = filtered_time + filtered_distance
+            
+            scorers = [s for s in scorers if not self._is_time_speed_metric(s) and not self._is_distance_efficiency_metric(s)]
+            
             if self.verbose and filtered_out:
-                print(f"Filtered out time/speed metrics (use --experimental-metrics to enable): {filtered_out}")
+                print(f"Filtered out experimental metrics (use --experimental-metrics to enable): {filtered_out}")
         
         return sorted(list(set(scorers)))
     
@@ -371,6 +376,17 @@ class LayoutScorer:
             scorer_lower == 'time' or
             scorer_lower == 'speed' or
             scorer_lower == 'dvorak7-speed'
+        )
+    
+    def _is_distance_efficiency_metric(self, scorer: str) -> bool:
+        """Determine if a scorer is a distance/efficiency-related metric that should be filtered by default."""
+        scorer_lower = scorer.lower()
+        return (
+            scorer_lower.startswith('distance_') or
+            scorer_lower.startswith('efficiency_') or
+            scorer_lower == 'distance' or
+            scorer_lower == 'efficiency' or
+            scorer_lower.endswith('_dist')
         )
     
     def _should_invert_scores(self, scorer: str) -> bool:
@@ -1011,32 +1027,33 @@ def create_cli_parser() -> argparse.ArgumentParser:
     """Create command-line argument parser."""
     
     parser = argparse.ArgumentParser(
-        description="Unified keyboard layout scorer with automatic defaults",
+        description="Unified keyboard layout scorer with biomechanically-grounded defaults",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
 
-  # Basic usage (default: non-time metrics only due to QWERTY bias)
+  # Basic usage (core biomechanical metrics only - recommended)
   # Note: Run 'python prep_scoring_tables.py --input-dir tables/' first to create required tables
   python score_layouts.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ"
   
-  # Include experimental time/speed metrics (caution: QWERTY training bias)
+  # Include experimental distance/time metrics (caution: limitations noted below)
   python score_layouts.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --experimental-metrics
   
   # Raw (unweighted) scoring only
   python score_layouts.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --raw
   
-  # Compare layouts with default (non-time) metrics - RECOMMENDED
+  # Compare layouts with core metrics - RECOMMENDED
   python score_layouts.py --compare qwerty:"qwertyuiop" dvorak:"',.pyfgcrl"
   
-  # Compare with experimental time metrics (caution: shows QWERTY bias)
+  # Compare with experimental metrics (caution: shows limitations)
   python score_layouts.py --compare qwerty:"qwertyuiop" dvorak:"',.pyfgcrl" --experimental-metrics
   
-  # Speed-weighted Dvorak-7 comparison (experimental)
+  # Specific experimental metrics
+  python score_layouts.py --compare qwerty:"qwertyuiop" dvorak:"',.pyfgcrl" --scorer efficiency --experimental-metrics
   python score_layouts.py --compare qwerty:"qwertyuiop" dvorak:"',.pyfgcrl" --scorer dvorak7-speed --experimental-metrics
   
-  # Both pure and speed-weighted Dvorak-7 (experimental)
-  python score_layouts.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --scorers dvorak7,dvorak7-speed --experimental-metrics
+  # Mix core and experimental metrics
+  python score_layouts.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --scorers engram,comfort,efficiency --experimental-metrics
   
   # Use custom score table and frequency file
   python score_layouts.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --score-table custom_scores.csv --frequency-file custom_freqs.csv
@@ -1060,17 +1077,28 @@ Default behavior:
 - With --raw: Ignores frequencies and uses raw (unweighted) scoring
 - With --verbose: Shows both weighted and raw scores for comparison
 - With --csv-output: Minimal CSV format for programmatic use (layout,scorer,weighted_score,raw_score)
-- With --experimental-metrics: Enables time/speed metrics (caution: QWERTY bias)
+- With --experimental-metrics: Enables distance/efficiency AND time/speed metrics
 
-QWERTY Bias Warning:
-Time/speed-related metrics are disabled by default because empirical timing data contains
-practice bias favoring QWERTY layouts. QWERTY letter-pairs map to heavily-practiced 
-key-pairs, while other layouts map to less-practiced combinations, creating artificial
-advantages for QWERTY. Use --experimental-metrics to enable these metrics with caution.
+Experimental Metrics Warning:
+Distance/efficiency and time/speed metrics are disabled by default due to significant limitations:
+
+1. Distance/efficiency metrics oversimplify biomechanics:
+   - Ignore lateral finger stretching vs. comfortable curling
+   - Don't account for finger strength differences (pinky vs. index)
+   - Miss awkward hand positions and wrist angles
+   - Treat all finger movements as equivalent
+
+2. Time/speed metrics contain QWERTY practice bias:
+   - Empirical timing data reflects years of QWERTY training
+   - QWERTY letter-pairs map to heavily-practiced key-pairs
+   - Other layouts map to less-practiced combinations
+   - Creates artificial advantages for QWERTY
+
+Use --experimental-metrics to enable these metrics with full awareness of their limitations.
 
 Available scoring methods:
-Default (recommended): distance→efficiency, comfort, dvorak7, engram, comfort-key
-Experimental (--experimental-metrics): time→speed, dvorak7-speed
+Core (recommended): comfort, comfort-key, dvorak7, engram
+Experimental (--experimental-metrics): distance→efficiency, time→speed, dvorak7-speed
 
 Distance scores are automatically inverted (1-score) and renamed to efficiency.
 Time scores are automatically inverted (1-score) and renamed to speed (experimental only).
@@ -1106,7 +1134,7 @@ dvorak7-speed provides both pure and empirically-weighted Dvorak-7 scores based 
     parser.add_argument(
         '--experimental-metrics',
         action='store_true',
-        help="Enable time/speed-related metrics (disabled by default due to QWERTY bias)"
+        help="Enable distance/efficiency AND time/speed metrics (disabled by default due to limitations described above)"
     )
     
     scorer_group = parser.add_mutually_exclusive_group()
