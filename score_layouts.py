@@ -5,6 +5,10 @@ Keyboard Layout Scorer using precomputed score table.
 A comprehensive tool for evaluating keyboard layouts using frequency-weighted scoring.
 Scoring methods include engram, comfort, comfort-key, distance, time, dvorak7, and dvorak7-speed.
 
+NB: The scoring tables have raw and normalized values. 
+All normalized values are between 0 and 1, with 1 being the best possible score.
+So raw distance and time scores (higher is worse) are inverted to fit this model.
+
 Setup:
 1. Generate individual score files (keypair_*_scores.csv) using your scoring scripts
 2. Run: python prep_scoring_tables.py --input-dir tables/
