@@ -57,9 +57,6 @@ Usage:
     # Compare with experimental metrics (caution: QWERTY bias)
     python score_layouts.py --compare qwerty:"qwertyuiop" dvorak:"',.pyfgcrl" --experimental-metrics
     
-    # Both pure and speed-weighted Dvorak-7 (experimental)
-    python score_layouts.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --scorers dvorak7,dvorak7-speed --experimental-metrics
-    
     # Verbose output (shows both weighted and raw scores)
     python score_layouts.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --verbose
     
