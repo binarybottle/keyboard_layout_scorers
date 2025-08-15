@@ -3,11 +3,10 @@
 Keyboard Layout Scorer using precomputed score table.
 
 A comprehensive tool for evaluating keyboard layouts using frequency-weighted scoring.
-Scoring methods include engram, comfort, comfort-key, distance, time, dvorak7, and dvorak7-speed.
-
-NB: The scoring tables have raw and normalized values. 
-All normalized values are between 0 and 1, with 1 being the best possible score.
-So raw distance and time scores (higher is worse) are inverted to fit this model.
+Scoring methods include engram, comfort, comfort-key, dvorak7, and distance.
+(Experimental scores related to time, including dvorak7-speed, should be ignored
+since they are heavily biased by practice effects.)
+Distance (and time) scores are automatically inverted and renamed to efficiency (and speed).
 
 Setup:
 1. Generate individual score files (keypair_*_scores.csv) using your scoring scripts
@@ -21,13 +20,7 @@ Default behavior:
 - Frequency data: input/english-letter-pair-frequencies-google-ngrams.csv
 - Letter frequencies: input/english-letter-frequencies-google-ngrams.csv
 - Scoring mode: Frequency-weighted (prioritizes common English letter combinations)
-- Score mapping: Letter-pair frequencies → Key-pair scores (distance/time inverted)
-
-Dvorak-7 Speed Scoring:
-- dvorak7-speed: Empirically-weighted Dvorak-7 using 19.4M typing speed correlations
-- Provides both pure Dvorak-7 scores and speed-weighted scores
-- Based on actual typing data analysis with FDR correction
-- Requires: input/dvorak7_speed_weights.csv (from empirical analysis)
+- Score mapping: Letter-pair frequencies → Key-pair scores (distance/time inverted and renamed)
 
 Usage:
     # Single layout evaluation (all available scoring methods)
@@ -56,13 +49,11 @@ Usage:
 
 Key features:
 - Automatic frequency weighting using English bigram frequencies
-- Smart score inversion (distance/time: higher is worse → lower scores)  
 - Letter-pair → Key-pair mapping (e.g., "TH" frequency weights T→H key transition)
 - Multiple output formats: detailed, CSV, minimal CSV, score-only
 - Graceful fallback to raw scoring if frequency file missing
 - Support for all scoring methods in the unified score table
 - Dynamic engram and comfort-key scoring (requires prep_scoring_tables.py output)
-- Empirical Dvorak-7 speed scoring with both pure and speed-weighted results
 """
 
 import sys
@@ -323,6 +314,23 @@ class LayoutScorer:
         else:
             print("No frequency file found - using raw scoring")
     
+    def _get_display_name(self, scorer: str, was_inverted: bool) -> str:
+        """Get user-friendly display name for scorer after inversion."""
+        if not was_inverted:
+            return scorer
+        
+        # Rename inverted metrics to reflect efficiency interpretation
+        if scorer.startswith('distance_'):
+            return scorer.replace('distance_', 'efficiency_')
+        elif scorer.startswith('time_'):
+            return scorer.replace('time_', 'speed_')
+        elif scorer == 'distance':
+            return 'efficiency'
+        elif scorer == 'time':
+            return 'speed'
+        
+        return scorer
+    
     def _should_invert_scores(self, scorer: str) -> bool:
         """Determine if a scorer's values should be inverted."""
         scorer_lower = scorer.lower()
@@ -442,9 +450,7 @@ class LayoutScorer:
             original_raw_score = self.score_table.loc[key_pair, score_col]
             score = (1.0 - original_raw_score) if invert_scores else original_raw_score
             
-            # Debug output for first few pairs when inverting
-            if invert_scores and self.verbose and raw_count < 3:
-                print(f"DEBUG: {scorer} - {letter_pair} ({key_pair}): raw={original_raw_score:.6f} -> inverted={score:.6f}")
+
             
             # Accumulate both original and processed scores
             original_raw_total += original_raw_score
@@ -463,9 +469,7 @@ class LayoutScorer:
         original_raw_average = original_raw_total / raw_count if raw_count > 0 else 0.0
         frequency_weighted_average = weighted_total_score / total_frequency if total_frequency > 0 else 0.0
         
-        # Debug output for final results when inverting
-        if invert_scores and self.verbose:
-            print(f"DEBUG: {scorer} final - original_raw_avg={original_raw_average:.6f}, processed_raw_avg={processed_raw_average:.6f}, freq_weighted_avg={frequency_weighted_average:.6f}")
+
         
         results = {
             'average_score': frequency_weighted_average if use_frequency else processed_raw_average,
@@ -735,7 +739,10 @@ class LayoutScorer:
                 continue
             
             try:
-                results[scorer] = self._score_layout_with_method(layout_mapping, scorer)
+                scorer_results = self._score_layout_with_method(layout_mapping, scorer)
+                was_inverted = self._should_invert_scores(scorer)
+                display_name = self._get_display_name(scorer, was_inverted)
+                results[display_name] = scorer_results
             except Exception as e:
                 print(f"Error scoring with {scorer}: {e}")
         
@@ -916,10 +923,10 @@ def save_detailed_comparison_csv(comparison_results: Dict[str, Dict[str, Dict[st
     
     rows = []
     for layout_name, layout_results in comparison_results.items():
-        for scorer, results in layout_results.items():
+        for display_scorer, results in layout_results.items():
             row = {
                 'layout_name': layout_name,
-                'scorer': scorer,
+                'scorer': display_scorer,
                 'average_score': results['average_score'],
                 'total_score': results['total_score'],
                 'pair_count': results['pair_count'],
@@ -1007,7 +1014,7 @@ Default behavior:
 - With --csv-output: Minimal CSV format for programmatic use (layout,scorer,weighted_score,raw_score)
 
 Available scoring methods depend on the score table contents (e.g., distance, comfort, dvorak7, time).
-Distance and time scores are automatically inverted (1-score) since higher values are worse.
+Distance and time scores are automatically inverted (1-score) and renamed to efficiency and speed respectively.
 Engram and comfort-key scores are computed dynamically and require letter frequencies and key comfort scores.
 dvorak7-speed provides both pure and empirically-weighted Dvorak-7 scores based on 19.4M typing correlations.
         """
