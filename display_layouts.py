@@ -78,7 +78,7 @@ Examples:
     )
     
     parser.add_argument('csv_file', 
-                       help='CSV file with layout and qwerty_letters columns')
+                       help='CSV file with layout and letters columns')
     
     parser.add_argument('--html', action='store_true',
                        help='Generate HTML output for each layout')
@@ -101,14 +101,14 @@ Examples:
             reader = csv.DictReader(file)
             
             # Check required columns
-            if 'layout' not in reader.fieldnames or 'qwerty_letters' not in reader.fieldnames:
-                print("Error: CSV must have 'layout' and 'qwerty_letters' columns")
+            if 'layout' not in reader.fieldnames or 'letters' not in reader.fieldnames:
+                print("Error: CSV must have 'layout' and 'letters' columns")
                 sys.exit(1)
             
             layouts_processed = 0
             for row in reader:
                 layout_name = row['layout'].strip()
-                qwerty_letters = row['qwerty_letters'].strip()
+                qwerty_letters = row['letters'].strip()
                 
                 if layout_name and qwerty_letters:
                     process_layout(layout_name, qwerty_letters)
