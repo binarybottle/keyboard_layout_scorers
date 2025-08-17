@@ -24,20 +24,20 @@ This precomputation allows the main scorer to simply look up scores rather
 than computing them on-demand, making layout scoring much faster.
 
 The 7 scoring criteria for typing bigrams are derived from Dvorak's
-"Typing Behavior" book and patent (1936) (0-1, higher = better performance):
+"Typing Behavior" book and patent (1936) and reflect favorable typing behaviors:
 
-    1.  Repetition: Typing with 1 hand or 1 finger
-    2.  Movement: Typing outside the 8 home keys
-    3.  Vertical separation: Typing in different rows 
-    4.  Horizontal reach: Typing outside 8 finger columns
-    5.  Adjacent fingers: Typing with adjacent fingers (except strong pair)
-    6.  Weak fingers: Typing with weaker fingers
-    7.  Outward direction: Finger sequence away from the thumb
+    1.  Distributed load: Typing with 2 hands or 2 fingers
+    2.  Anchored positions: Typing within the 8 home keys
+    3.  Row-aligned: Typing in the same or adjacent rows 
+    4.  Column-aligned: Typing within the 8 finger columns
+    5.  Adjacent/neighbor-aligned: Adjacent fingers stay in the same row
+    6.  Strong fingers: Typing with the stronger two fingers
+    7.  Inward direction: Finger sequence toward the thumb
 
 When applied to a single bigram, each criterion may be scored 0, 0.5, or 1 
-generally to indicate when 0, 1, or 2 fingers or keys satisfy a criterion. 
-The Dvorak-7 layout score is the average of the weighted means of each criterion 
-scored across all possible bigrams (here the weights are all 1).
+generally to indicate when 0, 1, or 2 fingers or keys satisfy the criterion. 
+Each criterion score for a layout is the average score across all bigrams.
+The overall Dvorak-7 score is simply the average of the criterion scores.
 
 Usage:
     python prep_keypair_dvorak7_scores.py
