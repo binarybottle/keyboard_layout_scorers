@@ -84,7 +84,7 @@ UPPER_FINGERS = {3}  # Only middle finger, ring finger (2) is ignored per study 
 LOWER_FINGERS = {1, 4}
 HOME_ROW = 2
 
-# Define finger column assignments (corrected for 1=pinky, 4=index)
+# Define finger column assignments (1=pinky, 4=index)
 FINGER_COLUMNS = {
     'L': {
         1: ['Q', 'A', 'Z'],    # Pinky
@@ -260,13 +260,14 @@ def score_bigram_engram8(bigram: str) -> Dict[str, float]:
         scores['hspan'] = 0.0      # same finger scores zero
     else:
         column_gap = abs(column1 - column2)
-        if (column_gap == 1 and row1 == row2) or (column_gap > 1 and row1 != row2):
+        finger_gap = abs(finger1 - finger2)
+        if (column_gap == 1 and row1 == row2) or (column_gap > 1 and finger_gap > 1 and row1 != row2):
             scores['hspan'] = 1.0  # adjacent columns, same row / non-adjacent, different rows
         else:
             scores['hspan'] = 0.0  # non-adjacent columns, same row / adjacent, different rows
 
     # 8. Finger sequence: Finger sequence toward the thumb
-    #    1.0: inward roll, or opposite hands
+    #    1.0: inward roll on the same row, or opposite hands
     #    0.0: outward roll, or same finger
     if hand1 != hand2:
         scores['sequence'] = 1.0      # opposite hands always score well

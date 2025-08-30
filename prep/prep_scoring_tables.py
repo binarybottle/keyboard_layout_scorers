@@ -73,13 +73,13 @@ def get_universal_normalization_ranges():
 
         # Dvorak-7 scores and components
         'dvorak7_score': (0, 7),        # Overall Dvorak-7 score range (sum of 7 components)
-        'dvorak7_repetition': (0, 1),   # Individual component ranges
-        'dvorak7_movement': (0, 1),      
-        'dvorak7_vertical': (0, 1),      
-        'dvorak7_horizontal': (0, 1),    
-        'dvorak7_adjacent': (0, 1),      
-        'dvorak7_weak': (0, 1),          
-        'dvorak7_outward': (0, 1),       
+        'dvorak7_distribution': (0, 1),   # Individual component ranges
+        'dvorak7_strength': (0, 1),      
+        'dvorak7_middle': (0, 1),      
+        'dvorak7_vspan': (0, 1),    
+        'dvorak7_columns': (0, 1),      
+        'dvorak7_remote': (0, 1),          
+        'dvorak7_inward': (0, 1),       
     }
 
 
@@ -471,17 +471,17 @@ def create_unified_score_tables(input_dir: str, verbose: bool = False) -> Tuple[
         'engram8_home': 'keypair_engram8_home_scores.csv',
         'engram8_curl': 'keypair_engram8_curl_scores.csv',
         'engram8_columns': 'keypair_engram8_columns_scores.csv',
-        'engram8_sequence': 'keypair_engram8_sequence_scores.csv',
         'engram8_vspan': 'keypair_engram8_vspan_scores.csv',
         'engram8_hspan': 'keypair_engram8_hspan_scores.csv',
+        'engram8_sequence': 'keypair_engram8_sequence_scores.csv',
         # Individual Dvorak-7 criteria
-        'dvorak7_repetition': 'keypair_dvorak7_repetition_scores.csv',
-        'dvorak7_movement': 'keypair_dvorak7_movement_scores.csv',
-        'dvorak7_vertical': 'keypair_dvorak7_vertical_scores.csv',
-        'dvorak7_horizontal': 'keypair_dvorak7_horizontal_scores.csv',
-        'dvorak7_adjacent': 'keypair_dvorak7_adjacent_scores.csv',
-        'dvorak7_weak': 'keypair_dvorak7_weak_scores.csv',
-        'dvorak7_outward': 'keypair_dvorak7_outward_scores.csv',
+        'dvorak7_distribution': 'keypair_dvorak7_distribution_scores.csv',
+        'dvorak7_strength': 'keypair_dvorak7_strength_scores.csv',
+        'dvorak7_middle': 'keypair_dvorak7_middle_scores.csv',
+        'dvorak7_vspan': 'keypair_dvorak7_vspan_scores.csv',
+        'dvorak7_columns': 'keypair_dvorak7_columns_scores.csv',
+        'dvorak7_remote': 'keypair_dvorak7_remote_scores.csv',
+        'dvorak7_inward': 'keypair_dvorak7_inward_scores.csv',
         # Legacy scores (for backward compatibility)
         'distance_score': 'keypair_distance_scores.csv',
         'time_score': 'keypair_time_scores.csv'
@@ -726,8 +726,7 @@ def validate_input_directory(input_dir: str) -> None:
         'keypair_comfort_scores.csv', 
         'keypair_distance_scores.csv',
         'keypair_dvorak7_scores.csv',
-        'keypair_engram8_scores.csv',
-        'keypair_comfort_combo_scores.csv'
+        'keypair_engram8_scores.csv'
     ]
     
     found_files = [f for f in expected_files if (input_path / f).exists()]
@@ -756,7 +755,6 @@ Input files expected in input directory:
     - keypair_distance_scores.csv (key_pair, distance_setup, distance_interval, distance_return, distance_total)
     - keypair_dvorak7_scores.csv (key_pair, dvorak7_score)
     - keypair_engram8_scores.csv (key_pair, engram8_score)
-    - keypair_comfort_combo_scores.csv (key_pair, comfort_combo_score)
     - Individual engram8 component files (optional)
     - Individual dvorak7 component files (optional)
 

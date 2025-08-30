@@ -30,7 +30,7 @@ Computing Engram-8 scores for 1024 key-pairs...
 📊 Validation Results:
    Total key-pairs: 1024
    Score range: 0.5000 to 8.0000
-   Average score: 5.0293
+   Average score: 4.9980
    Valid range (0-8): ✅
 
 🧮 Mathematical Accuracy Check:
@@ -53,9 +53,9 @@ Computing Engram-8 scores for 1024 key-pairs...
 
 📈 Score Distribution:
    Very Poor (0.0-1.4): 12 pairs (1.2%)
-   Poor (1.4-2.8): 72 pairs (7.0%)
-   Fair (2.8-4.2): 224 pairs (21.9%)
-   Good (4.2-5.6): 342 pairs (33.4%)
+   Poor (1.4-2.8): 82 pairs (8.0%)
+   Fair (2.8-4.2): 226 pairs (22.1%)
+   Good (4.2-5.6): 330 pairs (32.2%)
    Excellent (5.6-7.0): 254 pairs (24.8%)
    Perfect (8.0): 10 pairs (1.0%)
 

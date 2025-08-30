@@ -3,7 +3,7 @@
 Keyboard Layout Scorer using precomputed score table.
 
 A comprehensive tool for evaluating keyboard layouts using frequency-weighted scoring.
-Core scoring methods include engram2, comfort, comfort-key, engram8, and dvorak7.
+Core scoring methods include comfort_combo, comfort, comfort-key, engram8, and dvorak7.
 
 (Note: experimental distance/efficiency and time/speed metrics are disabled by default.
 Distance metrics oversimplify biomechanical complexity (ignoring lateral stretching,
@@ -25,7 +25,7 @@ Default behavior:
 - Score mapping: Letter-pair frequencies → Key-pair scores
 
 Core metrics (default):
-- engram2 (composite comfort model)
+- comfort_combo (composite comfort model)
 - comfort-key (frequency-weighted key comfort)
 - comfort (frequency-weighted key-pair comfort)  
 - engram8 (based on Typing Preference Study)
@@ -76,7 +76,7 @@ Features:
 - Multiple output formats: detailed, CSV, minimal CSV, score-only
 - Fallback to raw scoring if frequency file missing
 - Support for all scoring methods in the unified score table
-- Dynamic engram2 and comfort-key scoring (requires prep_scoring_tables.py output)
+- Dynamic comfort_combo and comfort-key scoring (requires prep_scoring_tables.py output)
 """
 
 import sys
@@ -324,8 +324,8 @@ class LayoutScorer:
         if self.letter_frequencies and self.key_comfort_scores:
             if 'comfort-key' not in self.available_scorers:
                 self.available_scorers.append('comfort-key')
-            if 'comfort' in self.available_scorers and 'engram2' not in self.available_scorers:
-                self.available_scorers.append('engram2')
+            if 'comfort' in self.available_scorers and 'comfort_combo' not in self.available_scorers:
+                self.available_scorers.append('comfort_combo')
         
         if self.dvorak7_speed_weights and DVORAK7_AVAILABLE:
             # Only add dvorak7-speed if experimental metrics are enabled
@@ -453,8 +453,8 @@ class LayoutScorer:
         
         if scorer == 'comfort-key':
             return self._score_layout_comfort_key(layout_mapping)
-        elif scorer == 'engram2':
-            return self._score_layout_engram2(layout_mapping)
+        elif scorer == 'comfort_combo':
+            return self._score_layout_comfort_combo(layout_mapping)
         elif scorer == 'dvorak7-speed':
             return self._score_layout_dvorak7_speed(layout_mapping)
         
@@ -612,7 +612,7 @@ class LayoutScorer:
         
         return results
     
-    def _score_layout_engram2(self, layout_mapping: Dict[str, str]) -> Dict[str, float]:
+    def _score_layout_comfort_combo(self, layout_mapping: Dict[str, str]) -> Dict[str, float]:
         """Score a layout using Engram-2 method (comfort * comfort-key)."""
         if not self.letter_frequencies or not self.key_comfort_scores:
             missing = []
@@ -656,14 +656,14 @@ class LayoutScorer:
                 comfort_key_score = self._compute_comfort_key_score(letter_pair, layout_mapping)
                 
                 if comfort_key_score is not None:
-                    engram2_score = comfort_score * comfort_key_score
+                    comfort_combo_score = comfort_score * comfort_key_score
                     
-                    raw_total_score += engram2_score
+                    raw_total_score += comfort_combo_score
                     raw_count += 1
                     
                     if use_frequency:
                         frequency = self.bigram_frequencies.get(letter_pair, 0.0)
-                        weighted_total_score += engram2_score * frequency
+                        weighted_total_score += comfort_combo_score * frequency
                         total_frequency += frequency
                         if frequency > 0:
                             frequency_coverage += frequency
@@ -1053,7 +1053,7 @@ Examples:
   python score_layouts.py --compare qwerty:"qwertyuiop" dvorak:"',.pyfgcrl" --scorer dvorak7-speed --experimental-metrics
   
   # Mix core and experimental metrics
-  python score_layouts.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --scorers engram2,comfort,efficiency --experimental-metrics
+  python score_layouts.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --scorers comfort_combo,comfort,efficiency --experimental-metrics
   
   # Use custom score table and frequency file
   python score_layouts.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --score-table custom_scores.csv --frequency-file custom_freqs.csv
@@ -1097,7 +1097,7 @@ Distance/efficiency and time/speed metrics are disabled by default due to signif
 Use --experimental-metrics to enable these metrics with full awareness of their limitations.
 
 Available scoring methods:
-Core (recommended): comfort, comfort-key, dvorak7, engram8, engram2
+Core (recommended): comfort, comfort-key, dvorak7, engram8, comfort_combo
 Experimental (--experimental-metrics): distance→efficiency, time→speed, dvorak7-speed
 
 Distance scores are automatically inverted (1-score) and renamed to efficiency.
