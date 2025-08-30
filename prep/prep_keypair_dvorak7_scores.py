@@ -51,48 +51,55 @@ import csv
 from pathlib import Path
 from typing import Dict
 
-# QWERTY keyboard layout with (row, finger, hand, homekey) mapping (same as original)
+# QWERTY keyboard layout with (row, finger, hand, homekey) mapping
 QWERTY_LAYOUT = {
-    # Number row (row 0)
-    '1': (0, 4, 'L', 0), '2': (0, 3, 'L', 0), '3': (0, 2, 'L', 0), '4': (0, 1, 'L', 0), '5': (0, 1, 'L', 0),
-    '6': (0, 1, 'R', 0), '7': (0, 1, 'R', 0), '8': (0, 2, 'R', 0), '9': (0, 3, 'R', 0), '0': (0, 4, 'R', 0),
-
-    # Top row (row 1)
-    'Q': (1, 4, 'L', 0), 'W': (1, 3, 'L', 0), 'E': (1, 2, 'L', 0), 'R': (1, 1, 'L', 0), 'T': (1, 1, 'L', 0),
-    'Y': (1, 1, 'R', 0), 'U': (1, 1, 'R', 0), 'I': (1, 2, 'R', 0), 'O': (1, 3, 'R', 0), 'P': (1, 4, 'R', 0),
-
-    # Home row (row 2)
-    'A': (2, 4, 'L', 1), 'S': (2, 3, 'L', 1), 'D': (2, 2, 'L', 1), 'F': (2, 1, 'L', 1), 'G': (2, 1, 'L', 0),
-    'H': (2, 1, 'R', 0), 'J': (2, 1, 'R', 1), 'K': (2, 2, 'R', 1), 'L': (2, 3, 'R', 1), ';': (2, 4, 'R', 1),
-
-    # Bottom row (row 3)
-    'Z': (3, 4, 'L', 0), 'X': (3, 3, 'L', 0), 'C': (3, 2, 'L', 0), 'V': (3, 1, 'L', 0), 'B': (3, 1, 'L', 0),
-    'N': (3, 1, 'R', 0), 'M': (3, 1, 'R', 0), ',': (3, 2, 'R', 0), '.': (3, 3, 'R', 0), '/': (3, 4, 'R', 0),
-
-    # Additional common keys
-    "'": (2, 4, 'R', 0), '[': (1, 4, 'R', 0),
+    # Number row (row 0) - finger numbers
+    '1': (0, 1, 'L', 0), '2': (0, 2, 'L', 0), '3': (0, 3, 'L', 0), '4': (0, 4, 'L', 0), '5': (0, 4, 'L', 0),
+    '6': (0, 4, 'R', 0), '7': (0, 4, 'R', 0), '8': (0, 3, 'R', 0), '9': (0, 2, 'R', 0), '0': (0, 1, 'R', 0),
+    
+    # Top row (row 1) - finger numbers
+    'Q': (1, 1, 'L', 0), 'W': (1, 2, 'L', 0), 'E': (1, 3, 'L', 0), 'R': (1, 4, 'L', 0), 'T': (1, 4, 'L', 0),
+    'Y': (1, 4, 'R', 0), 'U': (1, 4, 'R', 0), 'I': (1, 3, 'R', 0), 'O': (1, 2, 'R', 0), 'P': (1, 1, 'R', 0),
+    
+    # Home row (row 2) - finger numbers
+    'A': (2, 1, 'L', 1), 'S': (2, 2, 'L', 1), 'D': (2, 3, 'L', 1), 'F': (2, 4, 'L', 1), 'G': (2, 4, 'L', 0),
+    'H': (2, 4, 'R', 0), 'J': (2, 4, 'R', 1), 'K': (2, 3, 'R', 1), 'L': (2, 2, 'R', 1), ';': (2, 1, 'R', 1),
+    
+    # Bottom row (row 3) - finger numbers
+    'Z': (3, 1, 'L', 0), 'X': (3, 2, 'L', 0), 'C': (3, 3, 'L', 0), 'V': (3, 4, 'L', 0), 'B': (3, 4, 'L', 0),
+    'N': (3, 4, 'R', 0), 'M': (3, 4, 'R', 0), ',': (3, 3, 'R', 0), '.': (3, 2, 'R', 0), '/': (3, 1, 'R', 0),
+    
+    # Additional common keys - finger numbers
+    "'": (2, 1, 'R', 0), '[': (1, 1, 'R', 0),
 }
 
 # Define finger strength and home row
-STRONG_FINGERS = {1, 2}
-WEAK_FINGERS   = {3, 4}
+STRONG_FINGERS = {3, 4}  # middle and index
 HOME_ROW = 2
 
 # Define finger column assignments
 FINGER_COLUMNS = {
     'L': {
-        4: ['Q', 'A', 'Z'],
-        3: ['W', 'S', 'X'],
-        2: ['E', 'D', 'C'],
-        1: ['R', 'F', 'V']
+        1: ['Q', 'A', 'Z'],    # Pinky
+        2: ['W', 'S', 'X'],    # Ring  
+        3: ['E', 'D', 'C'],    # Middle
+        4: ['R', 'F', 'V', 'T', 'G', 'B']  # Index
     },
     'R': {
-        1: ['U', 'J', 'M'],
-        2: ['I', 'K', ','],
-        3: ['O', 'L', '.'],
-        4: ['P', ';', '/']
+        4: ['Y', 'H', 'N', 'U', 'J', 'M'],  # Index
+        3: ['I', 'K', ','],    # Middle
+        2: ['O', 'L', '.'],    # Ring
+        1: ['P', ';', '/', "'", '[']   # Pinky
     }
 }
+
+criteria = ['repetition', 
+            'adjacent', 
+            'vertical', 
+            'movement', 
+            'horizontal', 
+            'outward', 
+            'weak']
 
 def get_key_info(key: str):
     """Get (row, finger, hand) for a key."""
@@ -107,7 +114,7 @@ def is_finger_in_column(key: str, finger: int, hand: str) -> bool:
     return False
 
 def score_bigram_dvorak7(bigram: str) -> Dict[str, float]:
-    """Calculate all 9 Dvorak criteria scores for a bigram."""
+    """Calculate all 7 Dvorak criteria scores for a bigram."""
     if len(bigram) != 2:
         raise ValueError("Bigram must be exactly 2 characters long")    
     
@@ -201,7 +208,7 @@ def score_bigram_dvorak7(bigram: str) -> Dict[str, float]:
     else:
         finger_gap = abs(finger1 - finger2)
         if finger_gap == 1:
-            scores['adjacent'] = 0    # adjacent fingers where at least 1 is weak
+            scores['adjacent'] = 0.0  # adjacent fingers where at least 1 is weak
         elif finger_gap == 2:
             scores['adjacent'] = 1.0  # non-adjacent fingers: skipping 1 finger
         elif finger_gap == 3:
@@ -236,7 +243,7 @@ def score_bigram_dvorak7(bigram: str) -> Dict[str, float]:
 
 def get_all_qwerty_keys():
     """Get all standard QWERTY keys for testing."""
-    # Use the same key set as the original generator (excludes numbers)
+
     return list("QWERTYUIOPASDFGHJKL;ZXCVBNM,./'[")
 
 def generate_all_key_pairs():
@@ -257,13 +264,6 @@ def compute_key_pair_scores():
     
     # Initialize results for overall and individual criteria
     results['overall'] = []
-    criteria = ['repetition', 
-                'adjacent', 
-                'vertical', 
-                'movement', 
-                'horizontal', 
-                'outward', 
-                'weak']
     
     for criterion in criteria:
         results[criterion] = []
@@ -311,9 +311,6 @@ def save_all_score_files(results, output_dir="../tables"):
         writer.writerows(overall_results)
     
     print(f"✅ Saved overall scores to: {overall_file}")
-    
-    # Save individual criterion scores
-    criteria = ['repetition', 'adjacent', 'vertical', 'movement', 'horizontal', 'outward', 'weak']
     
     for criterion in criteria:
         criterion_file = f"{output_dir}/keypair_dvorak7_{criterion}_scores.csv"
@@ -382,9 +379,7 @@ def validate_output(output_dir="../tables"):
     print(f"   Accuracy check: {len(random_samples) - accuracy_errors}/{len(random_samples)} samples correct")
     
     # Validate individual criterion files
-    print(f"\n📁 Individual Criterion Files:")
-    criteria = ['repetition', 'adjacent', 'vertical', 'movement', 'horizontal', 'outward', 'weak']
-    
+    print(f"\n📁 Individual Criterion Files:")    
     for criterion in criteria:
         criterion_file = f"{output_dir}/keypair_dvorak7_{criterion}_scores.csv"
         if Path(criterion_file).exists():
@@ -397,9 +392,7 @@ def validate_output(output_dir="../tables"):
     
     # Test specific criteria with known examples
     print(f"\n🔍 Criteria-Specific Validation:")
-    
     criteria_tests = [
-        # Updated score ranges for raw 0-7 values
         ("Same key repetition", ['AA', 'SS', 'FF'], lambda s: 1.0 <= s <= 5.0),
         ("Worst cases", ['QZ', '/[', 'ZW'], lambda s: s <= 3.0),
         ("Alternating hands", ['FJ', 'AK', 'TN'], lambda s: s >= 3.5)
@@ -440,7 +433,6 @@ def validate_perfect_scores(output_dir="../tables"):
     
     with open(overall_file, 'r', encoding='utf-8') as f:
         reader = csv.DictReader(f)
-        # Look for 7.0 instead of 1.0
         perfect_pairs = [row for row in reader if float(row['dvorak7_score']) == 7.0]
     
     print(f"\n🏆 Perfect Score Verification ({len(perfect_pairs)} pairs):")
@@ -448,12 +440,9 @@ def validate_perfect_scores(output_dir="../tables"):
     for row in perfect_pairs:
         key_pair = row['key_pair']
         scores = score_bigram_dvorak7(key_pair)
-        
-        # Check if sum equals 7.0, not if all individual scores are 1.0
         total_score = sum(scores.values())
         is_perfect = total_score == 7.0
-        print(f"   {key_pair}: Total = 7.0? {'✅' if is_perfect else '❌'}")
-        
+        print(f"   {key_pair}: Total = 7.0? {'✅' if is_perfect else '❌'}")        
         if not is_perfect:
             print(f"      Individual scores: {scores}")
             print(f"      Sum: {total_score}")
@@ -469,7 +458,7 @@ def main():
     keys = get_all_qwerty_keys()
     print(f"QWERTY keys ({len(keys)}): {''.join(sorted(keys))}")
     print(f"Total key-pairs to compute: {len(keys)**2}")
-    print(f"Output files: 1 overall + 9 individual criteria = 10 total")
+    print(f"Output files: 1 overall + 7 individual criteria = 8 total")
     print()
     
     # Compute scores

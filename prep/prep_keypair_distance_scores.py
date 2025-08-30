@@ -49,13 +49,13 @@ STAGGERED_POSITION_MAP = {
 }
 
 FINGER_MAP = {
-    'q': 4, 'w': 3, 'e': 2, 'r': 1, 't': 1,
-    'a': 4, 's': 3, 'd': 2, 'f': 1, 'g': 1,
-    'z': 4, 'x': 3, 'c': 2, 'v': 1, 'b': 1,
-    'y': 1, 'u': 1, 'i': 2, 'o': 3, 'p': 4,
-    'h': 1, 'j': 1, 'k': 2, 'l': 3, ';': 4, 
-    'n': 1, 'm': 1, ',': 2, '.': 3, '/': 4,
-    '[': 4, "'": 4
+    'q': 1, 'w': 2, 'e': 3, 'r': 4, 't': 4,  # 1=pinky, 4=index
+    'a': 1, 's': 2, 'd': 3, 'f': 4, 'g': 4,
+    'z': 1, 'x': 2, 'c': 3, 'v': 4, 'b': 4,
+    'y': 4, 'u': 4, 'i': 3, 'o': 2, 'p': 1,
+    'h': 4, 'j': 4, 'k': 3, 'l': 2, ';': 1, 
+    'n': 4, 'm': 4, ',': 3, '.': 2, '/': 1,
+    '[': 1, "'": 1
 }
 
 COLUMN_MAP = {
@@ -68,16 +68,16 @@ COLUMN_MAP = {
     '[': 11, "'": 11
 }
 
-# Home row positions for each finger (where fingers start)
+# Home row positions for each finger (1=pinky, 4=index):
 HOME_ROW_POSITIONS = {
-    'L4': 'a',  # Left pinky
-    'L3': 's',  # Left ring
-    'L2': 'd',  # Left middle
-    'L1': 'f',  # Left index
-    'R1': 'j',  # Right index
-    'R2': 'k',  # Right middle
-    'R3': 'l',  # Right ring
-    'R4': ';'   # Right pinky
+    'L1': 'a',  # Left pinky
+    'L2': 's',  # Left ring
+    'L3': 'd',  # Left middle
+    'L4': 'f',  # Left index
+    'R4': 'j',  # Right index
+    'R3': 'k',  # Right middle
+    'R2': 'l',  # Right ring
+    'R1': ';'   # Right pinky
 }
 
 def calculate_euclidean_distance(pos1: Tuple[float, float], pos2: Tuple[float, float]) -> float:

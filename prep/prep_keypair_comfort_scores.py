@@ -45,16 +45,26 @@ import logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-# Original constants (unchanged)
+# Qwerty layout
 QWERTY_LAYOUT = {
-    # [Previous layout definition - unchanged]
-    'Q': (1, 4, 'L'), 'W': (1, 3, 'L'), 'E': (1, 2, 'L'), 'R': (1, 1, 'L'), 'T': (1, 1, 'L'),
-    'Y': (1, 1, 'R'), 'U': (1, 1, 'R'), 'I': (1, 2, 'R'), 'O': (1, 3, 'R'), 'P': (1, 4, 'R'),
-    'A': (2, 4, 'L'), 'S': (2, 3, 'L'), 'D': (2, 2, 'L'), 'F': (2, 1, 'L'), 'G': (2, 1, 'L'),
-    'H': (2, 1, 'R'), 'J': (2, 1, 'R'), 'K': (2, 2, 'R'), 'L': (2, 3, 'R'), ';': (2, 4, 'R'),
-    'Z': (3, 4, 'L'), 'X': (3, 3, 'L'), 'C': (3, 2, 'L'), 'V': (3, 1, 'L'), 'B': (3, 1, 'L'),
-    'N': (3, 1, 'R'), 'M': (3, 1, 'R'), ',': (3, 2, 'R'), '.': (3, 3, 'R'), '/': (3, 4, 'R'),
-    "'": (2, 4, 'R'), '[': (1, 4, 'R'),
+    # Number row (row 0) - finger numbers
+    '1': (0, 1, 'L', 0), '2': (0, 2, 'L', 0), '3': (0, 3, 'L', 0), '4': (0, 4, 'L', 0), '5': (0, 4, 'L', 0),
+    '6': (0, 4, 'R', 0), '7': (0, 4, 'R', 0), '8': (0, 3, 'R', 0), '9': (0, 2, 'R', 0), '0': (0, 1, 'R', 0),
+    
+    # Top row (row 1) - finger numbers
+    'Q': (1, 1, 'L', 0), 'W': (1, 2, 'L', 0), 'E': (1, 3, 'L', 0), 'R': (1, 4, 'L', 0), 'T': (1, 4, 'L', 0),
+    'Y': (1, 4, 'R', 0), 'U': (1, 4, 'R', 0), 'I': (1, 3, 'R', 0), 'O': (1, 2, 'R', 0), 'P': (1, 1, 'R', 0),
+    
+    # Home row (row 2) - finger numbers
+    'A': (2, 1, 'L', 1), 'S': (2, 2, 'L', 1), 'D': (2, 3, 'L', 1), 'F': (2, 4, 'L', 1), 'G': (2, 4, 'L', 0),
+    'H': (2, 4, 'R', 0), 'J': (2, 4, 'R', 1), 'K': (2, 3, 'R', 1), 'L': (2, 2, 'R', 1), ';': (2, 1, 'R', 1),
+    
+    # Bottom row (row 3) - finger numbers
+    'Z': (3, 1, 'L', 0), 'X': (3, 2, 'L', 0), 'C': (3, 3, 'L', 0), 'V': (3, 4, 'L', 0), 'B': (3, 4, 'L', 0),
+    'N': (3, 4, 'R', 0), 'M': (3, 4, 'R', 0), ',': (3, 3, 'R', 0), '.': (3, 2, 'R', 0), '/': (3, 1, 'R', 0),
+    
+    # Additional common keys - finger numbers
+    "'": (2, 1, 'R', 0), '[': (1, 1, 'R', 0),
 }
 
 # Define the lateral stretch keys that require finger stretching
