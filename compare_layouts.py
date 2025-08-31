@@ -16,19 +16,19 @@ Examples:
     poetry run python3 compare_layouts.py --tables layout_scores.csv
 
     # Core biomechanical metrics only (recommended)
-    poetry run python3 compare_layouts.py --metrics engram comfort comfort-key dvorak7 --tables layout_scores.csv
+    poetry run python3 compare_layouts.py --metrics engram8 dvorak7 comfort_combo comfort comfort_key --tables layout_scores.csv
 
     # Include experimental distance/time metrics (caution: limitations noted above)
-    poetry run python3 compare_layouts.py --metrics engram comfort comfort-key dvorak7 efficiency_total speed_total --tables layout_scores.csv
+    poetry run python3 compare_layouts.py --metrics engram8 comfort comfort_key dvorak7 efficiency speed --tables layout_scores.csv --experimental-metrics
 
     # Create plots with specific metrics and save summary
-    poetry run python3 compare_layouts.py --metrics engram comfort comfort-key dvorak7 --output comparison.png --summary summary.csv --tables layout_scores.csv 
+    poetry run python3 compare_layouts.py --metrics engram8 comfort comfort_key dvorak7 --output comparison.png --summary summary.csv --tables layout_scores.csv
 
     # Compare multiple tables with core metrics
-    poetry run python3 compare_layouts.py --metrics engram comfort comfort-key dvorak7 --output output/layout_comparison.png --tables layout_scores.csv moo_layout_scores.csv
+    poetry run python3 compare_layouts.py --metrics engram8 comfort comfort_key dvorak7 --output output/layout_comparison.png --tables layout_scores.csv moo_layout_scores.csv
 
     # Detailed comparison with Dvorak-7 breakdown (biomechanical focus)
-    poetry run python3 compare_layouts.py --metrics engram comfort comfort-key dvorak7 dvorak7_repetition dvorak7_movement dvorak7_vertical dvorak7_horizontal dvorak7_adjacent dvorak7_weak dvorak7_outward --output output/layout_comparison_detailed.png --tables layout_scores.csv moo_layout_scores.csv
+    poetry run python3 compare_layouts.py --metrics engram8 comfort comfort_key dvorak7 dvorak7_distribution dvorak7_strength dvorak7_middle dvorak7_vspan dvorak7_columns dvorak7_remote dvorak7_inward --output output/layout_comparison_detailed.png --tables layout_scores.csv moo_layout_scores.csv
 
 Input format:
   CSV files should be output from: score_layouts.py --csv-output
@@ -208,7 +208,7 @@ def find_available_metrics(dfs: List[pd.DataFrame], verbose: bool = False) -> Li
             if (metric_lower.startswith('distance') or metric_lower.startswith('efficiency') or
                 metric_lower.startswith('time') or metric_lower.startswith('speed') or
                 metric_lower == 'distance' or metric_lower == 'efficiency' or
-                metric_lower == 'time' or metric_lower == 'speed':
+                metric_lower == 'time' or metric_lower == 'speed'):
                 experimental_metrics.append(metric)
             else:
                 core_metrics.append(metric)
@@ -707,25 +707,25 @@ def main():
     parser = argparse.ArgumentParser(
         description='Create parallel coordinates plots and heatmaps comparing keyboard layouts with performance-based sorting',
         formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="""
+    epilog="""
 Examples:
   # All available metrics (core biomechanical metrics by default)
   python compare_layouts.py --tables layout_scores.csv
   
   # Core biomechanical metrics only (recommended)
-  python compare_layouts.py --tables layout_scores.csv --metrics engram comfort comfort-key dvorak7
+  python compare_layouts.py --tables layout_scores.csv --metrics engram8 dvorak7 comfort_combo comfort comfort_key
   
   # Include experimental distance/time metrics (caution: limitations)
-  python compare_layouts.py --tables layout_scores.csv --metrics engram comfort efficiency_total speed_total
+  python compare_layouts.py --tables layout_scores.csv --metrics engram8 comfort efficiency --experimental-metrics
   
   # Create summary table with performance sorting
-  python compare_layouts.py --tables layout_scores.csv --metrics engram comfort dvorak7 --summary layout_summary.csv
+  python compare_layouts.py --tables layout_scores.csv --metrics engram8 comfort dvorak7 --summary layout_summary.csv
   
   # Create both plots and summary with performance-based coloring
-  python compare_layouts.py --tables layout_scores.csv --metrics engram comfort comfort-key dvorak7 --output comparison.png --summary summary.csv
+  python compare_layouts.py --tables layout_scores.csv --metrics engram8 comfort comfort_key dvorak7 --output comparison.png --summary summary.csv
   
   # Multiple tables with filtered metrics and summary
-  python compare_layouts.py --tables scores1.csv scores2.csv --metrics comfort engram --summary combined_summary.csv
+  python compare_layouts.py --tables scores1.csv scores2.csv --metrics comfort engram8 --summary combined_summary.csv
 
 Input format:
   CSV files should be output from: score_layouts.py --csv-output
@@ -743,8 +743,8 @@ Performance-based coloring:
   When --summary is used, parallel plot lines are colored from dark red (best) to light red (worst) based on average performance.
 
 Core vs Experimental Metrics:
-  Core biomechanical metrics (recommended): engram, comfort, comfort-key, dvorak7
-  Experimental metrics (use with caution): efficiency_*, speed_*
+  Core biomechanical metrics (recommended): engram8, comfort, comfort_key, dvorak7
+  Experimental metrics (use with caution): efficiency*, speed*
   
   Experimental metrics have significant limitations:
   - Distance/efficiency metrics oversimplify biomechanics (ignore lateral stretching, finger strength, etc.)
@@ -802,13 +802,12 @@ Core vs Experimental Metrics:
     # Print summary
     if args.verbose:
         print_summary_stats(dfs, table_names, metrics)
-    
-    # Create summary table if requested (or for performance-based coloring)
+
+    # Create summary table only if explicitly requested
     summary_df = None
-    if args.summary or args.output is not None:
+    if args.summary:  # <-- ONLY create summary when --summary is specified
         if args.verbose:
             print(f"\nCreating performance summary...")
-        # Normalize data for fair comparison across tables
         normalized_dfs = normalize_data(dfs, metrics)
         summary_df = create_sorted_summary(normalized_dfs, table_names, metrics, args.summary)
     
