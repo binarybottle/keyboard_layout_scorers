@@ -566,7 +566,7 @@ def analyze_criterion_combinations(results):
     criteria_cols = [col for col in df.columns if col not in exclude_cols]
     
     # Verify we have the expected 7 criteria
-    expected_criteria = ['repetition', 'movement', 'vertical', 'horizontal', 'adjacent', 'weak', 'outward']
+    expected_criteria = ['distribution','strength','middle','vspan','columns','remote','inward']
     print_and_log(f"   Expected criteria: {expected_criteria}")
     print_and_log(f"   Found criteria: {criteria_cols}")
     
