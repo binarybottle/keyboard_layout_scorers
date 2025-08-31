@@ -785,7 +785,7 @@ This version automatically removes QWERTY bias using English bigram frequencies:
 - Analyzes large-scale empirical typing data (136M+ keystrokes) for robust biomechanical insights
 - Applies frequency-based corrections to remove practice effects  
 - Outputs layout-agnostic time scores for fair comparison
-- Perfect for dual framework analysis with Dvorak-7 validation
+- Appropriate for dual framework analysis with Dvorak-7 validation
 
 The debiasing process:
 1. Maps key-pairs back to letter-pairs

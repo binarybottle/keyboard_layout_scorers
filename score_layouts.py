@@ -3,7 +3,7 @@
 Keyboard Layout Scorer using precomputed score table.
 
 A comprehensive tool for evaluating keyboard layouts using frequency-weighted scoring.
-Core scoring methods include comfort_combo, comfort, comfort-key, engram8, and dvorak7.
+Core scoring methods include engram8, dvorak7, comfort_combo, comfort, and comfort_key.
 
 (Note: experimental distance/efficiency and time/speed metrics are disabled by default.
 Distance metrics oversimplify biomechanical complexity (ignoring lateral stretching,
@@ -24,17 +24,23 @@ Default behavior:
 - Scoring mode: Frequency-weighted (prioritizes common English letter combinations)
 - Score mapping: Letter-pair frequencies → Key-pair scores
 
+Scoring ranges:
+- Comfort scores: Normalized 0-1 (higher = more comfortable)
+- Engram-8 scores: 0-8 raw (sum of 8 components), normalized 0-1
+- Dvorak-7 scores: 0-7 raw (sum of 7 components), normalized 0-1  
+- Distance→efficiency: Inverted distance scores, normalized 0-1
+- Time→speed: Inverted time scores, normalized 0-1
+
 Core metrics (default):
-- comfort_combo (composite comfort model)
-- comfort-key (frequency-weighted key comfort)
-- comfort (frequency-weighted key-pair comfort)  
 - engram8 (based on Typing Preference Study)
 - dvorak7 (based on Dvorak's 7 typing principles)
+- comfort_combo (composite comfort model)
+- comfort_key (frequency-weighted key comfort)
+- comfort (frequency-weighted key-pair comfort)  
 
 Experimental metrics (--experimental-metrics) should be interpreted with caution:
 - efficiency_* (inverted (1-score) from distance-based metrics, oversimplifies biomechanics)
 - speed_* (inverted from time-based metrics, contains QWERTY training bias)
-- dvorak7-speed (empirically-weighted Dvorak-7, QWERTY bias)
 
 Usage:
     # Core biomechanical metrics only (recommended)
@@ -51,9 +57,6 @@ Usage:
     
     # Compare with experimental metrics (caution: limitations noted above)
     python score_layouts.py --compare qwerty:"qwertyuiop" dvorak:"',.pyfgcrl" --experimental-metrics
-    
-    # Specific experimental metrics
-    python score_layouts.py --compare qwerty:"qwertyuiop" dvorak:"',.pyfgcrl" --scorer dvorak7-speed --experimental-metrics
     
     # Mix core and experimental metrics
     python score_layouts.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --scorers engram8,comfort,efficiency --experimental-metrics
@@ -76,7 +79,7 @@ Features:
 - Multiple output formats: detailed, CSV, minimal CSV, score-only
 - Fallback to raw scoring if frequency file missing
 - Support for all scoring methods in the unified score table
-- Dynamic comfort_combo and comfort-key scoring (requires prep_scoring_tables.py output)
+- Dynamic comfort_combo and comfort_key scoring (requires prep_scoring_tables.py output)
 """
 
 import sys
@@ -86,14 +89,6 @@ import pandas as pd
 import numpy as np
 from pathlib import Path
 from typing import Dict, List, Tuple, Optional, Set
-
-# Import for dvorak7-speed scoring
-try:
-    sys.path.insert(0, str(Path(__file__).parent / "prep"))
-    from prep_keypair_dvorak7_scores import score_bigram_dvorak7
-    DVORAK7_AVAILABLE = True
-except ImportError:
-    DVORAK7_AVAILABLE = False
 
 class LayoutScorer:
     """Unified layout scorer using pre-computed score table."""
@@ -112,7 +107,6 @@ class LayoutScorer:
         
         self.letter_frequencies = self._load_letter_frequencies()
         self.key_comfort_scores = self._load_key_comfort_scores()
-        self.dvorak7_speed_weights = self._load_dvorak7_speed_weights()
         
         self._update_available_scorers()
         
@@ -249,47 +243,7 @@ class LayoutScorer:
             if self.verbose:
                 print(f"Error loading key comfort scores: {e}")
             return None
-    
-    def _load_dvorak7_speed_weights(self) -> Optional[Dict]:
-        """Load Dvorak-7 empirical speed weights."""
-        filepath = "input/dvorak7_speed_weights.csv"
         
-        if not Path(filepath).exists():
-            return None
-        
-        try:
-            df = pd.read_csv(filepath)
-            
-            required_cols = ['combination', 'k_way', 'correlation', 'significant_after_fdr']
-            for col in required_cols:
-                if col not in df.columns:
-                    return None
-            
-            significant_df = df[df['significant_after_fdr'] == True]
-            
-            if len(significant_df) == 0:
-                return None
-            
-            weights = {}
-            for _, row in significant_df.iterrows():
-                combination = str(row['combination'])
-                correlation = float(row['correlation'])
-                weights[combination] = correlation
-            
-            if self.verbose:
-                print(f"Loaded Dvorak-7 speed weights: {len(weights)} combinations")
-            
-            return {
-                'combinations': significant_df,
-                'weights': weights,
-                'best_combination': significant_df.iloc[0] if len(significant_df) > 0 else None
-            }
-            
-        except Exception as e:
-            if self.verbose:
-                print(f"Error loading Dvorak-7 speed weights: {e}")
-            return None
-    
     def _find_column(self, df: pd.DataFrame, candidates: List[str]) -> Optional[str]:
         """Find the first matching column name from candidates."""
         for col in candidates:
@@ -322,16 +276,11 @@ class LayoutScorer:
     def _update_available_scorers(self):
         """Add dynamic scorers to available list."""
         if self.letter_frequencies and self.key_comfort_scores:
-            if 'comfort-key' not in self.available_scorers:
-                self.available_scorers.append('comfort-key')
+            if 'comfort_key' not in self.available_scorers:
+                self.available_scorers.append('comfort_key')
             if 'comfort' in self.available_scorers and 'comfort_combo' not in self.available_scorers:
                 self.available_scorers.append('comfort_combo')
-        
-        if self.dvorak7_speed_weights and DVORAK7_AVAILABLE:
-            # Only add dvorak7-speed if experimental metrics are enabled
-            if self.experimental_metrics and 'dvorak7-speed' not in self.available_scorers:
-                self.available_scorers.append('dvorak7-speed')
-    
+            
     def _print_initialization_info(self, score_table_path: str, frequency_file: Optional[str]):
         """Print initialization information if verbose."""
         print(f"Score table: {score_table_path}")
@@ -374,8 +323,7 @@ class LayoutScorer:
             scorer_lower.startswith('time_') or
             scorer_lower.startswith('speed_') or
             scorer_lower == 'time' or
-            scorer_lower == 'speed' or
-            scorer_lower == 'dvorak7-speed'
+            scorer_lower == 'speed'
         )
     
     def _is_distance_efficiency_metric(self, scorer: str) -> bool:
@@ -424,7 +372,7 @@ class LayoutScorer:
         return valid_pairs
     
     def _compute_comfort_key_score(self, letter_pair: str, layout_mapping: Dict[str, str]) -> Optional[float]:
-        """Compute comfort-key score for a letter pair."""
+        """Compute comfort_key score for a letter pair."""
         if len(letter_pair) != 2 or not self.letter_frequencies or not self.key_comfort_scores:
             return None
         
@@ -451,12 +399,10 @@ class LayoutScorer:
         """Score a layout using a specific scoring method."""
         self._validate_layout_mapping(layout_mapping)
         
-        if scorer == 'comfort-key':
+        if scorer == 'comfort_key':
             return self._score_layout_comfort_key(layout_mapping)
         elif scorer == 'comfort_combo':
             return self._score_layout_comfort_combo(layout_mapping)
-        elif scorer == 'dvorak7-speed':
-            return self._score_layout_dvorak7_speed(layout_mapping)
         
         score_col = f"{scorer}_score_normalized"
         if score_col not in self.score_table.columns:
@@ -548,22 +494,22 @@ class LayoutScorer:
         return results
 
     def _score_layout_comfort_key(self, layout_mapping: Dict[str, str]) -> Dict[str, float]:
-        """Score a layout using comfort-key method."""
+        """Score a layout using comfort_key method."""
         if not self.letter_frequencies or not self.key_comfort_scores:
             missing = []
             if not self.letter_frequencies:
                 missing.append("input/english-letter-frequencies-google-ngrams.csv")
             if not self.key_comfort_scores:
                 missing.append("tables/key_scores.csv")
-            raise ValueError(f"Required files missing for comfort-key scoring: {missing}")
+            raise ValueError(f"Required files missing for comfort_key scoring: {missing}")
         
         if not self.bigram_frequencies:
-            raise ValueError("Bigram frequencies required for comfort-key scoring")
+            raise ValueError("Bigram frequencies required for comfort_key scoring")
         
         valid_letter_pairs = self._get_valid_letter_pairs(layout_mapping)
         
         if self.verbose:
-            print(f"Comfort-key: Processing {len(valid_letter_pairs)} valid pairs")
+            print(f"comfort_key: Processing {len(valid_letter_pairs)} valid pairs")
                 
         raw_total_score = 0.0
         raw_count = 0
@@ -613,14 +559,14 @@ class LayoutScorer:
         return results
     
     def _score_layout_comfort_combo(self, layout_mapping: Dict[str, str]) -> Dict[str, float]:
-        """Score a layout using Engram-2 method (comfort * comfort-key)."""
+        """Score a layout using comfort_combo method (comfort * comfort_key)."""
         if not self.letter_frequencies or not self.key_comfort_scores:
             missing = []
             if not self.letter_frequencies:
                 missing.append("input/english-letter-frequencies-google-ngrams.csv")
             if not self.key_comfort_scores:
                 missing.append("tables/key_scores.csv")
-            raise ValueError(f"Required files missing for Engram-2 scoring: {missing}")
+            raise ValueError(f"Required files missing for comfort_combo scoring: {missing}")
         
         comfort_col = "comfort_score_normalized"
         if comfort_col not in self.score_table.columns:
@@ -629,12 +575,12 @@ class LayoutScorer:
                 raise ValueError("Comfort scores not found in score table")
         
         if not self.bigram_frequencies:
-            raise ValueError("Bigram frequencies required for Engram-2 scoring")
+            raise ValueError("Bigram frequencies required for comfort_combo scoring")
         
         valid_letter_pairs = self._get_valid_letter_pairs(layout_mapping)
         
         if self.verbose:
-            print(f"Engram-2: Processing {len(valid_letter_pairs)} valid pairs")
+            print(f"comfort_combo: Processing {len(valid_letter_pairs)} valid pairs")
         
         raw_total_score = 0.0
         raw_count = 0
@@ -692,101 +638,7 @@ class LayoutScorer:
             })
         
         return results
-    
-    def _score_layout_dvorak7_speed(self, layout_mapping: Dict[str, str]) -> Dict[str, float]:
-        """Score layout using empirical Dvorak-7 speed weights."""
-        if not DVORAK7_AVAILABLE:
-            raise ValueError("prep_keypair_dvorak7_scores module not found")
         
-        if not self.dvorak7_speed_weights:
-            raise ValueError("Dvorak-7 speed weights not available")
-        
-        weights = self.dvorak7_speed_weights['weights']
-        
-        if self.bigram_frequencies:
-            letter_pairs = list(self.bigram_frequencies.keys())
-        else:
-            letter_pairs = ['TH', 'HE', 'IN', 'ER', 'AN', 'ND', 'ON', 'EN', 'AT', 'OU',
-                          'ED', 'HA', 'TO', 'OR', 'IT', 'IS', 'HI', 'ES', 'NG', 'VE']
-        
-        pure_scores = []
-        speed_weighted_scores = []
-        
-        use_frequency = self.bigram_frequencies is not None and not self.use_raw
-        weighted_total_pure = 0.0
-        weighted_total_speed = 0.0
-        total_frequency = 0.0
-        
-        for letter_pair in letter_pairs:
-            if len(letter_pair) == 2:
-                letter1, letter2 = letter_pair[0], letter_pair[1]
-                
-                if letter1 in layout_mapping and letter2 in layout_mapping:
-                    try:
-                        key1 = layout_mapping[letter1]
-                        key2 = layout_mapping[letter2]
-                        key_pair = key1 + key2
-                        criteria_scores = score_bigram_dvorak7(key_pair)
-
-                        pure_score = sum(criteria_scores.values()) / len(criteria_scores)
-                        pure_scores.append(pure_score)
-                        
-                        speed_score = 0.0
-                        total_abs_weight = 0.0
-                        
-                        for criterion, score in criteria_scores.items():
-                            weight = weights.get(criterion, 0.0)
-                            contribution = score * (-weight)
-                            speed_score += contribution
-                            total_abs_weight += abs(weight)
-                        
-                        if total_abs_weight > 0:
-                            speed_score = speed_score / total_abs_weight
-                        else:
-                            speed_score = pure_score
-                        
-                        speed_weighted_scores.append(speed_score)
-                        
-                        if use_frequency:
-                            frequency = self.bigram_frequencies.get(letter_pair, 0.0)
-                            weighted_total_pure += pure_score * frequency
-                            weighted_total_speed += speed_score * frequency
-                            total_frequency += frequency
-                        
-                    except Exception as e:
-                        if self.verbose:
-                            print(f"Warning: Could not score bigram '{letter_pair}': {e}")
-                        continue
-        
-        if use_frequency and total_frequency > 0:
-            pure_average = weighted_total_pure / total_frequency
-            speed_average = weighted_total_speed / total_frequency
-        else:
-            pure_average = np.mean(pure_scores) if pure_scores else 0.0
-            speed_average = np.mean(speed_weighted_scores) if speed_weighted_scores else 0.0
-        
-        results = {
-            'average_score': speed_average,
-            'raw_average_score': pure_average,
-            'pure_dvorak7_score': pure_average,
-            'speed_weighted_score': speed_average,
-            'improvement_ratio': speed_average / pure_average if pure_average > 0 else 1.0,
-            'letters_in_layout': len(layout_mapping),
-            'bigrams_scored': len(pure_scores),
-            'coverage': len(pure_scores) / len(letter_pairs) if letter_pairs else 0.0,
-            'pair_count': len(pure_scores),
-            'total_score': weighted_total_speed if use_frequency else sum(speed_weighted_scores),
-            'raw_total_score': weighted_total_pure if use_frequency else sum(pure_scores),
-        }
-        
-        if use_frequency:
-            results.update({
-                'total_frequency': total_frequency,
-                'frequency_coverage': total_frequency / sum(self.bigram_frequencies.values()) if self.bigram_frequencies else 0.0
-            })
-        
-        return results
-    
     def score_layout(self, layout_mapping: Dict[str, str], scorers: List[str]) -> Dict[str, Dict[str, float]]:
         """Score a layout using specified scoring methods."""
         results = {}
@@ -1050,7 +902,6 @@ Examples:
   
   # Specific experimental metrics
   python score_layouts.py --compare qwerty:"qwertyuiop" dvorak:"',.pyfgcrl" --scorer efficiency --experimental-metrics
-  python score_layouts.py --compare qwerty:"qwertyuiop" dvorak:"',.pyfgcrl" --scorer dvorak7-speed --experimental-metrics
   
   # Mix core and experimental metrics
   python score_layouts.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --scorers comfort_combo,comfort,efficiency --experimental-metrics
@@ -1072,7 +923,6 @@ Default behavior:
 - Uses tables/key_scores.csv for individual key comfort scores (created by prep_scoring_tables.py)
 - Uses input/english-letter-pair-frequencies-google-ngrams.csv for frequency weighting (if it exists)
 - Uses input/english-letter-frequencies-google-ngrams.csv for letter frequencies (if it exists)
-- Uses input/dvorak7_speed_weights.csv for empirical Dvorak-7 speed scoring (if it exists)
 - Falls back to raw scoring if frequency file is not found
 - With --raw: Ignores frequencies and uses raw (unweighted) scoring
 - With --verbose: Shows both weighted and raw scores for comparison
@@ -1097,13 +947,12 @@ Distance/efficiency and time/speed metrics are disabled by default due to signif
 Use --experimental-metrics to enable these metrics with full awareness of their limitations.
 
 Available scoring methods:
-Core (recommended): comfort, comfort-key, dvorak7, engram8, comfort_combo
-Experimental (--experimental-metrics): distance→efficiency, time→speed, dvorak7-speed
+Core (recommended): engram8, dvorak7, comfort_combo, comfort, comfort_key
+Experimental (--experimental-metrics): distance→efficiency, time→speed
 
 Distance scores are automatically inverted (1-score) and renamed to efficiency.
 Time scores are automatically inverted (1-score) and renamed to speed (experimental only).
-Engram-2 and comfort-key scores are computed dynamically and require letter frequencies and key comfort scores.
-dvorak7-speed provides both pure and empirically-weighted Dvorak-7 scores based on 19.4M typing correlations.
+comfort_combo and comfort_key scores are computed dynamically and require letter frequencies and key comfort scores.
         """
     )
     

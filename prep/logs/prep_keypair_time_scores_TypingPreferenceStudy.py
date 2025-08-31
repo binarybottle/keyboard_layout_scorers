@@ -881,10 +881,10 @@ def main():
         description='Generate time scores for QWERTY key-pairs with built-in QWERTY debiasing',
         epilog="""
 This version automatically removes QWERTY bias using English bigram frequencies:
-- Analyzes empirical typing data for rich biomechanical insights
+- Analyzes empirical typing data
 - Applies frequency-based corrections to remove practice effects  
 - Outputs layout-agnostic time scores for fair comparison
-- Perfect for dual framework analysis
+- Appropriate for dual framework analysis
 
 The debiasing process:
 1. Maps key-pairs back to letter-pairs

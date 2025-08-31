@@ -559,22 +559,18 @@ def main():
     parser = argparse.ArgumentParser(
         description='Generate hybrid time scores combining 136M intervals with component setup/return',
         epilog="""
-HYBRID METHODOLOGY - Best of Both Worlds:
-- Setup times: Component analysis (complete coverage, biomechanically accurate)
-- Interval times: 136M empirical data (16x more reliable, same as Dvorak validation)  
-- Return times: Component analysis (complete coverage, biomechanically accurate)
+HYBRID METHOD:
+- Setup times: Component analysis (complete coverage)
+- Interval times: 136M empirical data  
+- Return times: Component analysis (complete coverage)
 - Debiasing: Frequency-based + mirror-based corrections on total times
-
-This approach maximizes data quality where it matters most (intervals) while 
-ensuring complete coverage for all components. Output includes full provenance 
-tracking and is ready for layout optimization algorithms.
 
 Data Sources Required:
 1. 136M bigram timing file (interkey_interval measurements)
 2. Typing Preference Study CSV files (for component analysis)
 3. English bigram frequencies (for debiasing)
 
-Output: Complete typing cycle analysis with component breakdown and data provenance.
+Output: Complete typing analysis with component breakdown and data provenance.
         """
     )
     

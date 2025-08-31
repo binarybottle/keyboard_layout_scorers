@@ -208,8 +208,7 @@ def find_available_metrics(dfs: List[pd.DataFrame], verbose: bool = False) -> Li
             if (metric_lower.startswith('distance') or metric_lower.startswith('efficiency') or
                 metric_lower.startswith('time') or metric_lower.startswith('speed') or
                 metric_lower == 'distance' or metric_lower == 'efficiency' or
-                metric_lower == 'time' or metric_lower == 'speed' or
-                'dvorak7-speed' in metric_lower):
+                metric_lower == 'time' or metric_lower == 'speed':
                 experimental_metrics.append(metric)
             else:
                 core_metrics.append(metric)
@@ -745,7 +744,7 @@ Performance-based coloring:
 
 Core vs Experimental Metrics:
   Core biomechanical metrics (recommended): engram, comfort, comfort-key, dvorak7
-  Experimental metrics (use with caution): efficiency_*, speed_*, dvorak7-speed
+  Experimental metrics (use with caution): efficiency_*, speed_*
   
   Experimental metrics have significant limitations:
   - Distance/efficiency metrics oversimplify biomechanics (ignore lateral stretching, finger strength, etc.)

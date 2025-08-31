@@ -1,5 +1,5 @@
-> poetry run python3 prep_scoring_tables.py --input-dir ../tables/ --verbose
-Loading score files from: ../tables/
+> poetry run python3 prep_scoring_tables.py --input-dir ../tables --verbose
+Loading score files from: ../tables
   ✓ 'NA' key pair preserved in keypair_comfort_scores.csv
 Loaded 1024 rows from keypair_comfort_scores.csv
   Score range: -1.442261 - -0.061130
@@ -10,66 +10,69 @@ Loaded 1024 rows from keypair_dvorak7_scores.csv
   ✓ Loaded dvorak7_score from keypair_dvorak7_scores.csv
   ✓ 'NA' key pair preserved in keypair_engram8_scores.csv
 Loaded 1024 rows from keypair_engram8_scores.csv
-  Score range: 0.500000 - 7.000000
+  Score range: 0.500000 - 8.000000
   ✓ Loaded engram8_score from keypair_engram8_scores.csv
-  ⚠ Missing keypair_engram2_scores.csv, skipping engram2_score
-  ✓ 'NA' key pair preserved in keypair_engram8_distributed_scores.csv
-Loaded 1024 rows from keypair_engram8_distributed_scores.csv
+  ⚠ Missing keypair_comfort_combo_scores.csv, skipping comfort_combo_score
+  ✓ 'NA' key pair preserved in keypair_engram8_load_scores.csv
+Loaded 1024 rows from keypair_engram8_load_scores.csv
   Score range: 0.000000 - 1.000000
-  ✓ Loaded engram8_distributed from keypair_engram8_distributed_scores.csv
-  ⚠ Missing keypair_engram8_strength_scores.csv, skipping engram8_strength
-  ✓ 'NA' key pair preserved in keypair_engram8_primary_scores.csv
-Loaded 1024 rows from keypair_engram8_primary_scores.csv
+  ✓ Loaded engram8_load from keypair_engram8_load_scores.csv
+  ✓ 'NA' key pair preserved in keypair_engram8_strength_scores.csv
+Loaded 1024 rows from keypair_engram8_strength_scores.csv
   Score range: 0.000000 - 1.000000
-  ✓ Loaded engram8_primary from keypair_engram8_primary_scores.csv
-  ✓ 'NA' key pair preserved in keypair_engram8_secondary_scores.csv
-Loaded 1024 rows from keypair_engram8_secondary_scores.csv
+  ✓ Loaded engram8_strength from keypair_engram8_strength_scores.csv
+  ✓ 'NA' key pair preserved in keypair_engram8_home_scores.csv
+Loaded 1024 rows from keypair_engram8_home_scores.csv
   Score range: 0.000000 - 1.000000
-  ✓ Loaded engram8_secondary from keypair_engram8_secondary_scores.csv
-  ✓ 'NA' key pair preserved in keypair_engram8_lateral_scores.csv
-Loaded 1024 rows from keypair_engram8_lateral_scores.csv
-  Score range: 0.000000 - 0.000000
-  ✓ Loaded engram8_lateral from keypair_engram8_lateral_scores.csv
-  ✓ 'NA' key pair preserved in keypair_engram8_direction_scores.csv
-Loaded 1024 rows from keypair_engram8_direction_scores.csv
+  ✓ Loaded engram8_home from keypair_engram8_home_scores.csv
+  ✓ 'NA' key pair preserved in keypair_engram8_curl_scores.csv
+Loaded 1024 rows from keypair_engram8_curl_scores.csv
   Score range: 0.000000 - 1.000000
-  ✓ Loaded engram8_direction from keypair_engram8_direction_scores.csv
-  ✓ 'NA' key pair preserved in keypair_engram8_vertical_scores.csv
-Loaded 1024 rows from keypair_engram8_vertical_scores.csv
+  ✓ Loaded engram8_curl from keypair_engram8_curl_scores.csv
+  ✓ 'NA' key pair preserved in keypair_engram8_columns_scores.csv
+Loaded 1024 rows from keypair_engram8_columns_scores.csv
   Score range: 0.000000 - 1.000000
-  ✓ Loaded engram8_vertical from keypair_engram8_vertical_scores.csv
-  ✓ 'NA' key pair preserved in keypair_engram8_horizontal_scores.csv
-Loaded 1024 rows from keypair_engram8_horizontal_scores.csv
+  ✓ Loaded engram8_columns from keypair_engram8_columns_scores.csv
+  ✓ 'NA' key pair preserved in keypair_engram8_vspan_scores.csv
+Loaded 1024 rows from keypair_engram8_vspan_scores.csv
   Score range: 0.000000 - 1.000000
-  ✓ Loaded engram8_horizontal from keypair_engram8_horizontal_scores.csv
-  ✓ 'NA' key pair preserved in keypair_dvorak7_repetition_scores.csv
-Loaded 1024 rows from keypair_dvorak7_repetition_scores.csv
+  ✓ Loaded engram8_vspan from keypair_engram8_vspan_scores.csv
+  ✓ 'NA' key pair preserved in keypair_engram8_hspan_scores.csv
+Loaded 1024 rows from keypair_engram8_hspan_scores.csv
   Score range: 0.000000 - 1.000000
-  ✓ Loaded dvorak7_repetition from keypair_dvorak7_repetition_scores.csv
-  ✓ 'NA' key pair preserved in keypair_dvorak7_movement_scores.csv
-Loaded 1024 rows from keypair_dvorak7_movement_scores.csv
+  ✓ Loaded engram8_hspan from keypair_engram8_hspan_scores.csv
+  ✓ 'NA' key pair preserved in keypair_engram8_sequence_scores.csv
+Loaded 1024 rows from keypair_engram8_sequence_scores.csv
   Score range: 0.000000 - 1.000000
-  ✓ Loaded dvorak7_movement from keypair_dvorak7_movement_scores.csv
-  ✓ 'NA' key pair preserved in keypair_dvorak7_vertical_scores.csv
-Loaded 1024 rows from keypair_dvorak7_vertical_scores.csv
+  ✓ Loaded engram8_sequence from keypair_engram8_sequence_scores.csv
+  ✓ 'NA' key pair preserved in keypair_dvorak7_distribution_scores.csv
+Loaded 1024 rows from keypair_dvorak7_distribution_scores.csv
   Score range: 0.000000 - 1.000000
-  ✓ Loaded dvorak7_vertical from keypair_dvorak7_vertical_scores.csv
-  ✓ 'NA' key pair preserved in keypair_dvorak7_horizontal_scores.csv
-Loaded 1024 rows from keypair_dvorak7_horizontal_scores.csv
+  ✓ Loaded dvorak7_distribution from keypair_dvorak7_distribution_scores.csv
+  ✓ 'NA' key pair preserved in keypair_dvorak7_strength_scores.csv
+Loaded 1024 rows from keypair_dvorak7_strength_scores.csv
   Score range: 0.000000 - 1.000000
-  ✓ Loaded dvorak7_horizontal from keypair_dvorak7_horizontal_scores.csv
-  ✓ 'NA' key pair preserved in keypair_dvorak7_adjacent_scores.csv
-Loaded 1024 rows from keypair_dvorak7_adjacent_scores.csv
+  ✓ Loaded dvorak7_strength from keypair_dvorak7_strength_scores.csv
+  ✓ 'NA' key pair preserved in keypair_dvorak7_middle_scores.csv
+Loaded 1024 rows from keypair_dvorak7_middle_scores.csv
   Score range: 0.000000 - 1.000000
-  ✓ Loaded dvorak7_adjacent from keypair_dvorak7_adjacent_scores.csv
-  ✓ 'NA' key pair preserved in keypair_dvorak7_weak_scores.csv
-Loaded 1024 rows from keypair_dvorak7_weak_scores.csv
+  ✓ Loaded dvorak7_middle from keypair_dvorak7_middle_scores.csv
+  ✓ 'NA' key pair preserved in keypair_dvorak7_vspan_scores.csv
+Loaded 1024 rows from keypair_dvorak7_vspan_scores.csv
   Score range: 0.000000 - 1.000000
-  ✓ Loaded dvorak7_weak from keypair_dvorak7_weak_scores.csv
-  ✓ 'NA' key pair preserved in keypair_dvorak7_outward_scores.csv
-Loaded 1024 rows from keypair_dvorak7_outward_scores.csv
+  ✓ Loaded dvorak7_vspan from keypair_dvorak7_vspan_scores.csv
+  ✓ 'NA' key pair preserved in keypair_dvorak7_columns_scores.csv
+Loaded 1024 rows from keypair_dvorak7_columns_scores.csv
   Score range: 0.000000 - 1.000000
-  ✓ Loaded dvorak7_outward from keypair_dvorak7_outward_scores.csv
+  ✓ Loaded dvorak7_columns from keypair_dvorak7_columns_scores.csv
+  ✓ 'NA' key pair preserved in keypair_dvorak7_remote_scores.csv
+Loaded 1024 rows from keypair_dvorak7_remote_scores.csv
+  Score range: 0.000000 - 1.000000
+  ✓ Loaded dvorak7_remote from keypair_dvorak7_remote_scores.csv
+  ✓ 'NA' key pair preserved in keypair_dvorak7_inward_scores.csv
+Loaded 1024 rows from keypair_dvorak7_inward_scores.csv
+  Score range: 0.000000 - 1.000000
+  ✓ Loaded dvorak7_inward from keypair_dvorak7_inward_scores.csv
   ⚠ Missing 'distance_score' column in keypair_distance_scores.csv
     Available columns: ['key_pair', 'distance_setup', 'distance_interval', 'distance_return', 'distance_total']
   ⚠ Skipping distance_score from keypair_distance_scores.csv (column not found)
@@ -92,7 +95,7 @@ Loaded 1024 rows from keypair_time_scores.csv
     Components: time_setup, time_interval, time_return, time_total
 
 Unified dataframe has 1024 rows
-Score columns: ['distance_setup', 'distance_interval', 'distance_return', 'distance_total', 'time_setup', 'time_interval', 'time_return', 'time_total', 'comfort_score', 'dvorak7_score', 'engram8_score', 'engram8_distributed', 'engram8_primary', 'engram8_secondary', 'engram8_lateral', 'engram8_direction', 'engram8_vertical', 'engram8_horizontal', 'dvorak7_repetition', 'dvorak7_movement', 'dvorak7_vertical', 'dvorak7_horizontal', 'dvorak7_adjacent', 'dvorak7_weak', 'dvorak7_outward']
+Score columns: ['distance_setup', 'distance_interval', 'distance_return', 'distance_total', 'time_setup', 'time_interval', 'time_return', 'time_total', 'comfort_score', 'dvorak7_score', 'engram8_score', 'engram8_load', 'engram8_strength', 'engram8_home', 'engram8_curl', 'engram8_columns', 'engram8_vspan', 'engram8_hspan', 'engram8_sequence', 'dvorak7_distribution', 'dvorak7_strength', 'dvorak7_middle', 'dvorak7_vspan', 'dvorak7_columns', 'dvorak7_remote', 'dvorak7_inward']
 
 Applying universal normalization to score columns:
   distance_setup: Universal range [0, 35], 0 values clipped
@@ -131,87 +134,91 @@ Applying universal normalization to score columns:
     Original range: [-1.442, -0.061]
     Normalized range: [0.038, 0.959]
     Added comfort_score_normalized (range: 0.038493 - 0.959247)
-  dvorak7_score: Universal range [0, 1], 1001 values clipped
+  dvorak7_score: Universal range [0, 7], 0 values clipped
     Original range: [0.500, 7.000]
-    Normalized range: [0.500, 1.000]
-    Added dvorak7_score_normalized (range: 0.500000 - 1.000000)
-  engram8_score: Universal range [0, 1], 996 values clipped
-    Original range: [0.500, 7.000]
-    Normalized range: [0.500, 1.000]
-    Added engram8_score_normalized (range: 0.500000 - 1.000000)
-  engram8_distributed: Universal range [0, 1], 0 values clipped
+    Normalized range: [0.071, 1.000]
+    Added dvorak7_score_normalized (range: 0.071429 - 1.000000)
+  engram8_score: Universal range [0, 8], 0 values clipped
+    Original range: [0.500, 8.000]
+    Normalized range: [0.062, 1.000]
+    Added engram8_score_normalized (range: 0.062500 - 1.000000)
+  engram8_load: Universal range [0, 1], 0 values clipped
     Original range: [0.000, 1.000]
     Normalized range: [0.000, 1.000]
-    Added engram8_distributed_normalized (range: 0.000000 - 1.000000)
-  engram8_primary: Universal range [0, 1], 0 values clipped
+    Added engram8_load_normalized (range: 0.000000 - 1.000000)
+  engram8_strength: Universal range [0, 1], 0 values clipped
     Original range: [0.000, 1.000]
     Normalized range: [0.000, 1.000]
-    Added engram8_primary_normalized (range: 0.000000 - 1.000000)
-  engram8_secondary: Universal range [0, 1], 0 values clipped
+    Added engram8_strength_normalized (range: 0.000000 - 1.000000)
+  engram8_home: Universal range [0, 1], 0 values clipped
     Original range: [0.000, 1.000]
     Normalized range: [0.000, 1.000]
-    Added engram8_secondary_normalized (range: 0.000000 - 1.000000)
-  engram8_lateral: Universal range [0, 1], 0 values clipped
-    Original range: [0.000, 0.000]
-    Normalized range: [0.000, 0.000]
-    Added engram8_lateral_normalized (range: 0.000000 - 0.000000)
-  engram8_direction: Universal range [0, 1], 0 values clipped
+    Added engram8_home_normalized (range: 0.000000 - 1.000000)
+  engram8_curl: Universal range [0, 1], 0 values clipped
     Original range: [0.000, 1.000]
     Normalized range: [0.000, 1.000]
-    Added engram8_direction_normalized (range: 0.000000 - 1.000000)
-  engram8_vertical: Universal range [0, 1], 0 values clipped
+    Added engram8_curl_normalized (range: 0.000000 - 1.000000)
+  engram8_columns: Universal range [0, 1], 0 values clipped
     Original range: [0.000, 1.000]
     Normalized range: [0.000, 1.000]
-    Added engram8_vertical_normalized (range: 0.000000 - 1.000000)
-  engram8_horizontal: Universal range [0, 1], 0 values clipped
+    Added engram8_columns_normalized (range: 0.000000 - 1.000000)
+  engram8_vspan: Universal range [0, 1], 0 values clipped
     Original range: [0.000, 1.000]
     Normalized range: [0.000, 1.000]
-    Added engram8_horizontal_normalized (range: 0.000000 - 1.000000)
-  dvorak7_repetition: Universal range [0, 1], 0 values clipped
+    Added engram8_vspan_normalized (range: 0.000000 - 1.000000)
+  engram8_hspan: Universal range [0, 1], 0 values clipped
     Original range: [0.000, 1.000]
     Normalized range: [0.000, 1.000]
-    Added dvorak7_repetition_normalized (range: 0.000000 - 1.000000)
-  dvorak7_movement: Universal range [0, 1], 0 values clipped
+    Added engram8_hspan_normalized (range: 0.000000 - 1.000000)
+  engram8_sequence: Universal range [0, 1], 0 values clipped
     Original range: [0.000, 1.000]
     Normalized range: [0.000, 1.000]
-    Added dvorak7_movement_normalized (range: 0.000000 - 1.000000)
-  dvorak7_vertical: Universal range [0, 1], 0 values clipped
+    Added engram8_sequence_normalized (range: 0.000000 - 1.000000)
+  dvorak7_distribution: Universal range [0, 1], 0 values clipped
     Original range: [0.000, 1.000]
     Normalized range: [0.000, 1.000]
-    Added dvorak7_vertical_normalized (range: 0.000000 - 1.000000)
-  dvorak7_horizontal: Universal range [0, 1], 0 values clipped
+    Added dvorak7_distribution_normalized (range: 0.000000 - 1.000000)
+  dvorak7_strength: Universal range [0, 1], 0 values clipped
     Original range: [0.000, 1.000]
     Normalized range: [0.000, 1.000]
-    Added dvorak7_horizontal_normalized (range: 0.000000 - 1.000000)
-  dvorak7_adjacent: Universal range [0, 1], 0 values clipped
+    Added dvorak7_strength_normalized (range: 0.000000 - 1.000000)
+  dvorak7_middle: Universal range [0, 1], 0 values clipped
     Original range: [0.000, 1.000]
     Normalized range: [0.000, 1.000]
-    Added dvorak7_adjacent_normalized (range: 0.000000 - 1.000000)
-  dvorak7_weak: Universal range [0, 1], 0 values clipped
+    Added dvorak7_middle_normalized (range: 0.000000 - 1.000000)
+  dvorak7_vspan: Universal range [0, 1], 0 values clipped
     Original range: [0.000, 1.000]
     Normalized range: [0.000, 1.000]
-    Added dvorak7_weak_normalized (range: 0.000000 - 1.000000)
-  dvorak7_outward: Universal range [0, 1], 0 values clipped
+    Added dvorak7_vspan_normalized (range: 0.000000 - 1.000000)
+  dvorak7_columns: Universal range [0, 1], 0 values clipped
     Original range: [0.000, 1.000]
     Normalized range: [0.000, 1.000]
-    Added dvorak7_outward_normalized (range: 0.000000 - 1.000000)
+    Added dvorak7_columns_normalized (range: 0.000000 - 1.000000)
+  dvorak7_remote: Universal range [0, 1], 0 values clipped
+    Original range: [0.000, 1.000]
+    Normalized range: [0.000, 1.000]
+    Added dvorak7_remote_normalized (range: 0.000000 - 1.000000)
+  dvorak7_inward: Universal range [0, 1], 0 values clipped
+    Original range: [0.000, 1.000]
+    Normalized range: [0.000, 1.000]
+    Added dvorak7_inward_normalized (range: 0.000000 - 1.000000)
 
 🎯 Creating composite scores from detailed components...
-  ✓ Engram-8: Composite from 15 components
+  ✓ Engram-8: Composite from 17 components
   ✓ Dvorak-7: Composite from 15 components
   ✓ Time: Using time_total
   ✓ Distance: Using distance_total
   ✓ Comfort: Using comfort_score
 
 Applying universal normalization to composite scores:
-  engram8_score: Universal range [0, 1], 0 values clipped
-    Original range: [0.067, 0.867]
-    Normalized range: [0.067, 0.867]
-    Added engram8_score_normalized (range: 0.066667 - 0.866667)
-  dvorak7_score: Universal range [0, 1], 0 values clipped
-    Original range: [0.100, 1.000]
-    Normalized range: [0.100, 1.000]
-    Added dvorak7_score_normalized (range: 0.100000 - 1.000000)
+  engram8_score: Universal range [0, 8], 0 values clipped
+    Original range: [0.062, 1.000]
+    Normalized range: [0.008, 0.125]
+    Added engram8_score_normalized (range: 0.007812 - 0.125000)
+  dvorak7_score: Universal range [0, 7], 0 values clipped
+    Original range: [0.071, 1.000]
+    Normalized range: [0.010, 0.143]
+    Added dvorak7_score_normalized (range: 0.010204 - 0.142857)
   time_score: Universal range [570, 1250], 0 values clipped
     Original range: [571.607, 1248.076]
     Normalized range: [0.002, 0.997]
@@ -226,16 +233,16 @@ Applying universal normalization to composite scores:
     Added comfort_score_normalized (range: 0.038493 - 0.959247)
 
 Saved detailed scoring table to: ../tables/keypair_scores_detailed.csv
-  Table contains 1024 rows and 51 columns
-  Detailed columns: ['key_pair', 'comfort_score', 'distance_interval', 'distance_return', 'distance_setup', 'distance_total', 'dvorak7_adjacent', 'dvorak7_horizontal', 'dvorak7_movement', 'dvorak7_outward', 'dvorak7_repetition', 'dvorak7_score', 'dvorak7_vertical', 'dvorak7_weak', 'engram8_direction', 'engram8_distributed', 'engram8_horizontal', 'engram8_lateral', 'engram8_primary', 'engram8_score', 'engram8_secondary', 'engram8_vertical', 'time_interval', 'time_return', 'time_setup', 'time_total', 'comfort_score_normalized', 'distance_interval_normalized', 'distance_return_normalized', 'distance_setup_normalized', 'distance_total_normalized', 'dvorak7_adjacent_normalized', 'dvorak7_horizontal_normalized', 'dvorak7_movement_normalized', 'dvorak7_outward_normalized', 'dvorak7_repetition_normalized', 'dvorak7_score_normalized', 'dvorak7_vertical_normalized', 'dvorak7_weak_normalized', 'engram8_direction_normalized', 'engram8_distributed_normalized', 'engram8_horizontal_normalized', 'engram8_lateral_normalized', 'engram8_primary_normalized', 'engram8_score_normalized', 'engram8_secondary_normalized', 'engram8_vertical_normalized', 'time_interval_normalized', 'time_return_normalized', 'time_setup_normalized', 'time_total_normalized']
+  Table contains 1024 rows and 53 columns
+  Detailed columns: ['key_pair', 'comfort_score', 'distance_interval', 'distance_return', 'distance_setup', 'distance_total', 'dvorak7_columns', 'dvorak7_distribution', 'dvorak7_inward', 'dvorak7_middle', 'dvorak7_remote', 'dvorak7_score', 'dvorak7_strength', 'dvorak7_vspan', 'engram8_columns', 'engram8_curl', 'engram8_home', 'engram8_hspan', 'engram8_load', 'engram8_score', 'engram8_sequence', 'engram8_strength', 'engram8_vspan', 'time_interval', 'time_return', 'time_setup', 'time_total', 'comfort_score_normalized', 'distance_interval_normalized', 'distance_return_normalized', 'distance_setup_normalized', 'distance_total_normalized', 'dvorak7_columns_normalized', 'dvorak7_distribution_normalized', 'dvorak7_inward_normalized', 'dvorak7_middle_normalized', 'dvorak7_remote_normalized', 'dvorak7_score_normalized', 'dvorak7_strength_normalized', 'dvorak7_vspan_normalized', 'engram8_columns_normalized', 'engram8_curl_normalized', 'engram8_home_normalized', 'engram8_hspan_normalized', 'engram8_load_normalized', 'engram8_score_normalized', 'engram8_sequence_normalized', 'engram8_strength_normalized', 'engram8_vspan_normalized', 'time_interval_normalized', 'time_return_normalized', 'time_setup_normalized', 'time_total_normalized']
 
 Saved composite scoring table to: ../tables/keypair_scores_composite.csv
   Table contains 1024 rows and 11 columns
   Composite columns: ['key_pair', 'comfort_score', 'distance_score', 'dvorak7_score', 'engram8_score', 'time_score', 'comfort_score_normalized', 'distance_score_normalized', 'dvorak7_score_normalized', 'engram8_score_normalized', 'time_score_normalized']
 
 Composite score statistics:
-  engram8_score: 0.066667 - 0.866667 (mean: 0.571810)
-  dvorak7_score: 0.100000 - 1.000000 (mean: 0.663932)
+  engram8_score: 0.062500 - 1.000000 (mean: 0.624756)
+  dvorak7_score: 0.071429 - 1.000000 (mean: 0.653460)
   time_score: 571.607151 - 1248.075636 (mean: 839.122335)
   distance_score: 0.000000 - 130.560655 (mean: 63.147447)
   comfort_score: -1.442261 - -0.061130 (mean: -0.801436)
