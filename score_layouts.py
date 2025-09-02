@@ -3,7 +3,7 @@
 Keyboard Layout Scorer using precomputed score table.
 
 A comprehensive tool for evaluating keyboard layouts using frequency-weighted scoring.
-Core scoring methods include engram8, dvorak7, comfort_combo, comfort, and comfort_key.
+Core scoring methods include engram7, dvorak7, comfort_combo, comfort, and comfort_key.
 
 (Note: experimental distance/efficiency and time/speed metrics are disabled by default.
 Distance metrics oversimplify biomechanical complexity (ignoring lateral stretching,
@@ -26,13 +26,13 @@ Default behavior:
 
 Scoring ranges:
 - Comfort scores: Normalized 0-1 (higher = more comfortable)
-- Engram-8 scores: 0-8 raw (sum of 8 components), normalized 0-1
+- Engram-7 scores: 0-8 raw (sum of 8 components), normalized 0-1
 - Dvorak-7 scores: 0-7 raw (sum of 7 components), normalized 0-1  
 - Distance→efficiency: Inverted distance scores, normalized 0-1
 - Time→speed: Inverted time scores, normalized 0-1
 
 Core metrics (default):
-- engram8 (based on Typing Preference Study)
+- engram7 (based on Typing Preference Study)
 - dvorak7 (based on Dvorak's 7 typing principles)
 - comfort_combo (composite comfort model)
 - comfort_key (frequency-weighted key comfort)
@@ -59,7 +59,7 @@ Usage:
     python score_layouts.py --compare qwerty:"qwertyuiop" dvorak:"',.pyfgcrl" --experimental-metrics
     
     # Mix core and experimental metrics
-    python score_layouts.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --scorers engram8,comfort,efficiency --experimental-metrics
+    python score_layouts.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --scorers engram7,comfort,efficiency --experimental-metrics
     
     # Verbose output (shows both weighted and raw scores)
     python score_layouts.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --verbose
@@ -947,7 +947,7 @@ Distance/efficiency and time/speed metrics are disabled by default due to signif
 Use --experimental-metrics to enable these metrics with full awareness of their limitations.
 
 Available scoring methods:
-Core (recommended): engram8, dvorak7, comfort_combo, comfort, comfort_key
+Core (recommended): engram7, dvorak7, comfort_combo, comfort, comfort_key
 Experimental (--experimental-metrics): distance→efficiency, time→speed
 
 Distance scores are automatically inverted (1-score) and renamed to efficiency.

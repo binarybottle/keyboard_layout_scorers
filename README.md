@@ -49,7 +49,7 @@ First, generate the precomputed scoring tables (already provided, language-indep
 
 ```bash
 # Generate individual scoring tables
-python prep_keypair_engram8_scores.py
+python prep_keypair_engram7_scores.py
 python prep_keypair_comfort_scores.py
 python prep_keypair_dvorak7_scores.py
 python prep_keypair_distance_scores.py --text-files corpus1.txt,corpus2.txt
@@ -112,7 +112,7 @@ keyboard_layout_scorers/
 │   ├── keypair_time_scores.csv        # Time scoring data
 │   ├── keypair_comfort_scores.csv     # Comfort scoring data
 │   ├── keypair_dvorak7_scores.csv     # Dvorak-7 scoring data
-│   ├── keypair_engram8_scores.csv     # Engram-8 scoring data
+│   ├── keypair_engram7_scores.csv     # Engram-7 scoring data
 │   └── keypair_*_*_scores.csv         # Individual criterion files│
 │ 
 ├── input/                             # Input data files
@@ -126,10 +126,10 @@ keyboard_layout_scorers/
 
 ### Phase 1: Table Generation
 
-**Engram-8 Scores** (`prep_keypair_engram8_scores.py`):
+**Engram-7 Scores** (`prep_keypair_engram7_scores.py`):
 - Implements 8 typing criteria from Typing Preference Study
 - Generates both overall and individual criterion scores  
-- Outputs: `keypair_engram8_scores.csv` + individual criterion files
+- Outputs: `keypair_engram7_scores.csv` + individual criterion files
 
 **Comfort Scores** (`prep_keypair_comfort_scores.py`):
 - Generates comfort scores for all key-pairs using rule-based approach
@@ -156,7 +156,7 @@ keyboard_layout_scorers/
 
 **Scoring Ranges:**
 - Dvorak-7: Raw scores 0-7 (sum of 7 components), normalized to 0-1 
-- Engram-8: Raw scores 0-8 (sum of 8 components), normalized to 0-1
+- Engram-7: Raw scores 0-8 (sum of 8 components), normalized to 0-1
 - Universal normalization applied by prep_scoring_tables.py for cross-dataset comparability
 
 **Table Unification** (`prep_scoring_tables.py`):

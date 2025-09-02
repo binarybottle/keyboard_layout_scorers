@@ -1,25 +1,24 @@
 #!/usr/bin/env python3
 """
-Generate precomputed Engram-8 scores for all possible QWERTY key-pairs.
+Generate precomputed Engram-7 scores for all possible QWERTY key-pairs.
 
 (c) Arno Klein (arnoklein.info), MIT License (see LICENSE)
 
-This script computes both the overall Engram-8 score and individual criterion scores
+This script computes both the overall Engram-7 score and individual criterion scores
 for every possible pair of QWERTY keys and saves them to separate CSV files.
 
 The output files contain all possible key-pairs (e.g., "QW", "QE", "AS") with
 their corresponding scores.
 
 Main output files:
-    - ../tables/keypair_engram8_scores.csv - Overall average score
-    - ../tables/keypair_engram8_load_scores.csv
-    - ../tables/keypair_engram8_strength_scores.csv
-    - ../tables/keypair_engram8_home_scores.csv
-    - ../tables/keypair_engram8_curl_scores.csv
-    - ../tables/keypair_engram8_columns_scores.csv
-    - ../tables/keypair_engram8_vspan_scores.csv
-    - ../tables/keypair_engram8_hspan_scores.csv
-    - ../tables/keypair_engram8_sequence_scores.csv
+    - ../tables/keypair_engram7_scores.csv - Overall average score
+    - ../tables/keypair_engram7_load_scores.csv
+    - ../tables/keypair_engram7_strength_scores.csv
+    - ../tables/keypair_engram7_position_scores.csv
+    - ../tables/keypair_engram7_stretch_scores.csv
+    - ../tables/keypair_engram7_vspan_scores.csv
+    - ../tables/keypair_engram7_hspan_scores.csv
+    - ../tables/keypair_engram7_sequence_scores.csv
 
 This precomputation allows the main scorer to simply look up scores rather
 than computing them on-demand, making layout scoring much faster.
@@ -28,24 +27,23 @@ The 8 scoring criteria for typing bigrams come from the Typing Preference Study:
 
     1.  Finger load: Typing with 2 fingers
     2.  Finger strength: Typing with the stronger two fingers
-    3.  Finger home: Typing within the 8 home keys
-    4.  Finger curl: Typing preferences above/below the 8 home keys
-    5.  Finger columns: Typing within the 8 finger columns
-    6.  Row separation: Typing in the same row, reaches, and hurdles 
-    7.  Column separation: Adjacent columns in the same row
-    8.  Finger sequence: Finger sequence toward the thumb in the same row
+    3.  Finger position: Typing within the 8 home keys, or preferred alternate keys
+    4.  Finger stretch: Typing within the 8 finger columns
+    5.  Row span: Same row, reaches, and hurdles 
+    6.  Column span: Adjacent columns in the same row
+    7.  Finger sequence: Finger sequence toward the thumb in the same row
 
 When applied to a single bigram, each criterion may be scored 0, 0.5, or 1 
 generally to indicate when 0, 1, or 2 fingers or keys satisfy the criterion. 
 Each criterion score for a layout is the average score across all bigrams.
-The overall Engram-8 score is simply the average of the criterion scores.
+The overall Engram-7 score is simply the average of the criterion scores.
 
 Usage:
-    python prep_keypair_engram8_scores.py
+    python prep_keypair_engram7_scores.py
 
 Output:
-    ../tables/keypair_engram8_scores.csv - CSV with columns: key_pair, engram8_score
-    ../tables/keypair_engram8_*_scores.csv - Individual criterion scores
+    ../tables/keypair_engram7_scores.csv - CSV with columns: key_pair, engram7_score
+    ../tables/keypair_engram7_*_scores.csv - Individual criterion scores
 """
 
 import csv
@@ -102,9 +100,8 @@ FINGER_COLUMNS = {
 
 criteria = ['load', 
             'strength', 
-            'home', 
-            'curl', 
-            'columns', 
+            'position', 
+            'stretch', 
             'vspan', 
             'hspan',
             'sequence'] 
@@ -121,7 +118,7 @@ def is_finger_in_column(key: str, finger: int, hand: str) -> bool:
         return key in FINGER_COLUMNS[hand][finger]
     return False
 
-def score_bigram_engram8(bigram: str) -> Dict[str, float]:
+def score_bigram_engram7(bigram: str) -> Dict[str, float]:
     """Calculate all 8 Engram criteria scores for a bigram."""
     if len(bigram) != 2:
         raise ValueError("Bigram must be exactly 2 characters long")    
@@ -144,16 +141,15 @@ def score_bigram_engram8(bigram: str) -> Dict[str, float]:
     scores = {}
 
     #----------------------------------------------------------------------------------
-    # Engram-8 scoring criteria
+    # Engram-7 scoring criteria
     #----------------------------------------------------------------------------------    
     #1.  Finger load: Typing with 2 fingers
     #2.  Finger strength: Typing with the stronger two fingers
-    #3.  Finger home: Typing within the 8 home keys
-    #4.  Finger curl: Typing preferences above/below the 8 home keys
-    #5.  Finger columns: Typing within the 8 finger columns
-    #6.  Row separation: Typing in the same row, reaches, and hurdles
-    #7.  Column separation: Adjacent columns in the same row
-    #8.  Finger sequence: Finger sequence toward the thumb
+    #3.  Finger position: Typing within the 8 home keys, or preferred alternate keys
+    #4.  Finger stretch: Typing within the 8 finger columns
+    #5.  Row span: Same row, reaches, and hurdles
+    #6.  Column span: Adjacent columns in the same row
+    #7.  Finger sequence: Finger sequence toward the thumb
     #----------------------------------------------------------------------------------    
    
     # 1. Finger load: Typing with 2 fingers
@@ -179,65 +175,46 @@ def score_bigram_engram8(bigram: str) -> Dict[str, float]:
     else:
         scores['strength'] = 0.0      # 0 keys typed with strong finger
 
-    # 3. Finger home: Typing within the 8 home keys
-    #    1.0: 2 home keys
-    #    0.5: 1 home key
-    #    0.0: 0 home keys
-    home_count = sum(1 for homekey in [homekey1, homekey2] if homekey == 1)
-    if home_count == 2:
-        scores['home'] = 1.0      # 2 home keys
-    elif home_count == 1:
-        scores['home'] = 0.5      # 1 home key
+    # 3. Finger position: Typing within the 8 home keys, or preferred alternate keys
+    #    Alternate positions above/below the home keys: 
+    #      fingers 1,4 prefer row 3; finger 3 prefers rows 1; finger 2 no preference
+    #    For each key:
+    #    1.0: home key
+    #    0.5: alternate key
+    #    0.0: other key
+    position_score = 0
+    if homekey1 == 1:
+        position_score += 1
     else:
-        scores['home'] = 0.0      # 0 home keys
-
-    # 4. Finger curl: Typing above/below the 8 home keys
-    #    Based on study results: ignore finger 2 (ring), count preferred rows for others
-    #    1.0: 0 keys in unpreferred curl position*
-    #    0.5: 1 key in unpreferred curl position*
-    #    0.0: 2 keys in unpreferred curl position*
-    #    *(or outside finger columns)
-    #    Preferred curl positions: fingers 1,4 prefer row 3; finger 3 prefers rows 1; finger 2 no preference
-    unpreferred_count = 0
-    if in_column1:
-        if finger1 in UPPER_FINGERS and row1 == 3:
-            # Fingers that prefer the upper row 1 (not lower row 3)
-            unpreferred_count += 1
-        elif finger1 in LOWER_FINGERS and row1 == 1:
-            # Fingers that prefer the lower row 3 (not upper row 1)
-            unpreferred_count += 1
+        if in_column1:
+            # UPPER_FINGERS prefer the upper row 1; LOWER_FINGERS prefer lower row 3
+            if finger1 in UPPER_FINGERS and row1 == 3 or finger1 in LOWER_FINGERS and row1 == 1:
+                position_score = 0.0
+            else:
+                position_score += 0.5
+    if homekey2 == 1:
+        position_score += 1
     else:
-        unpreferred_count += 1
+        if in_column2:
+            # UPPER_FINGERS prefer the upper row 1; LOWER_FINGERS prefer lower row 3
+            if finger2 in UPPER_FINGERS and row2 == 3 or finger2 in LOWER_FINGERS and row2 == 1:
+                position_score = 0.0
+            else:
+                position_score += 0.5
+    scores['position'] = position_score / 2.0
 
-    if in_column2:
-        if finger2 in UPPER_FINGERS and row2 == 3:
-            # Fingers that prefer the upper row 1 (not lower row 3)
-            unpreferred_count += 1
-        elif finger2 in LOWER_FINGERS and row2 == 1:
-            # Fingers that prefer the lower row 3 (not upper row 1)
-            unpreferred_count += 1
-    else:
-        unpreferred_count += 1
-
-    if unpreferred_count == 2:
-        scores['curl'] = 0.0      # 2 keys in unpreferred rows
-    elif unpreferred_count == 1:
-        scores['curl'] = 0.5      # 1 key in unpreferred row
-    else:
-        scores['curl'] = 1.0      # 0 keys in unpreferred rows
-
-    # 5. Finger columns: Typing within the 8 finger columns
+    # 4. Finger stretch: Typing within the 8 finger columns
     #    1.0: 2 keys within finger columns
     #    0.5: 1 key within finger columns
     #    0.0: 0 keys within finger columns
     if in_column1 and in_column2:
-        scores['columns'] = 1.0      # 2 keys within finger columns
+        scores['stretch'] = 1.0      # 2 keys within finger columns
     elif in_column1 or in_column2:
-        scores['columns'] = 0.5      # 1 key within finger columns
+        scores['stretch'] = 0.5      # 1 key within finger columns
     else:
-        scores['columns'] = 0.0      # 0 keys within finger columns
+        scores['stretch'] = 0.0      # 0 keys within finger columns
 
-    # 6. Row separation: Typing in the same row, reaches, and hurdles 
+    # 5. Row span: Same row, reaches, and hurdles 
     #    1.0: 2 keys in the same row, or opposite hands
     #    0.5: 2 keys in adjacent rows (reach)
     #    0.0: 2 keys straddling home row (hurdle)
@@ -251,7 +228,7 @@ def score_bigram_engram8(bigram: str) -> Dict[str, float]:
         else:
             scores['vspan'] = 0.0      # 2 keys straddling home row (hurdle)
 
-    # 7. Column separation: Adjacent columns in the same row
+    # 6. Column span: Adjacent columns in the same row
     #    1.0: adjacent columns in same row, or non-adjacent columns in different rows (or 2 hands)
     #    0.0: non-adjacent columns in the same row, or adjacent columns in different rows (or 1 finger)
     if hand1 != hand2:
@@ -266,7 +243,7 @@ def score_bigram_engram8(bigram: str) -> Dict[str, float]:
         else:
             scores['hspan'] = 0.0  # non-adjacent columns, same row / adjacent, different rows
 
-    # 8. Finger sequence: Finger sequence toward the thumb
+    # 7. Finger sequence: Finger sequence toward the thumb
     #    1.0: inward roll on the same row, or opposite hands
     #    0.0: outward roll, or same finger
     if hand1 != hand2:
@@ -298,7 +275,7 @@ def generate_all_key_pairs():
     return key_pairs
 
 def compute_key_pair_scores():
-    """Compute Engram-8 scores for all key-pairs."""
+    """Compute Engram-7 scores for all key-pairs."""
     key_pairs = generate_all_key_pairs()
     results = {}
     
@@ -308,29 +285,29 @@ def compute_key_pair_scores():
     for criterion in criteria:
         results[criterion] = []
 
-    print(f"Computing Engram-8 scores for {len(key_pairs)} key-pairs...")
+    print(f"Computing Engram-7 scores for {len(key_pairs)} key-pairs...")
 
     for i, key_pair in enumerate(key_pairs):
         if i % 100 == 0:
             print(f"  Progress: {i}/{len(key_pairs)} ({i/len(key_pairs)*100:.1f}%)")
         
-        # Compute individual Engram-8 criteria scores using the scorer's function
-        bigram_scores = score_bigram_engram8(key_pair)
+        # Compute individual Engram-7 criteria scores using the scorer's function
+        bigram_scores = score_bigram_engram7(key_pair)
         
-        # Calculate sum (baseline Engram-8 score)
-        engram8_score = sum(bigram_scores.values())
+        # Calculate sum (baseline Engram-7 score)
+        engram7_score = sum(bigram_scores.values())
         
         # Store overall score
         results['overall'].append({
             'key_pair': key_pair,
-            'engram8_score': engram8_score
+            'engram7_score': engram7_score
         })
     
         # Store individual criterion scores
         for criterion in criteria:
             results[criterion].append({
                 'key_pair': key_pair,
-                f'engram8_{criterion}': bigram_scores[criterion]
+                f'engram7_{criterion}': bigram_scores[criterion]
             })
 
     return results
@@ -342,22 +319,22 @@ def save_all_score_files(results, output_dir="../tables"):
     Path(output_dir).mkdir(parents=True, exist_ok=True)
     
     # Save overall scores
-    overall_file = f"{output_dir}/keypair_engram8_scores.csv"
+    overall_file = f"{output_dir}/keypair_engram7_scores.csv"
     overall_results = sorted(results['overall'], key=lambda x: x['key_pair'])
     
     with open(overall_file, 'w', newline='', encoding='utf-8') as f:
-        writer = csv.DictWriter(f, fieldnames=['key_pair', 'engram8_score'])
+        writer = csv.DictWriter(f, fieldnames=['key_pair', 'engram7_score'])
         writer.writeheader()
         writer.writerows(overall_results)
     
     print(f"✅ Saved overall scores to: {overall_file}")
     
     for criterion in criteria:
-        criterion_file = f"{output_dir}/keypair_engram8_{criterion}_scores.csv"
+        criterion_file = f"{output_dir}/keypair_engram7_{criterion}_scores.csv"
         criterion_results = sorted(results[criterion], key=lambda x: x['key_pair'])
         
         with open(criterion_file, 'w', newline='', encoding='utf-8') as f:
-            writer = csv.DictWriter(f, fieldnames=['key_pair', f'engram8_{criterion}'])
+            writer = csv.DictWriter(f, fieldnames=['key_pair', f'engram7_{criterion}'])
             writer.writeheader()
             writer.writerows(criterion_results)
         
@@ -367,14 +344,14 @@ def validate_output(output_dir="../tables"):
     """
     Validation with comprehensive accuracy checking.
     
-    This function performs extensive validation of the generated Engram-8 scores,
+    This function performs extensive validation of the generated Engram-7 scores,
     including mathematical verification of scoring criteria and edge case testing.
     """
     import csv
     import random
     from pathlib import Path
     
-    overall_file = f"{output_dir}/keypair_engram8_scores.csv"
+    overall_file = f"{output_dir}/keypair_engram7_scores.csv"
     
     if not Path(overall_file).exists():
         print(f"❌ Overall output file not found: {overall_file}")
@@ -389,7 +366,7 @@ def validate_output(output_dir="../tables"):
     print(f"   Total key-pairs: {len(rows)}")
     
     # Statistical validation
-    scores = [float(row['engram8_score']) for row in rows]
+    scores = [float(row['engram7_score']) for row in rows]
     min_score, max_score = min(scores), max(scores)
     avg_score = sum(scores) / len(scores)
     
@@ -405,10 +382,10 @@ def validate_output(output_dir="../tables"):
     
     for row in random_samples:
         key_pair = row['key_pair']
-        csv_score = float(row['engram8_score'])
+        csv_score = float(row['engram7_score'])
         
         # Recalculate score using the same logic
-        calculated_scores = score_bigram_engram8(key_pair)
+        calculated_scores = score_bigram_engram7(key_pair)
         # Use raw sum instead of normalized average
         calculated_sum = sum(calculated_scores.values())
         
@@ -421,7 +398,7 @@ def validate_output(output_dir="../tables"):
     # Validate individual criterion files
     print(f"\n📁 Individual Criterion Files:")    
     for criterion in criteria:
-        criterion_file = f"{output_dir}/keypair_engram8_{criterion}_scores.csv"
+        criterion_file = f"{output_dir}/keypair_engram7_{criterion}_scores.csv"
         if Path(criterion_file).exists():
             with open(criterion_file, 'r', encoding='utf-8') as f:
                 reader = csv.DictReader(f)
@@ -443,7 +420,7 @@ def validate_output(output_dir="../tables"):
         for pair in test_pairs:
             row = next((r for r in rows if r['key_pair'] == pair), None)
             if row:
-                test_scores.append(float(row['engram8_score']))
+                test_scores.append(float(row['engram7_score']))
         
         all_pass = all(score_check(score) for score in test_scores)
         print(f"   {test_name}: {'✅' if all_pass else '❌'} ({len([s for s in test_scores if score_check(s)])}/{len(test_scores)})")
@@ -469,16 +446,16 @@ def validate_perfect_scores(output_dir="../tables"):
     """Specifically validate that perfect scores are mathematically correct."""
     import csv
     
-    overall_file = f"{output_dir}/keypair_engram8_scores.csv"
+    overall_file = f"{output_dir}/keypair_engram7_scores.csv"
     
     with open(overall_file, 'r', encoding='utf-8') as f:
         reader = csv.DictReader(f)
-        perfect_pairs = [row for row in reader if float(row['engram8_score']) == 8.0]
+        perfect_pairs = [row for row in reader if float(row['engram7_score']) == 8.0]
     
     print(f"\n🏆 Perfect Score Verification ({len(perfect_pairs)} pairs):")
     for row in perfect_pairs:
         key_pair = row['key_pair']
-        scores = score_bigram_engram8(key_pair)
+        scores = score_bigram_engram7(key_pair)
         total_score = sum(scores.values())
         is_perfect = total_score == 8.0
         print(f"   {key_pair}: Total = 8.0? {'✅' if is_perfect else '❌'}")
@@ -490,14 +467,14 @@ def validate_perfect_scores(output_dir="../tables"):
 
 def main():
     """Main entry point."""
-    print("Prepare Engram-8 key-pair scores (overall + individual criteria)")
+    print("Prepare Engram-7 key-pair scores (overall + individual criteria)")
     print("=" * 70)
     
     # Load QWERTY keys to show what we're working with
     keys = get_all_qwerty_keys()
     print(f"QWERTY keys ({len(keys)}): {''.join(sorted(keys))}")
     print(f"Total key-pairs to compute: {len(keys)**2}")
-    print(f"Output files: 1 overall + 8 individual criteria = 9 total")
+    print(f"Output files: 1 overall + 7 individual criteria = 8 total")
     print()
     
     # Compute scores
@@ -511,9 +488,9 @@ def main():
     validate_output(output_dir)
     validate_perfect_scores(output_dir)
 
-    print(f"\n✅ Engram-8 key-pair score generation complete!")
-    print(f"   Overall scores: {output_dir}/keypair_engram8_scores.csv")
-    print(f"   Individual criteria: {output_dir}/keypair_engram8_*_scores.csv")
+    print(f"\n✅ Engram-7 key-pair score generation complete!")
+    print(f"   Overall scores: {output_dir}/keypair_engram7_scores.csv")
+    print(f"   Individual criteria: {output_dir}/keypair_engram7_*_scores.csv")
 
 if __name__ == "__main__":
     main()
