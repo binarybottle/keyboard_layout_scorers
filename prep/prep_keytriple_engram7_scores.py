@@ -1,31 +1,31 @@
 #!/usr/bin/env python3
 """
-Generate precomputed Engram-7 scores for all possible QWERTY key-pairs.
+Generate precomputed Engram-7 scores for all possible QWERTY key-triples.
 
 (c) Arno Klein (arnoklein.info), MIT License (see LICENSE)
 
 This script computes both the overall Engram-7 score and individual criterion scores
-for every possible pair of QWERTY keys and saves them to separate CSV files.
+for every possible triple of QWERTY keys and saves them to separate CSV files.
 
-The output files contain all possible key-pairs (e.g., "QW", "QE", "AS") with
+The output files contain all possible key-triples (e.g., "QWE", "QAS", "ASD") with
 their corresponding scores.
 
-Main output files:
-    - ../tables/keypair_engram7_scores.csv - Overall average score
-    - ../tables/keypair_engram7_load_scores.csv
-    - ../tables/keypair_engram7_strength_scores.csv
-    - ../tables/keypair_engram7_position_scores.csv
-    - ../tables/keypair_engram7_stretch_scores.csv
-    - ../tables/keypair_engram7_vspan_scores.csv
-    - ../tables/keypair_engram7_hspan_scores.csv
-    - ../tables/keypair_engram7_sequence_scores.csv
+Output file:
+    - ../tables/keytriple_engram7_scores.csv - Overall average score
+    - ../tables/keytriple_engram7_load_scores.csv
+    - ../tables/keytriple_engram7_strength_scores.csv
+    - ../tables/keytriple_engram7_position_scores.csv
+    - ../tables/keytriple_engram7_stretch_scores.csv
+    - ../tables/keytriple_engram7_vspan_scores.csv
+    - ../tables/keytriple_engram7_hspan_scores.csv
+    - ../tables/keytriple_engram7_sequence_scores.csv
 
 This precomputation allows the main scorer to simply look up scores rather
 than computing them on-demand, making layout scoring much faster.
 
-The 7 scoring criteria for typing bigrams come from the Typing Preference Study:
+The 7 scoring criteria for typing trigrams come from the Typing Preference Study:
 
-    1.  Finger load: Typing with 2 fingers
+    1.  Finger load: Typing with 3 fingers
     2.  Finger strength: Typing with the stronger two fingers
     3.  Finger position: Typing within the 8 home keys, or preferred alternate keys
     4.  Finger stretch: Typing within the 8 finger columns
@@ -33,17 +33,17 @@ The 7 scoring criteria for typing bigrams come from the Typing Preference Study:
     6.  Column span: Adjacent columns in the same row
     7.  Finger sequence: Finger sequence toward the thumb in the same row
 
-When applied to a single bigram, each criterion may be scored 0, 0.5, or 1 
-generally to indicate when 0, 1, or 2 fingers or keys satisfy the criterion. 
-Each criterion score for a layout is the average score across all bigrams.
+When applied to a single trigram, each criterion may be scored 0, 0.5, or 1 
+generally to indicate when 0, 1, 2, or 3 fingers or keys satisfy the criterion. 
+Each criterion score for a layout is the average score across all trigrams.
 The overall Engram-7 score is simply the average of the criterion scores.
 
 Usage:
-    python prep_keypair_engram7_scores.py
+    python prep_keytriple_engram7_scores.py
 
 Output:
-    ../tables/keypair_engram7_scores.csv - CSV with columns: key_pair, engram7_score
-    ../tables/keypair_engram7_*_scores.csv - Individual criterion scores
+    ../tables/keytriple_engram7_scores.csv - CSV with columns: key_triple, engram7_score
+    ../tables/keytriple_engram7_*_scores.csv - Individual criterion scores
 """
 
 import csv
@@ -76,9 +76,9 @@ QWERTY_LAYOUT = {
 # Define finger strength and home row
 # Strong fingers are middle (3) and index (4) based on hypothesis testing
 STRONG_FINGERS = {3, 4}
-# Upper finger (middle finger) prefers upper rows
+# Upper finger (middle finger) prefers upper rows based on H7-8 results
 UPPER_FINGERS = {3}  # Only middle finger, ring finger (2) is ignored per study results
-# Lower fingers (pinky and index) prefer lower rows
+# Lower fingers (pinky and index) prefer lower rows based on H9-10 results
 LOWER_FINGERS = {1, 4}
 HOME_ROW = 2
 
@@ -118,32 +118,35 @@ def is_finger_in_column(key: str, finger: int, hand: str) -> bool:
         return key in FINGER_COLUMNS[hand][finger]
     return False
 
-def score_bigram_engram7(bigram: str) -> Dict[str, float]:
-    """Calculate all 7 Engram criteria scores for a bigram."""
-    if len(bigram) != 2:
-        raise ValueError("Bigram must be exactly 2 characters long")    
-    
-    char1, char2 = bigram[0].upper(), bigram[1].upper()
+def score_trigram_engram7(trigram: str) -> Dict[str, float]:
+    """Calculate all 7 Engram criteria scores for a trigram."""
+    if len(trigram) != 3:
+        raise ValueError("Trigram must be exactly 3 characters long")
+
+    char1, char2, char3 = trigram[0].upper(), trigram[1].upper(), trigram[2].upper()
     
     # Get key information
     key_info1 = get_key_info(char1)
     key_info2 = get_key_info(char2)
-    
-    if key_info1 is None or key_info2 is None:
-        raise ValueError(f"Invalid keys: {char1}, {char2}")
-    
+    key_info3 = get_key_info(char3)
+
+    if key_info1 is None or key_info2 is None or key_info3 is None:
+        raise ValueError(f"Invalid keys: {char1}, {char2}, {char3}")
+
     row1, column1, finger1, hand1, homekey1 = key_info1
     row2, column2, finger2, hand2, homekey2 = key_info2
+    row3, column3, finger3, hand3, homekey3 = key_info3
 
     in_column1 = is_finger_in_column(char1, finger1, hand1)
     in_column2 = is_finger_in_column(char2, finger2, hand2)
+    in_column3 = is_finger_in_column(char3, finger3, hand3)
     
     scores = {}
 
     #----------------------------------------------------------------------------------
     # Engram-7 scoring criteria
     #----------------------------------------------------------------------------------    
-    #1.  Finger load: Typing with 2 fingers
+    #1.  Finger load: Typing with 3 fingers
     #2.  Finger strength: Typing with the stronger two fingers
     #3.  Finger position: Typing within the 8 home keys, or preferred alternate keys
     #4.  Finger stretch: Typing within the 8 finger columns
@@ -152,26 +155,42 @@ def score_bigram_engram7(bigram: str) -> Dict[str, float]:
     #7.  Finger sequence: Finger sequence toward the thumb
     #----------------------------------------------------------------------------------    
    
-    # 1. Finger load: Typing with 2 fingers
-    #    1.0: 2 fingers on 2 hands to type 2 keys
-    #    1.0: 2 fingers on 1 hand to type 2 keys
-    #    0.0: 1 finger on 1 hand to type 1-2 keys
-    if hand1 != hand2:
-        scores['load'] = 1.0      # 2 fingers on 2 hands to type 2 keys
-    elif finger1 != finger2:
-        scores['load'] = 1.0      # 2 fingers on 1 hand to type 2 keys
-    elif finger1 == finger2:
-        scores['load'] = 0.0      # 1 finger on 1 hand to type 1-2 keys
+    # 1. Finger load: Typing with 3 fingers
+    #    1.0: 3 fingers to type 3 keys
+    #    0.5: 2 fingers
+    #    0.0: 1 finger
+    if hand1 != hand2 and hand1 == hand3:    # alternating hands
+        scores['load'] = 1.0           
+    elif hand1 == hand2 == hand3:
+        if finger1 == finger2 == finger3:    # 1 finger
+            scores['load'] = 0.0           
+        elif finger1 != finger2 != finger3:  # 3 fingers
+            scores['load'] = 1.0           
+        else:                                # 2 fingers
+            scores['load'] = 0.5           
+    elif hand1 == hand2 and hand2 != hand3:  
+        if finger1 != finger2:               # 3 fingers: 2 fingers, 1 hand
+            scores['load'] = 1.0      
+        else:                                # 2 fingers: 1 finger, 1 hand
+            scores['load'] = 0.5      
+    elif hand1 != hand2 and hand2 == hand3:             
+        if finger2 != finger3:               # 3 fingers: 2 fingers, 1 hand
+            scores['load'] = 1.0      
+        else:                                # 2 fingers: 1 finger, 1 hand
+            scores['load'] = 0.5      
 
     # 2. Finger strength: Typing with the stronger two fingers
-    #    1.0: 2 keys typed with strong fingers
-    #    0.5: 1 key typed with 1 strong finger
-    #    0.0: 0 keys typed with strong finger
-    strong_count = sum(1 for finger in [finger1, finger2] if finger in STRONG_FINGERS)
-    if strong_count == 2:
-        scores['strength'] = 1.0      # 2 keys typed with strong fingers
+    #    1.0:  3 keys typed with strong fingers
+    #    0.67: 2 keys typed with strong fingers
+    #    0.33: 1 key  typed with strong finger
+    #    0.0:  0 keys typed with strong finger
+    strong_count = sum(1 for finger in [finger1, finger2, finger3] if finger in STRONG_FINGERS)
+    if strong_count == 3:
+        scores['strength'] = 1.0      # 3 keys typed with strong fingers
+    elif strong_count == 2:
+        scores['strength'] = 0.67     # 2 keys typed with strong fingers
     elif strong_count == 1:
-        scores['strength'] = 0.5      # 1 key typed with 1 strong finger
+        scores['strength'] = 0.33     # 1 key  typed with strong finger
     else:
         scores['strength'] = 0.0      # 0 keys typed with strong finger
 
@@ -201,61 +220,100 @@ def score_bigram_engram7(bigram: str) -> Dict[str, float]:
                 position_score = 0.0
             else:
                 position_score += 0.5
-    scores['position'] = position_score / 2.0
+    if homekey3 == 1:
+        position_score += 1
+    else:
+        if in_column3:
+            # UPPER_FINGERS prefer the upper row 1; LOWER_FINGERS prefer lower row 3
+            if finger3 in UPPER_FINGERS and row3 == 3 or finger3 in LOWER_FINGERS and row3 == 1:
+                position_score = 0.0
+            else:
+                position_score += 0.5
+    scores['position'] = position_score / 3.0
 
     # 4. Finger stretch: Typing within the 8 finger columns
-    #    1.0: 2 keys within finger columns
-    #    0.5: 1 key within finger columns
-    #    0.0: 0 keys within finger columns
-    if in_column1 and in_column2:
-        scores['stretch'] = 1.0      # 2 keys within finger columns
-    elif in_column1 or in_column2:
-        scores['stretch'] = 0.5      # 1 key within finger columns
+    #    1.0:  3 keys within finger columns
+    #    0.67: 2 keys within finger columns
+    #    0.33: 1 key  within finger column
+    #    0.0:  0 keys within finger column
+    if in_column1 and in_column2 and in_column3:
+        scores['stretch'] = 1.0      # 3 keys within finger columns
+    elif in_column1 and in_column2 or in_column1 and in_column3 or in_column2 and in_column3:
+        scores['stretch'] = 0.67     # 2 keys within finger columns
+    elif in_column1 or in_column2 or in_column3:
+        scores['stretch'] = 0.33     # 1 key  within finger column
     else:
-        scores['stretch'] = 0.0      # 0 keys within finger columns
+        scores['stretch'] = 0.0      # 0 keys within finger column
 
-    # 5. Row span: Same row, reaches, and hurdles 
+    # 5. Row span: Same row, reaches, and hurdles
+    #    For each pair of keys (1-2, 2-3, 1-3):
+    #    Score the pair and average the 3 scores
+    #    Possible scores for each pair: 
     #    1.0: 2 keys in the same row, or opposite hands
     #    0.5: 2 keys in adjacent rows (reach)
     #    0.0: 2 keys straddling home row (hurdle)
+    row_span_score = 0
     if hand1 != hand2:
-        scores['vspan'] = 1.0          # opposite hands always score well
+        row_span_score += 1.0          # opposite hands always score well
     else:
         if row1 == row2:
-            scores['vspan'] = 1.0      # 2 keys in the same row
+            row_span_score += 1.0      # 2 keys in the same row
         elif abs(row1 - row2) == 1:
-            scores['vspan'] = 0.5      # 2 keys in adjacent rows (reach)
-        else:
-            scores['vspan'] = 0.0      # 2 keys straddling home row (hurdle)
+            row_span_score += 0.5      # 2 keys in adjacent rows (reach)
+    if hand2 != hand3:
+        row_span_score += 1.0          # opposite hands always score well
+    else:
+        if row2 == row3:
+            row_span_score += 1.0      # 2 keys in the same row
+        elif abs(row2 - row3) == 1:
+            row_span_score += 0.5      # 2 keys in adjacent rows (reach)
+    scores['vspan'] = row_span_score / 2.0
 
     # 6. Column span: Adjacent columns in the same row
     #    1.0: adjacent columns in same row, or non-adjacent columns in different rows (or 2 hands)
     #    0.0: non-adjacent columns in the same row, or adjacent columns in different rows (or 1 finger)
+    col_span_score = 0
     if hand1 != hand2:
-        scores['hspan'] = 1.0      # opposite hands always score well
-    elif finger1 == finger2:
-        scores['hspan'] = 0.0      # same finger scores zero
+        col_span_score += 1.0          # opposite hands always score well
     else:
-        column_gap = abs(column1 - column2)
-        finger_gap = abs(finger1 - finger2)
-        if (column_gap == 1 and row1 == row2) or (column_gap > 1 and finger_gap > 1 and row1 != row2):
-            scores['hspan'] = 1.0  # adjacent columns, same row / non-adjacent, different rows
-        else:
-            scores['hspan'] = 0.0  # non-adjacent columns, same row / adjacent, different rows
+        if finger1 != finger2:
+            column_gap = abs(column1 - column2)
+            finger_gap = abs(finger1 - finger2)
+            if (column_gap == 1 and row1 == row2) or (column_gap > 1 and finger_gap > 1 and row1 != row2):
+                column_gap += 1.0  # adjacent columns, same row / non-adjacent, different rows
+    if hand2 != hand3:
+        col_span_score += 1.0          # opposite hands always score well
+    else:
+        if finger2 != finger3:
+            column_gap = abs(column2 - column3)
+            finger_gap = abs(finger2 - finger3)
+            if (column_gap == 1 and row2 == row3) or (column_gap > 1 and finger_gap > 1 and row2 != row3):
+                column_gap += 1.0  # adjacent columns, same row / non-adjacent, different rows
+    scores['hspan'] = col_span_score / 2.0
 
     # 7. Finger sequence: Finger sequence toward the thumb
-    #    1.0: inward roll on the same row, or opposite hands
-    #    0.0: outward roll, or same finger
-    if hand1 != hand2:
-        scores['sequence'] = 1.0      # opposite hands always score well
-    elif finger1 == finger2:
-        scores['sequence'] = 0.0      # same finger scores zero
-    elif row1 == row2:
-        # Inward roll: toward thumb (finger number increases: 1→2→3→4)
-        # Both hands are bilaterally symmetric, so same sequence logic
-        scores['sequence'] = 1.0 if finger1 < finger2 else 0.0
-    else:
-        scores['sequence'] = 0.0
+    #    1.0: inward roll
+    #    0.5: outward roll
+    #    0.0: mixed roll, or same finger
+    if finger1 == finger2 == finger3:
+        scores['sequence'] = 0.0          # same finger scores zero
+    elif hand1 != hand2 and hand1 == hand3:
+        scores['sequence'] = 1.0          # alternating hands
+    elif hand1 == hand2 == hand3:
+        if finger1 < finger2 < finger3:
+            scores['sequence'] = 1.0      # inward roll
+        elif finger1 > finger2 > finger3:
+            scores['sequence'] = 0.5      # outward roll
+    elif hand1 == hand2 and hand2 != hand3:
+        if finger1 < finger2:
+            scores['sequence'] = 1.0      # inward roll
+        elif finger1 > finger2:
+            scores['sequence'] = 0.5      # outward roll
+    elif hand1 != hand2 and hand2 == hand3:
+        if finger2 < finger3:
+            scores['sequence'] = 1.0      # inward roll
+        elif finger2 > finger3:
+            scores['sequence'] = 0.5      # outward roll
 
     return scores
 
@@ -263,20 +321,20 @@ def get_all_qwerty_keys():
     """Get all standard QWERTY keys for testing."""
     return list("QWERTYUIOPASDFGHJKL;ZXCVBNM,./'[")
 
-def generate_all_key_pairs():
+def generate_all_key_triples():
     """Generate all possible QWERTY key-pair combinations."""
     keys = get_all_qwerty_keys()
-    key_pairs = []
+    key_triples = []
     
     for key1 in keys:
         for key2 in keys:
-            key_pairs.append(key1 + key2)
+            key_triples.append(key1 + key2)
     
-    return key_pairs
+    return key_triples
 
-def compute_key_pair_scores():
+def compute_key_triple_scores():
     """Compute Engram-7 scores for all key-pairs."""
-    key_pairs = generate_all_key_pairs()
+    key_triples = generate_all_key_triples()
     results = {}
     
     # Initialize results for overall and individual criteria
@@ -285,29 +343,29 @@ def compute_key_pair_scores():
     for criterion in criteria:
         results[criterion] = []
 
-    print(f"Computing Engram-7 scores for {len(key_pairs)} key-pairs...")
+    print(f"Computing Engram-7 scores for {len(key_triples)} key-pairs...")
 
-    for i, key_pair in enumerate(key_pairs):
+    for i, key_triple in enumerate(key_triples):
         if i % 100 == 0:
-            print(f"  Progress: {i}/{len(key_pairs)} ({i/len(key_pairs)*100:.1f}%)")
+            print(f"  Progress: {i}/{len(key_triples)} ({i/len(key_triples)*100:.1f}%)")
         
         # Compute individual Engram-7 criteria scores using the scorer's function
-        bigram_scores = score_bigram_engram7(key_pair)
+        trigram_scores = score_trigram_engram7(key_triple)
         
         # Calculate sum (baseline Engram-7 score)
-        engram7_score = sum(bigram_scores.values())
+        engram7_score = sum(trigram_scores.values())
         
         # Store overall score
         results['overall'].append({
-            'key_pair': key_pair,
+            'key_triple': key_triple,
             'engram7_score': engram7_score
         })
     
         # Store individual criterion scores
         for criterion in criteria:
             results[criterion].append({
-                'key_pair': key_pair,
-                f'engram7_{criterion}': bigram_scores[criterion]
+                'key_triple': key_triple,
+                f'engram7_{criterion}': trigram_scores[criterion]
             })
 
     return results
@@ -319,22 +377,22 @@ def save_all_score_files(results, output_dir="../tables"):
     Path(output_dir).mkdir(parents=True, exist_ok=True)
     
     # Save overall scores
-    overall_file = f"{output_dir}/keypair_engram7_scores.csv"
-    overall_results = sorted(results['overall'], key=lambda x: x['key_pair'])
+    overall_file = f"{output_dir}/keytriple_engram7_scores.csv"
+    overall_results = sorted(results['overall'], key=lambda x: x['key_triple'])
     
     with open(overall_file, 'w', newline='', encoding='utf-8') as f:
-        writer = csv.DictWriter(f, fieldnames=['key_pair', 'engram7_score'])
+        writer = csv.DictWriter(f, fieldnames=['key_triple', 'engram7_score'])
         writer.writeheader()
         writer.writerows(overall_results)
     
     print(f"✅ Saved overall scores to: {overall_file}")
     
     for criterion in criteria:
-        criterion_file = f"{output_dir}/keypair_engram7_{criterion}_scores.csv"
-        criterion_results = sorted(results[criterion], key=lambda x: x['key_pair'])
+        criterion_file = f"{output_dir}/keytriple_engram7_{criterion}_scores.csv"
+        criterion_results = sorted(results[criterion], key=lambda x: x['key_triple'])
         
         with open(criterion_file, 'w', newline='', encoding='utf-8') as f:
-            writer = csv.DictWriter(f, fieldnames=['key_pair', f'engram7_{criterion}'])
+            writer = csv.DictWriter(f, fieldnames=['key_triple', f'engram7_{criterion}'])
             writer.writeheader()
             writer.writerows(criterion_results)
         
@@ -351,7 +409,7 @@ def validate_output(output_dir="../tables"):
     import random
     from pathlib import Path
     
-    overall_file = f"{output_dir}/keypair_engram7_scores.csv"
+    overall_file = f"{output_dir}/keytriple_engram7_scores.csv"
     
     if not Path(overall_file).exists():
         print(f"❌ Overall output file not found: {overall_file}")
@@ -374,23 +432,23 @@ def validate_output(output_dir="../tables"):
     print(f"   Average score: {avg_score:.4f}")
     # Now checking for 0-7 range instead of 0-1
     print(f"   Valid range (0-7): {'✅' if 0 <= min_score and max_score <= 7 else '❌'}")
-
+    
     # Test mathematical accuracy on random samples
     print(f"\n🧮 Mathematical Accuracy Check:")
     random_samples = random.sample(rows, min(20, len(rows)))
     accuracy_errors = 0
     
     for row in random_samples:
-        key_pair = row['key_pair']
+        key_triple = row['key_triple']
         csv_score = float(row['engram7_score'])
         
         # Recalculate score using the same logic
-        calculated_scores = score_bigram_engram7(key_pair)
+        calculated_scores = score_trigram_engram7(key_triple)
         # Use raw sum instead of normalized average
         calculated_sum = sum(calculated_scores.values())
         
         if abs(calculated_sum - csv_score) > 0.0001:
-            print(f"   ❌ Accuracy error: {key_pair} - CSV: {csv_score:.4f}, Calc: {calculated_sum:.4f}")
+            print(f"   ❌ Accuracy error: {key_triple} - CSV: {csv_score:.4f}, Calc: {calculated_sum:.4f}")
             accuracy_errors += 1
     
     print(f"   Accuracy check: {len(random_samples) - accuracy_errors}/{len(random_samples)} samples correct")
@@ -398,7 +456,7 @@ def validate_output(output_dir="../tables"):
     # Validate individual criterion files
     print(f"\n📁 Individual Criterion Files:")    
     for criterion in criteria:
-        criterion_file = f"{output_dir}/keypair_engram7_{criterion}_scores.csv"
+        criterion_file = f"{output_dir}/keytriple_engram7_{criterion}_scores.csv"
         if Path(criterion_file).exists():
             with open(criterion_file, 'r', encoding='utf-8') as f:
                 reader = csv.DictReader(f)
@@ -418,7 +476,7 @@ def validate_output(output_dir="../tables"):
     for test_name, test_pairs, score_check in criteria_tests:
         test_scores = []
         for pair in test_pairs:
-            row = next((r for r in rows if r['key_pair'] == pair), None)
+            row = next((r for r in rows if r['key_triple'] == pair), None)
             if row:
                 test_scores.append(float(row['engram7_score']))
         
@@ -438,7 +496,7 @@ def validate_output(output_dir="../tables"):
     # Perfect scores count
     perfect_count = len([s for s in scores if s == 7.0])
     print(f"   Perfect (7.0): {perfect_count} pairs ({perfect_count/len(scores)*100:.1f}%)")
-
+    
     print(f"\n✅ Validation complete!")
     return accuracy_errors == 0
 
@@ -446,19 +504,19 @@ def validate_perfect_scores(output_dir="../tables"):
     """Specifically validate that perfect scores are mathematically correct."""
     import csv
     
-    overall_file = f"{output_dir}/keypair_engram7_scores.csv"
+    overall_file = f"{output_dir}/keytriple_engram7_scores.csv"
     
     with open(overall_file, 'r', encoding='utf-8') as f:
         reader = csv.DictReader(f)
-        perfect_pairs = [row for row in reader if float(row['engram7_score']) == 8.0]
+        perfect_pairs = [row for row in reader if float(row['engram7_score']) == 7.0]
     
     print(f"\n🏆 Perfect Score Verification ({len(perfect_pairs)} pairs):")
     for row in perfect_pairs:
-        key_pair = row['key_pair']
-        scores = score_bigram_engram7(key_pair)
+        key_triple = row['key_triple']
+        scores = score_trigram_engram7(key_triple)
         total_score = sum(scores.values())
         is_perfect = total_score == 7.0
-        print(f"   {key_pair}: Total = 7.0? {'✅' if is_perfect else '❌'}")
+        print(f"   {key_triple}: Total = 7.0? {'✅' if is_perfect else '❌'}")
         if not is_perfect:
             print(f"      Individual scores: {scores}")
             print(f"      Sum: {total_score}")
@@ -478,7 +536,7 @@ def main():
     print()
     
     # Compute scores
-    results = compute_key_pair_scores()
+    results = compute_key_triple_scores()
     
     # Save results
     output_dir = "../tables"
@@ -489,8 +547,8 @@ def main():
     validate_perfect_scores(output_dir)
 
     print(f"\n✅ Engram-7 key-pair score generation complete!")
-    print(f"   Overall scores: {output_dir}/keypair_engram7_scores.csv")
-    print(f"   Individual criteria: {output_dir}/keypair_engram7_*_scores.csv")
+    print(f"   Overall scores: {output_dir}/keytriple_engram7_scores.csv")
+    print(f"   Individual criteria: {output_dir}/keytriple_engram7_*_scores.csv")
 
 if __name__ == "__main__":
     main()
