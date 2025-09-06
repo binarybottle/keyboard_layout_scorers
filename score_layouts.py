@@ -3,7 +3,7 @@
 Keyboard Layout Scorer using precomputed score table.
 
 A comprehensive tool for evaluating keyboard layouts using frequency-weighted scoring.
-Core scoring methods include engram7, dvorak7, comfort_combo, comfort, and comfort_key.
+Core scoring methods include engram6, dvorak7, comfort_combo, comfort, and comfort_key.
 
 (Note: experimental distance/efficiency and time/speed metrics are disabled by default.
 Distance metrics oversimplify biomechanical complexity (ignoring lateral stretching,
@@ -13,11 +13,11 @@ Use --experimental-metrics to enable them.)
 Setup:
 1. Generate individual score files (keypair_*_scores.csv) using scoring scripts in prep/
 2. Run: python prep_scoring_tables.py --input-dir tables/
-   This creates: tables/keypair_scores_detailed.csv and tables/key_scores.csv
+   This creates: tables/scores_2key_detailed.csv and tables/key_scores.csv
 3. Run this script to score layouts using all available methods
 
 Default behavior:
-- Score table: tables/keypair_scores_detailed.csv (created by prep_scoring_tables.py)
+- Score table: tables/scores_2key_detailed.csv (created by prep_scoring_tables.py)
 - Key scores: tables/key_scores.csv (created by prep_scoring_tables.py)  
 - Frequency data: input/english-letter-pair-frequencies-google-ngrams.csv
 - Letter frequencies: input/english-letter-frequencies-google-ngrams.csv
@@ -26,13 +26,13 @@ Default behavior:
 
 Scoring ranges:
 - Comfort scores: Normalized 0-1 (higher = more comfortable)
-- Engram-7 scores: 0-8 raw (sum of 8 components), normalized 0-1
+- Engram-6 scores: 0-8 raw (sum of 8 components), normalized 0-1
 - Dvorak-7 scores: 0-7 raw (sum of 7 components), normalized 0-1  
 - Distance→efficiency: Inverted distance scores, normalized 0-1
 - Time→speed: Inverted time scores, normalized 0-1
 
 Core metrics (default):
-- engram7 (based on Typing Preference Study)
+- engram6 (based on Typing Preference Study)
 - dvorak7 (based on Dvorak's 7 typing principles)
 - comfort_combo (composite comfort model)
 - comfort_key (frequency-weighted key comfort)
@@ -59,7 +59,7 @@ Usage:
     python score_layouts.py --compare qwerty:"qwertyuiop" dvorak:"',.pyfgcrl" --experimental-metrics
     
     # Mix core and experimental metrics
-    python score_layouts.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --scorers engram7,comfort,efficiency --experimental-metrics
+    python score_layouts.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --scorers engram6,comfort,efficiency --experimental-metrics
     
     # Verbose output (shows both weighted and raw scores)
     python score_layouts.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --verbose
@@ -919,7 +919,7 @@ Examples:
   python score_layouts.py --compare qwerty:"qwerty" dvorak:"',.py" --csv results.csv
 
 Default behavior:
-- Uses tables/keypair_scores_detailed.csv for key-pair scoring data (created by prep_scoring_tables.py)
+- Uses tables/scores_2key_detailed.csv for key-pair scoring data (created by prep_scoring_tables.py)
 - Uses tables/key_scores.csv for individual key comfort scores (created by prep_scoring_tables.py)
 - Uses input/english-letter-pair-frequencies-google-ngrams.csv for frequency weighting (if it exists)
 - Uses input/english-letter-frequencies-google-ngrams.csv for letter frequencies (if it exists)
@@ -947,7 +947,7 @@ Distance/efficiency and time/speed metrics are disabled by default due to signif
 Use --experimental-metrics to enable these metrics with full awareness of their limitations.
 
 Available scoring methods:
-Core (recommended): engram7, dvorak7, comfort_combo, comfort, comfort_key
+Core (recommended): engram6, dvorak7, comfort_combo, comfort, comfort_key
 Experimental (--experimental-metrics): distance→efficiency, time→speed
 
 Distance scores are automatically inverted (1-score) and renamed to efficiency.
@@ -958,8 +958,8 @@ comfort_combo and comfort_key scores are computed dynamically and require letter
     
     parser.add_argument(
         '--score-table',
-        default="tables/keypair_scores_detailed.csv",
-        help="Path to unified score table CSV file (default: tables/keypair_scores_detailed.csv)"
+        default="tables/scores_2key_detailed.csv",
+        help="Path to unified score table CSV file (default: tables/scores_2key_detailed.csv)"
     )
     
     parser.add_argument(

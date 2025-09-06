@@ -16,19 +16,19 @@ Examples:
     poetry run python3 compare_layouts.py --tables layout_scores.csv
 
     # Core biomechanical metrics only (recommended)
-    poetry run python3 compare_layouts.py --metrics engram7 dvorak7 comfort_combo comfort comfort_key --tables layout_scores.csv
+    poetry run python3 compare_layouts.py --metrics engram6 dvorak7 comfort_combo comfort comfort_key --tables layout_scores.csv
 
     # Include experimental distance/time metrics (caution: limitations noted above)
-    poetry run python3 compare_layouts.py --metrics engram7 comfort comfort_key dvorak7 efficiency speed --tables layout_scores.csv --experimental-metrics
+    poetry run python3 compare_layouts.py --metrics engram6 comfort comfort_key dvorak7 efficiency speed --tables layout_scores.csv --experimental-metrics
 
     # Create plots with specific metrics and save summary
-    poetry run python3 compare_layouts.py --metrics engram7 comfort comfort_key dvorak7 --output comparison.png --summary summary.csv --tables layout_scores.csv
+    poetry run python3 compare_layouts.py --metrics engram6 comfort comfort_key dvorak7 --output comparison.png --summary summary.csv --tables layout_scores.csv
 
     # Compare multiple tables with core metrics
-    poetry run python3 compare_layouts.py --metrics engram7 comfort comfort_key dvorak7 --output output/layout_comparison.png --tables layout_scores.csv moo_layout_scores.csv
+    poetry run python3 compare_layouts.py --metrics engram6 comfort comfort_key dvorak7 --output output/layout_comparison.png --tables layout_scores.csv moo_layout_scores.csv
 
     # Detailed comparison with Dvorak-7 breakdown (biomechanical focus)
-    poetry run python3 compare_layouts.py --metrics engram7 comfort comfort_key dvorak7 dvorak7_distribution dvorak7_strength dvorak7_middle dvorak7_vspan dvorak7_columns dvorak7_remote dvorak7_inward --output output/layout_comparison_detailed.png --tables layout_scores.csv moo_layout_scores.csv
+    poetry run python3 compare_layouts.py --metrics engram6 comfort comfort_key dvorak7 dvorak7_distribution dvorak7_strength dvorak7_middle dvorak7_vspan dvorak7_columns dvorak7_remote dvorak7_inward --output output/layout_comparison_detailed.png --tables layout_scores.csv moo_layout_scores.csv
 
 Input format:
   CSV files should be output from: score_layouts.py --csv-output
@@ -713,19 +713,19 @@ Examples:
   python compare_layouts.py --tables layout_scores.csv
   
   # Core biomechanical metrics only (recommended)
-  python compare_layouts.py --tables layout_scores.csv --metrics engram7 dvorak7 comfort_combo comfort comfort_key
+  python compare_layouts.py --tables layout_scores.csv --metrics engram6 dvorak7 comfort_combo comfort comfort_key
   
   # Include experimental distance/time metrics (caution: limitations)
-  python compare_layouts.py --tables layout_scores.csv --metrics engram7 comfort efficiency --experimental-metrics
+  python compare_layouts.py --tables layout_scores.csv --metrics engram6 comfort efficiency --experimental-metrics
   
   # Create summary table with performance sorting
-  python compare_layouts.py --tables layout_scores.csv --metrics engram7 comfort dvorak7 --summary layout_summary.csv
+  python compare_layouts.py --tables layout_scores.csv --metrics engram6 comfort dvorak7 --summary layout_summary.csv
   
   # Create both plots and summary with performance-based coloring
-  python compare_layouts.py --tables layout_scores.csv --metrics engram7 comfort comfort_key dvorak7 --output comparison.png --summary summary.csv
+  python compare_layouts.py --tables layout_scores.csv --metrics engram6 comfort comfort_key dvorak7 --output comparison.png --summary summary.csv
   
   # Multiple tables with filtered metrics and summary
-  python compare_layouts.py --tables scores1.csv scores2.csv --metrics comfort engram7 --summary combined_summary.csv
+  python compare_layouts.py --tables scores1.csv scores2.csv --metrics comfort engram6 --summary combined_summary.csv
 
 Input format:
   CSV files should be output from: score_layouts.py --csv-output
@@ -743,7 +743,7 @@ Performance-based coloring:
   When --summary is used, parallel plot lines are colored from dark red (best) to light red (worst) based on average performance.
 
 Core vs Experimental Metrics:
-  Core biomechanical metrics (recommended): engram7, comfort, comfort_key, dvorak7
+  Core biomechanical metrics (recommended): engram6, comfort, comfort_key, dvorak7
   Experimental metrics (use with caution): efficiency*, speed*
   
   Experimental metrics have significant limitations:

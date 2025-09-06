@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-prep_scoring_tables.py - Create standardized scoring tables from individual score files
+Create standardized key-pair scoring tables from individual score files
 
-Takes individual score CSV files and prepares unified tables with normalized scores.
+Takes individual key-pair score CSV files and prepares unified tables with normalized scores.
 Creates both detailed component tables and composite score tables.
 
 Input files expected:
@@ -11,13 +11,12 @@ Input files expected:
 - keypair_distance_scores.csv (key_pair, distance_setup, distance_interval, distance_return, distance_total)
 - keypair_dvorak7_scores.csv (key_pair, dvorak7_score)
 - individual Dvorak-7 component files
-- keypair_engram7_scores.csv (key_pair, engram7_score)
-- individual Engram-7 component files
+- engram_2key_scores_scores.csv (key_pair, engram6_score)
+- individual Engram-6 component files
 
 Output:
-- tables/keypair_scores_detailed.csv: All individual components with normalized versions
-- tables/keypair_scores_composite.csv: Composite scores (engram7, dvorak7, time, distance, comfort)
-- tables/key_scores.csv: Individual key comfort scores
+- tables/scores_2key_detailed.csv: All individual components with normalized versions
+- tables/scores_2key_composite.csv: Composite scores (engram6, dvorak7, time, distance, comfort)
 
 Usage:
     python prep_scoring_tables.py --input-dir ../tables/
@@ -60,15 +59,14 @@ def get_universal_normalization_ranges():
         # Comfort-combo scores - combination of key and key-pair comfort scores
         'comfort_combo_score': (0, 100), # Assuming 0-100 scale
 
-        # Engram-7 scores and components
-        'engram7_score': (0, 7),         # Overall Engram-7 score range (sum of 8 components)
-        'engram7_load': (0, 1),          # Individual component ranges
-        'engram7_strength': (0, 1), 
-        'engram7_position': (0, 1),       
-        'engram7_stretch': (0, 1),      
-        'engram7_vspan': (0, 1),      
-        'engram7_hspan': (0, 1),    
-        'engram7_sequence': (0, 1),          
+        # Engram-6 scores and components
+        'engram6_score': (0, 6),         # Overall Engram-6 score range (sum of 6 components)
+        'engram6_strength': (0, 1),      # Individual component ranges
+        'engram6_stretch': (0, 1),      
+        'engram6_curl': (0, 1),       
+        'engram6_rows': (0, 1),      
+        'engram6_columns': (0, 1),    
+        'engram6_order': (0, 1),          
 
         # Dvorak-7 scores and components
         'dvorak7_score': (0, 7),          # Overall Dvorak-7 score range (sum of 7 components)
@@ -292,17 +290,17 @@ def create_composite_scores(unified_df: pd.DataFrame, verbose: bool = False) -> 
         if verbose:
             print("  ✓ Comfort-combo: Using direct score")
     
-    # Engram-7 composite
-    engram7_components = [col for col in unified_df.columns if col.startswith('engram7_') and col != 'engram7_score']
-    if len(engram7_components) > 1:
+    # Engram-6 composite
+    engram6_components = [col for col in unified_df.columns if col.startswith('engram6_') and col != 'engram6_score']
+    if len(engram6_components) > 1:
         # Create weighted composite from components
-        composite_df['engram7_score'] = unified_df[engram7_components].mean(axis=1)
+        composite_df['engram6_score'] = unified_df[engram6_components].mean(axis=1)
         if verbose:
-            print(f"  ✓ Engram-7: Composite from {len(engram7_components)} components")
-    elif 'engram7_score' in unified_df.columns:
-        composite_df['engram7_score'] = unified_df['engram7_score']
+            print(f"  ✓ Engram-6: Composite from {len(engram6_components)} components")
+    elif 'engram6_score' in unified_df.columns:
+        composite_df['engram6_score'] = unified_df['engram6_score']
         if verbose:
-            print("  ✓ Engram-7: Using direct score")
+            print("  ✓ Engram-6: Using direct score")
     
     # Dvorak-7 composite
     dvorak7_components = [col for col in unified_df.columns if col.startswith('dvorak7_') and col != 'dvorak7_score']
@@ -441,7 +439,7 @@ def create_key_comfort_scores(input_dir: str, verbose: bool = False) -> None:
     key_comfort_df['comfort_score'] = key_comfort_df['comfort_score'].round(6)
     
     # Save to output directory
-    output_file = input_path / 'key_scores.csv'
+    output_file = input_path / 'key_comfort_scores.csv'
     key_comfort_df.to_csv(output_file, index=False)
     
     if verbose:
@@ -462,16 +460,15 @@ def create_unified_score_tables(input_dir: str, verbose: bool = False) -> Tuple[
     simple_score_files = {
         'comfort_score': 'keypair_comfort_scores.csv',
         'dvorak7_score': 'keypair_dvorak7_scores.csv',
-        'engram7_score': 'keypair_engram7_scores.csv',
+        'engram6_score': 'engram_2key_scores.csv',
         'comfort_combo_score': 'keypair_comfort_combo_scores.csv',
-        # Individual Engram-7 criteria (fixed filenames)
-        'engram7_load': 'keypair_engram7_load_scores.csv',
-        'engram7_strength': 'keypair_engram7_strength_scores.csv', 
-        'engram7_position': 'keypair_engram7_position_scores.csv',
-        'engram7_stretch': 'keypair_engram7_stretch_scores.csv',
-        'engram7_vspan': 'keypair_engram7_vspan_scores.csv',
-        'engram7_hspan': 'keypair_engram7_hspan_scores.csv',
-        'engram7_sequence': 'keypair_engram7_sequence_scores.csv',
+        # Individual Engram-6 criteria (fixed filenames)
+        'engram6_strength': 'engram_2key_scores_strength.csv', 
+        'engram6_stretch': 'engram_2key_scores_stretch.csv',
+        'engram6_curl': 'engram_2key_scores_curl.csv',
+        'engram6_rows': 'engram_2key_scores_rows.csv',
+        'engram6_columns': 'engram_2key_scores_columns.csv',
+        'engram6_order': 'engram_2key_scores_order.csv',
         # Individual Dvorak-7 criteria
         'dvorak7_distribution': 'keypair_dvorak7_distribution_scores.csv',
         'dvorak7_strength': 'keypair_dvorak7_strength_scores.csv',
@@ -666,7 +663,7 @@ def save_score_tables(detailed_df: pd.DataFrame, composite_df: pd.DataFrame, inp
     for col in float_columns:
         detailed_output_df[col] = detailed_output_df[col].round(6)
     
-    detailed_file = input_path / 'keypair_scores_detailed.csv'
+    detailed_file = input_path / 'scores_2key_detailed.csv'
     detailed_output_df.to_csv(detailed_file, index=False)
     
     # Save composite scores
@@ -687,7 +684,7 @@ def save_score_tables(detailed_df: pd.DataFrame, composite_df: pd.DataFrame, inp
     for col in float_columns:
         composite_output_df[col] = composite_output_df[col].round(6)
     
-    composite_file = input_path / 'keypair_scores_composite.csv'
+    composite_file = input_path / 'scores_2key_composite.csv'
     composite_output_df.to_csv(composite_file, index=False)
     
     if verbose:
@@ -724,7 +721,7 @@ def validate_input_directory(input_dir: str) -> None:
         'keypair_comfort_scores.csv', 
         'keypair_distance_scores.csv',
         'keypair_dvorak7_scores.csv',
-        'keypair_engram7_scores.csv'
+        'engram_2key_scores.csv'
     ]
     
     found_files = [f for f in expected_files if (input_path / f).exists()]
@@ -752,22 +749,22 @@ Input files expected in input directory:
     - keypair_comfort_scores.csv (key_pair, comfort_score)
     - keypair_distance_scores.csv (key_pair, distance_setup, distance_interval, distance_return, distance_total)
     - keypair_dvorak7_scores.csv (key_pair, dvorak7_score)
-    - keypair_engram7_scores.csv (key_pair, engram7_score)
-    - Individual engram7 component files (optional)
+    - engram_2key_scores.csv (key_pair, engram6_score)
+    - Individual engram6 component files (optional)
     - Individual dvorak7 component files (optional)
 
 Creates three standardized output files:
-    - tables/keypair_scores_detailed.csv: All individual components
+    - tables/scores_2key_detailed.csv: All individual components
         - key_pair: Two-character key pair (e.g., "QW", "AS")
         - Original detailed score columns (time_setup, time_interval, time_return, time_total, distance_setup, etc.)
         - Normalized score columns (*_normalized) with universal ranges for cross-dataset comparability (0-1 range)
     
-    - tables/keypair_scores_composite.csv: Composite scores for cleaner visualization
+    - tables/scores_2key_composite.csv: Composite scores for cleaner visualization
         - key_pair: Two-character key pair
-        - Composite scores (comfort_combo_score, engram7_score, dvorak7_score, time_score, distance_score, comfort_score)
+        - Composite scores (comfort_combo_score, engram6_score, dvorak7_score, time_score, distance_score, comfort_score)
         - Normalized composite columns (*_normalized) with universal ranges
     
-    - tables/key_scores.csv: Individual key comfort scores
+    - tables/key_comfort_scores.csv: Individual key comfort scores
         - key: Individual key character
         - comfort_score: Normalized comfort score for that key (extracted from same-key bigrams like "AA", ";;")
 
@@ -777,7 +774,7 @@ Normalization:
     - Time components: 200-400ms (setup), 100-450ms (interval), 200-400ms (return), 570-1250ms (total)
     - Comfort scores: -1.5 to 0.0 range
     - Comfort-combo scores: 0-100 range
-    - Engram-7 scores: 0-8 (overall), 0-1 (components)  
+    - Engram-6 scores: 0-8 (overall), 0-1 (components)  
     - Dvorak-7 scores: 0-7 (overall), 0-1 (components)
     
     Values outside universal ranges are clipped. This ensures normalized scores
@@ -797,9 +794,9 @@ Score Combinations:
             - distance_setup, distance_interval, distance_return, distance_total
         For composite, uses distance_total (or falls back to legacy distance_score)
     
-    Engram-7 and Dvorak-7 Scores:
+    Engram-6 and Dvorak-7 Scores:
         If individual component files available, creates composite from components
-        Otherwise uses direct engram7_score and dvorak7_score
+        Otherwise uses direct engram6_score and dvorak7_score
 
 All floating point values are formatted to 6 decimal places.
 Missing input files will be skipped with a warning.
@@ -841,9 +838,9 @@ The script uses universal normalization ranges for cross-dataset comparability.
         )
         
         print(f"\nSuccessfully created scoring tables:")
-        print(f"  - Detailed scores: {Path(args.input_dir) / 'keypair_scores_detailed.csv'}")
-        print(f"  - Composite scores: {Path(args.input_dir) / 'keypair_scores_composite.csv'}")
-        print(f"  - Key scores: {Path(args.input_dir) / 'key_scores.csv'}")
+        print(f"  - Detailed scores: {Path(args.input_dir) / 'scores_2key_detailed.csv'}")
+        print(f"  - Composite scores: {Path(args.input_dir) / 'scores_2key_composite.csv'}")
+        print(f"  - Key comfort scores: {Path(args.input_dir) / 'key_comfort_scores.csv'}")
         return 0
         
     except Exception as e:

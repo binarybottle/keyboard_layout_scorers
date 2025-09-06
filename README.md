@@ -49,7 +49,7 @@ First, generate the precomputed scoring tables (already provided, language-indep
 
 ```bash
 # Generate individual scoring tables
-python prep_keypair_engram7_scores.py
+python prep_keypair_engram6_scores.py
 python prep_keypair_comfort_scores.py
 python prep_keypair_dvorak7_scores.py
 python prep_keypair_distance_scores.py --text-files corpus1.txt,corpus2.txt
@@ -105,20 +105,20 @@ keyboard_layout_scorers/
 │
 ├── # Data Directories
 ├── tables/
-│   ├── keypair_scores_detailed.csv    # Detailed unified scoring table
-│   ├── keypair_scores_composite.csv   # Composite scoring table
+│   ├── scores_2key_detailed.csv    # Detailed unified scoring table
+│   ├── scores_2key_composite.csv   # Composite scoring table
 │   ├── key_scores.csv                 # Individual key comfort scores
 │   ├── keypair_distance_scores.csv    # Distance scoring data
 │   ├── keypair_time_scores.csv        # Time scoring data
 │   ├── keypair_comfort_scores.csv     # Comfort scoring data
 │   ├── keypair_dvorak7_scores.csv     # Dvorak-7 scoring data
-│   ├── keypair_engram7_scores.csv     # Engram-7 scoring data
+│   ├── keypair_engram6_scores.csv     # Engram-6 scoring data
 │   └── keypair_*_*_scores.csv         # Individual criterion files│
 │ 
 ├── input/                             # Input data files
 │   ├── english-letter-pair-frequencies-google-ngrams.csv
 │   ├── english-letter-frequencies-google-ngrams.csv
-│   └── comfort_keypair_scores_24keys.csv
+│   └── comfort_scores_2key_24keys.csv
 └──
 ```
 
@@ -126,10 +126,10 @@ keyboard_layout_scorers/
 
 ### Phase 1: Table Generation
 
-**Engram-7 Scores** (`prep_keypair_engram7_scores.py`):
+**Engram-6 Scores** (`prep_keypair_engram6_scores.py`):
 - Implements 8 typing criteria from Typing Preference Study
 - Generates both overall and individual criterion scores  
-- Outputs: `keypair_engram7_scores.csv` + individual criterion files
+- Outputs: `keypair_engram6_scores.csv` + individual criterion files
 
 **Comfort Scores** (`prep_keypair_comfort_scores.py`):
 - Generates comfort scores for all key-pairs using rule-based approach
@@ -156,13 +156,13 @@ keyboard_layout_scorers/
 
 **Scoring Ranges:**
 - Dvorak-7: Raw scores 0-7 (sum of 7 components), normalized to 0-1 
-- Engram-7: Raw scores 0-8 (sum of 8 components), normalized to 0-1
+- Engram-6: Raw scores 0-8 (sum of 8 components), normalized to 0-1
 - Universal normalization applied by prep_scoring_tables.py for cross-dataset comparability
 
 **Table Unification** (`prep_scoring_tables.py`):
 - Combines all individual score files
 - Applies universal normalization ranges for cross-dataset comparability
-- Creates `keypair_scores_detailed.csv`, `keypair_scores_composite.csv`, and `key_scores.csv`
+- Creates `scores_2key_detailed.csv`, `scores_2key_composite.csv`, and `key_scores.csv`
 - Handles both raw scores (0-7, 0-8 ranges) and normalized versions (0-1)
 
 ### Phase 2: Layout scoring
@@ -219,12 +219,12 @@ python compare_layouts.py --metrics engram comfort efficiency_total speed_total 
 ### Required files (Phase 1)
 - `input/english-letter-pair-frequencies-google-ngrams.csv` - English bigram frequencies
 - `input/english-letter-frequencies-google-ngrams.csv` - English letter frequencies  
-- `input/comfort_keypair_scores_24keys.csv` - Base comfort scores for key-pairs
+- `input/comfort_scores_2key_24keys.csv` - Base comfort scores for key-pairs
 - Text corpus files (for preparing distance scoring table)
 - CSV typing data directory (for preparing time scoring table)
 
 ### Generated files (Phase 1 output)
-- `tables/keypair_scores_detailed.csv` - Unified scoring table with normalized scores
+- `tables/scores_2key_detailed.csv` - Unified scoring table with normalized scores
 - `tables/key_scores.csv` - Individual key comfort scores
 - Individual scorer tables (`tables/keypair_*_scores.csv`)
 
