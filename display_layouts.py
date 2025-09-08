@@ -2,13 +2,16 @@
 """
 Display multiple keyboard layouts from CSV file
 
-Takes a CSV with 'layout' and 'qwerty_letters' columns and displays each layout.
-The qwerty_letters should be 32 characters in QWERTY key order.
+Takes a CSV with 'layout', and either ('letters'/'items') and ('positions'/'keys') columns.
 
 Usage:
     python display_layouts.py layouts.csv
-"""
 
+CSV format:
+  layout,letters,positions
+  Dvorak,'.pyfgcrl,aoeuidhtns;qjkxbmwvz,QWERTYUIOPASDFGHJKL;ZXCVBNM,./['
+  Colemak,qwfpgjluy;arstdhneio'zxcvbkm,./, QWERTYUIOPASDFGHJKL;ZXCVBNM,./['
+"""
 import argparse
 import csv
 import subprocess
@@ -17,27 +20,16 @@ import os
 
 QWERTY_ORDER = "QWERTYUIOPASDFGHJKL;ZXCVBNM,./['"
 
-def process_layout(layout_name, qwerty_letters):
+def process_layout(layout_name, letters, positions):
     """
     Process a single layout and display it using display_layout.py
     
     Args:
         layout_name: Name of the layout
-        qwerty_letters: 32-character string with letters in QWERTY order
+        letters: Letters/items to place
+        positions: Corresponding QWERTY positions/keys
     """
-    # Pad or truncate to exactly 32 characters
-    qwerty_letters = qwerty_letters.ljust(32)[:32]
-    
-    # Find positions where letters are placed (non-space characters)
-    letters = ""
-    positions = ""
-    
-    for i, char in enumerate(qwerty_letters):
-        if char != ' ' and char != '.':  # Skip spaces and dots (empty keys)
-            letters += char.lower()
-            positions += QWERTY_ORDER[i]
-    
-    if not letters:
+    if not letters or not positions:
         print(f"{layout_name}: (empty layout)")
         return
     
@@ -100,18 +92,36 @@ Examples:
         with open(args.csv_file, 'r', encoding='utf-8') as file:
             reader = csv.DictReader(file)
             
-            # Check required columns
-            if 'layout' not in reader.fieldnames or 'letters' not in reader.fieldnames:
-                print("Error: CSV must have 'layout' and 'letters' columns")
+            # Check for required columns (accept both names)
+            fieldnames = reader.fieldnames or []
+            
+            # Find letters column
+            letters_col = None
+            for col in ['letters', 'items']:
+                if col in fieldnames:
+                    letters_col = col
+                    break
+            
+            # Find positions column  
+            positions_col = None
+            for col in ['positions', 'keys']:
+                if col in fieldnames:
+                    positions_col = col
+                    break
+            
+            if not letters_col or not positions_col:
+                print("Error: CSV must have ('letters' or 'items') and ('positions' or 'keys') columns")
+                print(f"Found columns: {', '.join(fieldnames)}")
                 sys.exit(1)
             
             layouts_processed = 0
             for row in reader:
                 layout_name = row['layout'].strip()
-                qwerty_letters = row['letters'].strip()
+                letters = row[letters_col].strip()
+                positions = row[positions_col].strip()
                 
-                if layout_name and qwerty_letters:
-                    process_layout(layout_name, qwerty_letters)
+                if layout_name and letters and positions:
+                    process_layout(layout_name, letters, positions)
                     layouts_processed += 1
             
             if layouts_processed == 0:

@@ -33,7 +33,8 @@ Examples:
 Input format:
   CSV files should be output from: score_layouts.py --csv-output
   Expected columns: layout_name,scorer,weighted_score,raw_score
-  Optional: layout_string (enables additional layout analysis columns)
+  Optional: letters,positions OR items,keys OR layout_string (enables additional layout analysis)
+  New format supports arbitrary letter-to-position mappings
 
 Summary output:
   CSV with columns: index, layout, [letters, positions], average_score, [metric_values]
@@ -57,37 +58,36 @@ import sys
 from typing import List, Dict, Tuple, Optional
 import matplotlib.cm as cm
 
-def parse_layout_string(layout_string: str) -> tuple:
-    """Parse layout string to extract letters and their positions."""
-    if pd.isna(layout_string) or not layout_string:
+def parse_layout_mapping(letters: str, positions: str) -> tuple:
+    """Parse letters and positions to create layout mapping."""
+    if pd.isna(letters) or pd.isna(positions) or not letters or not positions:
         return "", ""
     
-    # QWERTY reference positions
+    # Clean up the strings
+    letters = str(letters).strip('"').replace('\\', '')
+    positions = str(positions).strip('"').replace('\\', '')
+    
+    # QWERTY reference positions for output
     qwerty_positions = "QWERTYUIOPASDFGHJKL;ZXCVBNM,./['"
     
-    # Extract letters from layout string (should be same length as QWERTY)
-    layout_letters = layout_string.strip('"').replace('\\', '')  # Clean up quotes and escapes
+    # Validate input lengths match
+    if len(letters) != len(positions):
+        # Try to handle the mismatch gracefully
+        min_len = min(len(letters), len(positions))
+        letters = letters[:min_len]
+        positions = positions[:min_len]
     
-    if len(layout_letters) != len(qwerty_positions):
-        # Try to pad or truncate to match QWERTY length
-        if len(layout_letters) < len(qwerty_positions):
-            layout_letters = layout_letters + ' ' * (len(qwerty_positions) - len(layout_letters))
-        else:
-            layout_letters = layout_letters[:len(qwerty_positions)]
-    
-    # Create mapping from layout position to letter
+    # Create mapping from position to letter
     position_to_letter = {}
+    for letter, pos in zip(letters, positions):
+        if pos in qwerty_positions:  # Only map valid QWERTY positions
+            position_to_letter[pos] = letter
     
-    for i, (pos, letter) in enumerate(zip(qwerty_positions, layout_letters)):
-        position_to_letter[pos] = letter
+    # Create output strings in QWERTY order
+    output_letters = ''.join(position_to_letter.get(pos, ' ') for pos in qwerty_positions)
+    output_positions = qwerty_positions
     
-    # Letters in QWERTY order (what letter is at each QWERTY position)
-    letters = ''.join(position_to_letter.get(pos, ' ') for pos in qwerty_positions)
-    
-    # QWERTY positions (reference)
-    positions = qwerty_positions
-    
-    return letters, positions
+    return output_letters, output_positions
 
 def load_and_pivot_data(file_path: str, use_raw: bool = False, verbose: bool = False) -> pd.DataFrame:
     """Load CSV data from score_layouts.py output and pivot to layout x scorer format."""
@@ -161,19 +161,63 @@ def load_and_pivot_data(file_path: str, use_raw: bool = False, verbose: bool = F
             pivoted = pivoted.reset_index()
             pivoted = pivoted.rename(columns={'layout_name': 'layout'})
             
-            # If layout_string column exists, preserve it
-            if 'layout_string' in df.columns:
-                # Get unique layout strings for each layout name
+            # Preserve layout mapping data if available
+            layout_data_preserved = False
+            
+            # Check for new format: letters+positions or items+keys
+            if 'letters' in df.columns and 'positions' in df.columns:
+                # Get unique mappings for each layout name
+                layout_mappings = df.groupby('layout_name')[['letters', 'positions']].first()
+                pivoted = pivoted.merge(layout_mappings.reset_index().rename(columns={'layout_name': 'layout'}), 
+                                      on='layout', how='left')
+                
+                # Parse layout mappings to create standardized layout analysis columns
+                parsed_data = pivoted.apply(lambda row: parse_layout_mapping(
+                    row.get('letters', ''), row.get('positions', '')), axis=1)
+                pivoted['layout_letters'] = [x[0] for x in parsed_data]
+                pivoted['layout_positions'] = [x[1] for x in parsed_data]
+                layout_data_preserved = True
+                
+                if verbose:
+                    print("Layout data preserved from letters+positions columns")
+                    
+            elif 'items' in df.columns and 'keys' in df.columns:
+                # Alternative column names
+                layout_mappings = df.groupby('layout_name')[['items', 'keys']].first()
+                pivoted = pivoted.merge(layout_mappings.reset_index().rename(columns={'layout_name': 'layout'}), 
+                                      on='layout', how='left')
+                
+                # Parse layout mappings to create standardized layout analysis columns
+                parsed_data = pivoted.apply(lambda row: parse_layout_mapping(
+                    row.get('items', ''), row.get('keys', '')), axis=1)
+                pivoted['layout_letters'] = [x[0] for x in parsed_data]
+                pivoted['layout_positions'] = [x[1] for x in parsed_data]
+                layout_data_preserved = True
+                
+                if verbose:
+                    print("Layout data preserved from items+keys columns")
+                    
+            elif 'layout_string' in df.columns:
+                # Backward compatibility: preserve old layout_string format
                 layout_strings = df.groupby('layout_name')['layout_string'].first()
                 pivoted = pivoted.merge(layout_strings.reset_index().rename(columns={'layout_name': 'layout'}), 
                                       on='layout', how='left')
+                
+                # Parse layout strings using old method to create standardized columns
+                parsed_data = pivoted['layout_string'].apply(parse_layout_string)
+                pivoted['layout_letters'] = [x[0] for x in parsed_data]
+                pivoted['layout_positions'] = [x[1] for x in parsed_data]
+                layout_data_preserved = True
+                
+                if verbose:
+                    print("Layout data preserved from layout_string column (legacy format)")
             
             if verbose:
                 print(f"Pivoted data shape: {pivoted.shape}")
                 print(f"Layouts: {len(pivoted)}")
-                print(f"Metrics (scorers): {len(pivoted.columns) - 1}")
-                if 'layout_string' in pivoted.columns:
-                    print("Layout strings preserved in data")
+                print(f"Metrics (scorers): {len([col for col in pivoted.columns if col not in ['layout', 'letters', 'positions', 'items', 'keys', 'layout_string', 'layout_letters', 'layout_positions']])}")
+                if layout_data_preserved:
+                    print("Layout mapping data preserved for analysis")
             
             return pivoted
             
@@ -183,7 +227,7 @@ def load_and_pivot_data(file_path: str, use_raw: bool = False, verbose: bool = F
     except Exception as e:
         print(f"Error loading {file_path}: {e}")
         sys.exit(1)
-
+        
 def find_available_metrics(dfs: List[pd.DataFrame], verbose: bool = False) -> List[str]:
     """Find which scorer metrics are available in the data."""
     # Get all columns that appear to be numeric metrics (excluding 'layout')
@@ -317,13 +361,12 @@ def create_sorted_summary(dfs: List[pd.DataFrame], table_names: List[str],
             print(f"Warning: No 'layout' column found in {table_name}, skipping")
             continue
         
-        # Parse layout strings if available
-        has_layout_strings = 'layout_string' in summary_df.columns
-        if has_layout_strings:
-            # Parse layout strings to create the 2 new columns
-            parsed_data = summary_df['layout_string'].apply(parse_layout_string)
-            summary_df['letters'] = [x[0] for x in parsed_data]
-            summary_df['positions'] = [x[1] for x in parsed_data]
+        # Parse layout data if available
+        has_layout_data = False
+        if 'layout_letters' in summary_df.columns and 'layout_positions' in summary_df.columns:
+            summary_df['letters'] = summary_df['layout_letters']
+            summary_df['positions'] = summary_df['layout_positions']
+            has_layout_data = True
         
         # Filter to only include layouts with sufficient data
         valid_layouts = []
@@ -352,8 +395,8 @@ def create_sorted_summary(dfs: List[pd.DataFrame], table_names: List[str],
         # layout_name, letters, positions, average_score, then original metrics
         output_columns = ['layout']
         
-        # Add layout string columns if available
-        if has_layout_strings:
+        # Add layout data columns if available
+        if has_layout_data:
             output_columns.extend(['letters', 'positions'])
         
         # Add average score column
