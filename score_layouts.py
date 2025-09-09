@@ -4,6 +4,7 @@ Keyboard Layout Scorer using precomputed score table.
 
 A comprehensive tool for evaluating keyboard layouts using frequency-weighted scoring.
 Core scoring methods include engram6, dvorak7, comfort_combo, comfort, and comfort_key.
+Now includes 3-key (trigram) Engram-6 scoring in addition to 2-key (bigram) scoring.
 
 (Note: experimental distance/efficiency and time/speed metrics are disabled by default.
 Distance metrics oversimplify biomechanical complexity (ignoring lateral stretching,
@@ -12,27 +13,32 @@ Use --experimental-metrics to enable them.)
 
 Setup:
 1. Generate individual score files (keypair_*_scores.csv) using scoring scripts in prep/
-2. Run: python prep_scoring_tables.py --input-dir tables/
+2. Generate 3-key score files using: python prep_keytriple_engram6_scores.py
+3. Run: python prep_scoring_tables.py --input-dir tables/
    This creates: tables/scores_2key_detailed.csv and tables/key_scores.csv
-3. Run this script to score layouts using all available methods
+4. Run this script to score layouts using all available methods
 
 Default behavior:
 - Score table: tables/scores_2key_detailed.csv (created by prep_scoring_tables.py)
+- 3-key scores: tables/engram_3key_scores*.csv (created by prep_keytriple_engram6_scores.py)
 - Key scores: tables/key_scores.csv (created by prep_scoring_tables.py)  
 - Frequency data: input/english-letter-pair-frequencies-google-ngrams.csv
 - Letter frequencies: input/english-letter-frequencies-google-ngrams.csv
 - Scoring mode: Frequency-weighted (prioritizes common English letter combinations)
-- Score mapping: Letter-pair frequencies → Key-pair scores
+- Score mapping: Letter-pair frequencies → Key-pair scores, Letter-triple frequencies → Key-triple scores
 
 Scoring ranges:
 - Comfort scores: Normalized 0-1 (higher = more comfortable)
-- Engram-6 scores: 0-8 raw (sum of 8 components), normalized 0-1
+- Engram-6 scores: 0-6 raw (sum of 6 components), normalized 0-1
+- Engram-6 3-key scores: 0-6 raw (sum of 6 components), normalized 0-1  
 - Dvorak-7 scores: 0-7 raw (sum of 7 components), normalized 0-1  
 - Distance→efficiency: Inverted distance scores, normalized 0-1
 - Time→speed: Inverted time scores, normalized 0-1
 
 Core metrics (default):
-- engram6 (based on Typing Preference Study)
+- engram6 (based on Typing Preference Study - 2-key bigrams)
+- engram6_3key (based on Typing Preference Study - 3-key trigrams)
+- engram6_3key_* (individual 3-key criteria: strength, stretch, curl, rows, columns, order)
 - dvorak7 (based on Dvorak's 7 typing principles)
 - comfort_combo (composite comfort model)
 - comfort_key (frequency-weighted key comfort)
@@ -52,8 +58,11 @@ Usage:
     # Force raw (unweighted) scoring
     python score_layouts.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --raw
     
-    # Compare multiple layouts (recommended approach)
+    # Compare multiple layouts (recommended approach) - CSV format
     python score_layouts.py --compare qwerty:"qwertyuiop" dvorak:"',.pyfgcrl" colemak:"qwfpgjluy;"
+    
+    # Save CSV (compatible with display_layouts.py and compare_layouts.py)
+    python score_layouts.py --compare qwerty:"qwertyuiop" dvorak:"',.pyfgcrl" --csv layouts.csv
     
     # Compare with experimental metrics (caution: limitations noted above)
     python score_layouts.py --compare qwerty:"qwertyuiop" dvorak:"',.pyfgcrl" --experimental-metrics
@@ -61,25 +70,21 @@ Usage:
     # Mix core and experimental metrics
     python score_layouts.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --scorers engram6,comfort,efficiency --experimental-metrics
     
+    # Use only 3-key Engram-6 scoring
+    python score_layouts.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --scorers engram6_3key
+    
     # Verbose output (shows both weighted and raw scores)
     python score_layouts.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --verbose
     
-    # Minimal CSV output for scripts/automation
-    python score_layouts.py --compare qwerty:"qwertyuiop" dvorak:"',.pyfgcrl" --csv-output
-    
-    # Save detailed results to file
-    python score_layouts.py --compare qwerty:"qwertyuiop" dvorak:"',.pyfgcrl" --csv results.csv
-    
-    # Custom files (when defaults aren't suitable)
-    python score_layouts.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --score-table custom.csv --frequency-file custom_freq.csv
-
 Features:
-- Automatic frequency weighting using English bigram frequencies
+- Automatic frequency weighting using English bigram and trigram frequencies
 - Letter-pair → Key-pair mapping (e.g., "TH" frequency weights T→H key transition)
-- Multiple output formats: detailed, CSV, minimal CSV, score-only
+- Letter-triple → Key-triple mapping (e.g., "THE" frequency weights T→H→E key sequence)
+- CSV format compatible with both display scripts and comparison tools
 - Fallback to raw scoring if frequency file missing
-- Support for all scoring methods in the unified score table
+- Support for all scoring methods in the score table
 - Dynamic comfort_combo and comfort_key scoring (requires prep_scoring_tables.py output)
+- 3-key Engram-6 scoring with individual criterion breakdown
 """
 
 import sys
@@ -90,8 +95,11 @@ import numpy as np
 from pathlib import Path
 from typing import Dict, List, Tuple, Optional, Set
 
+# QWERTY reference order for positions
+QWERTY_POSITIONS = "QWERTYUIOPASDFGHJKL;ZXCVBNM,./['"
+
 class LayoutScorer:
-    """Unified layout scorer using pre-computed score table."""
+    """Layout scorer using pre-computed score table."""
     
     def __init__(self, score_table_path: str, frequency_file: Optional[str] = None, use_raw: bool = False, verbose: bool = False, experimental_metrics: bool = False):
         """Initialize scorer with score table and optional frequency data."""
@@ -99,11 +107,18 @@ class LayoutScorer:
         self.use_raw = use_raw
         self.experimental_metrics = experimental_metrics
         self.score_table = self._load_score_table(score_table_path)
+        
+        # Load 3-key score tables
+        self.score_3key_tables = self._load_3key_score_tables()
+        
         self.available_scorers = self._detect_available_scorers()
         
         self.bigram_frequencies = None
         if frequency_file:
             self.bigram_frequencies = self._load_frequency_data(frequency_file)
+        
+        # Try to load trigram frequencies
+        self.trigram_frequencies = self._load_trigram_frequencies()
         
         self.letter_frequencies = self._load_letter_frequencies()
         self.key_comfort_scores = self._load_key_comfort_scores()
@@ -114,7 +129,7 @@ class LayoutScorer:
             self._print_initialization_info(score_table_path, frequency_file)
     
     def _load_score_table(self, filepath: str) -> pd.DataFrame:
-        """Load the unified score table with careful NA handling."""
+        """Load the score table with careful NA handling."""
         if not Path(filepath).exists():
             raise FileNotFoundError(f"Score table not found: {filepath}")
         
@@ -145,6 +160,82 @@ class LayoutScorer:
             print("'NA' key pair preserved in score table")
         
         return df.set_index('key_pair')
+
+    def _load_3key_score_tables(self) -> Dict[str, pd.DataFrame]:
+        """Load all 3-key score tables."""
+        tables = {}
+        base_path = Path("tables")
+        
+        # Define 3-key score files
+        score_files = {
+            'engram6_3key': 'engram_3key_scores.csv',
+            'engram6_3key_strength': 'engram_3key_scores_strength.csv',
+            'engram6_3key_stretch': 'engram_3key_scores_stretch.csv',
+            'engram6_3key_curl': 'engram_3key_scores_curl.csv',
+            'engram6_3key_rows': 'engram_3key_scores_rows.csv',
+            'engram6_3key_columns': 'engram_3key_scores_columns.csv',
+            'engram6_3key_order': 'engram_3key_scores_order.csv',
+        }
+        
+        for score_name, filename in score_files.items():
+            filepath = base_path / filename
+            if filepath.exists():
+                try:
+                    df = pd.read_csv(filepath,
+                                   dtype={'key_triple': 'str'},
+                                   keep_default_na=False,
+                                   na_values=['', 'NULL', 'null', 'NaN', 'nan'])
+                    
+                    if 'key_triple' in df.columns:
+                        # Clean data
+                        missing_count = df['key_triple'].isna().sum()
+                        if missing_count > 0:
+                            df = df.dropna(subset=['key_triple'])
+                        
+                        empty_count = (df['key_triple'].astype(str).str.strip() == '').sum()
+                        if empty_count > 0:
+                            df = df[df['key_triple'].astype(str).str.strip() != '']
+                        
+                        # Set index and normalize scores to 0-1 range
+                        df_indexed = df.set_index('key_triple')
+                        
+                        # Find the score column
+                        score_col = None
+                        if score_name == 'engram6_3key':
+                            score_col = 'engram6_score'
+                        else:
+                            criterion = score_name.replace('engram6_3key_', '')
+                            score_col = f'engram6_{criterion}'
+                        
+                        if score_col in df_indexed.columns:
+                            # Normalize scores (Engram-6 ranges from 0-6, individual criteria 0-1)
+                            scores = df_indexed[score_col].values
+                            if score_name == 'engram6_3key':
+                                # Overall score: normalize 0-6 to 0-1
+                                normalized_scores = scores / 6.0
+                            else:
+                                # Individual criteria: already 0-1, but clip to be safe
+                                normalized_scores = np.clip(scores, 0.0, 1.0)
+                            
+                            df_indexed[f'{score_col}_normalized'] = normalized_scores
+                            tables[score_name] = df_indexed
+                            
+                            if self.verbose:
+                                print(f"Loaded 3-key table: {filename} ({len(df_indexed)} triples)")
+                        else:
+                            if self.verbose:
+                                print(f"Warning: Score column '{score_col}' not found in {filename}")
+                    else:
+                        if self.verbose:
+                            print(f"Warning: 'key_triple' column not found in {filename}")
+                except Exception as e:
+                    if self.verbose:
+                        print(f"Error loading 3-key table {filename}: {e}")
+            else:
+                if self.verbose:
+                    print(f"3-key table not found: {filename}")
+        
+        return tables
 
     def _load_frequency_data(self, filepath: str) -> Optional[Dict[str, float]]:
         """Load bigram frequency data from CSV file."""
@@ -179,6 +270,44 @@ class LayoutScorer:
         if self.verbose:
             total_freq = sum(frequencies.values())
             print(f"Loaded {len(frequencies)} bigram frequencies (total: {total_freq:,})")
+        
+        return frequencies
+
+    def _load_trigram_frequencies(self) -> Optional[Dict[str, float]]:
+        """Load trigram frequency data from CSV file."""
+        filepath = "input/english-letter-triple-frequencies-google-ngrams.csv"
+        
+        if not Path(filepath).exists():
+            if self.verbose:
+                print(f"Trigram frequency file not found: {filepath}")
+            return None
+        
+        try:
+            df = pd.read_csv(filepath)
+        except Exception as e:
+            if self.verbose:
+                print(f"Error reading trigram frequency file: {e}")
+            return None
+        
+        trigram_col = self._find_column(df, ['trigram', 'triple', 'key_triple', 'letter_triple'])
+        freq_col = self._find_column(df, ['normalized_frequency', 'frequency'])
+        
+        if not trigram_col or not freq_col:
+            if self.verbose:
+                print("Could not find required columns in trigram frequency file")
+            return None
+        
+        frequencies = {}
+        for _, row in df.iterrows():
+            trigram = str(row[trigram_col]).strip().upper()
+            freq = float(row[freq_col])
+            
+            if len(trigram) == 3:
+                frequencies[trigram] = freq
+        
+        if self.verbose:
+            total_freq = sum(frequencies.values())
+            print(f"Loaded {len(frequencies)} trigram frequencies (total: {total_freq:,})")
         
         return frequencies
     
@@ -252,26 +381,93 @@ class LayoutScorer:
         return None
     
     def _detect_available_scorers(self) -> List[str]:
-        """Detect available scoring methods from table columns."""
-        scorers = []
+        """Detect available scoring methods from table columns, ordered logically."""
+        available_scorers = set()
         
+        # Add 2-key scorers from main table
         for col in self.score_table.columns:
             if col.endswith('_normalized'):
                 scorer_name = col.replace('_normalized', '').replace('_score', '')
-                scorers.append(scorer_name)
+                available_scorers.add(scorer_name)
+        
+        # Add 3-key scorers from 3-key tables
+        for score_name in self.score_3key_tables.keys():
+            available_scorers.add(score_name)
         
         # Filter out experimental metrics unless experimental_metrics is enabled
         if not self.experimental_metrics:
-            filtered_time = [s for s in scorers if self._is_time_speed_metric(s)]
-            filtered_distance = [s for s in scorers if self._is_distance_efficiency_metric(s)]
+            filtered_time = [s for s in available_scorers if self._is_time_speed_metric(s)]
+            filtered_distance = [s for s in available_scorers if self._is_distance_efficiency_metric(s)]
             filtered_out = filtered_time + filtered_distance
             
-            scorers = [s for s in scorers if not self._is_time_speed_metric(s) and not self._is_distance_efficiency_metric(s)]
+            available_scorers = {s for s in available_scorers if not self._is_time_speed_metric(s) and not self._is_distance_efficiency_metric(s)}
             
             if self.verbose and filtered_out:
                 print(f"Filtered out experimental metrics (use --experimental-metrics to enable): {filtered_out}")
         
-        return sorted(list(set(scorers)))
+        # Order scorers logically: composite scores first, then components by category
+        ordered_scorers = []
+        
+        # 1. Dynamic composite scores (computed on-the-fly)
+        dynamic_composites = ['comfort_combo', 'comfort_key']
+        for scorer in dynamic_composites:
+            if scorer in available_scorers:
+                ordered_scorers.append(scorer)
+        
+        # 2. Core composite scores (2-key)
+        core_2key_composites = ['comfort', 'engram6', 'dvorak7']
+        for scorer in core_2key_composites:
+            if scorer in available_scorers:
+                ordered_scorers.append(scorer)
+        
+        # 3. 3-key composite scores
+        key_3key_composites = ['engram6_3key']
+        for scorer in key_3key_composites:
+            if scorer in available_scorers:
+                ordered_scorers.append(scorer)
+        
+        # 4. 2-key Engram-6 component scores (in logical order)
+        engram6_2key_components = [
+            'engram6_strength', 'engram6_stretch', 'engram6_curl', 
+            'engram6_rows', 'engram6_columns', 'engram6_order'
+        ]
+        for scorer in engram6_2key_components:
+            if scorer in available_scorers:
+                ordered_scorers.append(scorer)
+        
+        # 5. 3-key Engram-6 component scores (in logical order)
+        engram6_3key_components = [
+            'engram6_3key_strength', 'engram6_3key_stretch', 'engram6_3key_curl',
+            'engram6_3key_rows', 'engram6_3key_columns', 'engram6_3key_order'
+        ]
+        for scorer in engram6_3key_components:
+            if scorer in available_scorers:
+                ordered_scorers.append(scorer)
+        
+        # 6. Dvorak-7 component scores (in logical order)
+        dvorak7_components = [
+            'dvorak7_distribution', 'dvorak7_strength', 'dvorak7_middle', 'dvorak7_vspan',
+            'dvorak7_columns', 'dvorak7_remote', 'dvorak7_inward'
+        ]
+        for scorer in dvorak7_components:
+            if scorer in available_scorers:
+                ordered_scorers.append(scorer)
+        
+        # 7. Experimental metrics (if enabled)
+        if self.experimental_metrics:
+            # Distance/efficiency metrics
+            distance_metrics = sorted([s for s in available_scorers if self._is_distance_efficiency_metric(s)])
+            ordered_scorers.extend(distance_metrics)
+            
+            # Time/speed metrics  
+            time_metrics = sorted([s for s in available_scorers if self._is_time_speed_metric(s)])
+            ordered_scorers.extend(time_metrics)
+        
+        # 8. Any remaining scorers (fallback for unexpected scorers)
+        remaining = sorted([s for s in available_scorers if s not in ordered_scorers])
+        ordered_scorers.extend(remaining)
+        
+        return ordered_scorers
     
     def _update_available_scorers(self):
         """Add dynamic scorers to available list."""
@@ -287,6 +483,7 @@ class LayoutScorer:
         if frequency_file:
             print(f"Frequency file: {frequency_file}")
         print(f"Loaded score table with {len(self.score_table)} key pairs")
+        print(f"Loaded {len(self.score_3key_tables)} 3-key score tables")
         print(f"Available scorers: {', '.join(self.available_scorers)}")
         
         if self.use_raw:
@@ -295,6 +492,10 @@ class LayoutScorer:
             total_freq = sum(self.bigram_frequencies.values())
             print(f"Loaded frequency data for {len(self.bigram_frequencies)} bigrams")
             print(f"Total frequency count: {total_freq:,}")
+            if self.trigram_frequencies:
+                trigram_total = sum(self.trigram_frequencies.values())
+                print(f"Loaded frequency data for {len(self.trigram_frequencies)} trigrams")
+                print(f"Total trigram frequency count: {trigram_total:,}")
             print("Using frequency-weighted scoring by default")
         else:
             print("No frequency file found - using raw scoring")
@@ -370,6 +571,20 @@ class LayoutScorer:
                     valid_pairs.append(letter_pair)
         
         return valid_pairs
+
+    def _get_valid_letter_triples(self, layout_mapping: Dict[str, str]) -> List[str]:
+        """Get letter triples that can be scored with the current layout."""
+        if not self.trigram_frequencies:
+            return []
+        
+        valid_triples = []
+        for letter_triple in self.trigram_frequencies.keys():
+            if len(letter_triple) == 3:
+                letter1, letter2, letter3 = letter_triple[0], letter_triple[1], letter_triple[2]
+                if letter1 in layout_mapping and letter2 in layout_mapping and letter3 in layout_mapping:
+                    valid_triples.append(letter_triple)
+        
+        return valid_triples
     
     def _compute_comfort_key_score(self, letter_pair: str, layout_mapping: Dict[str, str]) -> Optional[float]:
         """Compute comfort_key score for a letter pair."""
@@ -394,16 +609,121 @@ class LayoutScorer:
             return (comfort1 * freq1 + comfort2 * freq2) / (freq1 + freq2)
         else:
             return (comfort1 + comfort2) / 2.0
+
+    def _score_layout_3key(self, layout_mapping: Dict[str, str], scorer: str) -> Dict[str, float]:
+        """Score a layout using 3-key scoring method."""
+        if scorer not in self.score_3key_tables:
+            raise ValueError(f"3-key scorer '{scorer}' not available")
+        
+        score_table = self.score_3key_tables[scorer]
+        
+        # Determine score column
+        if scorer == 'engram6_3key':
+            score_col = 'engram6_score_normalized'
+        else:
+            criterion = scorer.replace('engram6_3key_', '')
+            score_col = f'engram6_{criterion}_normalized'
+        
+        if score_col not in score_table.columns:
+            raise ValueError(f"Score column '{score_col}' not found in 3-key table")
+        
+        # Use trigram frequencies if available, otherwise fall back to raw scoring
+        use_frequency = self.trigram_frequencies is not None and not self.use_raw
+        
+        if use_frequency:
+            valid_letter_triples = self._get_valid_letter_triples(layout_mapping)
+        else:
+            # For raw scoring, generate all possible triples from the layout
+            letters = list(layout_mapping.keys())
+            valid_letter_triples = []
+            for l1 in letters:
+                for l2 in letters:
+                    for l3 in letters:
+                        valid_letter_triples.append(l1 + l2 + l3)
+        
+        if self.verbose:
+            if use_frequency:
+                print(f"3-key {scorer}: Processing {len(valid_letter_triples)} valid triples out of {len(self.trigram_frequencies)} total")
+            else:
+                print(f"3-key {scorer}: Processing {len(valid_letter_triples)} raw triples")
+        
+        raw_total_score = 0.0
+        raw_count = 0
+        weighted_total_score = 0.0
+        total_frequency = 0.0
+        frequency_coverage = 0.0
+        
+        for letter_triple in valid_letter_triples:
+            if len(letter_triple) != 3:
+                continue
+                
+            letter1, letter2, letter3 = letter_triple[0], letter_triple[1], letter_triple[2]
+            
+            if letter1 not in layout_mapping or letter2 not in layout_mapping or letter3 not in layout_mapping:
+                continue
+            
+            key1 = layout_mapping[letter1]
+            key2 = layout_mapping[letter2]
+            key3 = layout_mapping[letter3]
+            key_triple = str(key1) + str(key2) + str(key3)
+            
+            if len(key_triple) != 3:
+                continue
+            
+            if key_triple not in score_table.index:
+                continue
+            
+            score = score_table.loc[key_triple, score_col]
+            
+            raw_total_score += score
+            raw_count += 1
+            
+            if use_frequency:
+                frequency = self.trigram_frequencies.get(letter_triple, 0.0)
+                weighted_total_score += score * frequency
+                total_frequency += frequency
+                if frequency > 0:
+                    frequency_coverage += frequency
+        
+        # Calculate averages
+        raw_average = raw_total_score / raw_count if raw_count > 0 else 0.0
+        frequency_weighted_average = weighted_total_score / total_frequency if total_frequency > 0 else 0.0
+        
+        results = {
+            'average_score': frequency_weighted_average if use_frequency else raw_average,
+            'raw_average_score': raw_average,
+            'total_score': weighted_total_score if use_frequency else raw_total_score,
+            'raw_total_score': raw_total_score,
+            'pair_count': raw_count,  # Actually triple_count, but keeping consistent naming
+        }
+        
+        if use_frequency:
+            results.update({
+                'coverage': raw_count / len(self.trigram_frequencies) if self.trigram_frequencies else 0.0,
+                'total_frequency': total_frequency,
+                'frequency_coverage': frequency_coverage / sum(self.trigram_frequencies.values()) if self.trigram_frequencies else 0.0
+            })
+        else:
+            # For raw scoring, coverage is against all possible triples in the layout
+            total_possible = len(layout_mapping) ** 3
+            results['coverage'] = raw_count / total_possible if total_possible > 0 else 0.0
+        
+        return results
     
     def _score_layout_with_method(self, layout_mapping: Dict[str, str], scorer: str) -> Dict[str, float]:
         """Score a layout using a specific scoring method."""
         self._validate_layout_mapping(layout_mapping)
+        
+        # Check if this is a 3-key scorer
+        if scorer.startswith('engram6_3key'):
+            return self._score_layout_3key(layout_mapping, scorer)
         
         if scorer == 'comfort_key':
             return self._score_layout_comfort_key(layout_mapping)
         elif scorer == 'comfort_combo':
             return self._score_layout_comfort_combo(layout_mapping)
         
+        # Standard 2-key scoring
         score_col = f"{scorer}_score_normalized"
         if score_col not in self.score_table.columns:
             score_col = f"{scorer}_normalized"
@@ -454,8 +774,6 @@ class LayoutScorer:
             original_raw_score = self.score_table.loc[key_pair, score_col]
             score = (1.0 - original_raw_score) if invert_scores else original_raw_score
             
-
-            
             # Accumulate both original and processed scores
             original_raw_total += original_raw_score
             raw_total_score += score
@@ -472,8 +790,6 @@ class LayoutScorer:
         processed_raw_average = raw_total_score / raw_count if raw_count > 0 else 0.0
         original_raw_average = original_raw_total / raw_count if raw_count > 0 else 0.0
         frequency_weighted_average = weighted_total_score / total_frequency if total_frequency > 0 else 0.0
-        
-
         
         results = {
             'average_score': frequency_weighted_average if use_frequency else processed_raw_average,
@@ -710,10 +1026,14 @@ def parse_layout_compare(compare_args: List[str]) -> Tuple[Dict[str, Dict[str, s
         
         layout_strings[name] = layout_str
         
-        qwerty_positions = "QWERTYUIOPASDFGHJKL;ZXCVBNM,./['"
+        qwerty_positions = QWERTY_POSITIONS
         
         if len(layout_str) > len(qwerty_positions):
             raise ValueError(f"Layout '{name}' too long. Max {len(qwerty_positions)} characters.")
+        
+        # Pad layout string if it's shorter than QWERTY
+        if len(layout_str) < len(qwerty_positions):
+            layout_str = layout_str + ' ' * (len(qwerty_positions) - len(layout_str))
         
         mapping = {}
         for i, char in enumerate(layout_str):
@@ -725,22 +1045,50 @@ def parse_layout_compare(compare_args: List[str]) -> Tuple[Dict[str, Dict[str, s
     
     return layouts, layout_strings
 
-def format_csv_output(comparison_results, layout_strings=None):
-    """Format minimal CSV output for programmatic use."""
-    lines = ["layout_name,scorer,weighted_score,raw_score,layout_string"]
+def layout_string_to_letters_positions(layout_string: str) -> Tuple[str, str]:
+    """Convert layout string to letters and positions for display compatibility."""
+    # Pad or truncate to match QWERTY length
+    padded_layout = layout_string
+    if len(padded_layout) < len(QWERTY_POSITIONS):
+        padded_layout = padded_layout + ' ' * (len(QWERTY_POSITIONS) - len(padded_layout))
+    elif len(padded_layout) > len(QWERTY_POSITIONS):
+        padded_layout = padded_layout[:len(QWERTY_POSITIONS)]
     
+    letters = padded_layout
+    positions = QWERTY_POSITIONS
+    
+    return letters, positions
+
+def format_unified_csv_output(comparison_results: Dict[str, Dict[str, Dict[str, float]]], 
+                             layout_strings: Dict[str, str], 
+                             scorers: List[str]) -> str:
+    """Format CSV output compatible with display scripts and compare_layouts.py."""
+    lines = []
+    
+    # Header: layout,letters,positions,scorer1,scorer2,...
+    header = ['layout', 'letters', 'positions']
+    header.extend(scorers)
+    lines.append(','.join(header))
+    
+    # Data rows
     for layout_name, layout_results in comparison_results.items():
-        for scorer, results in layout_results.items():
-            safe_layout_name = str(layout_name).replace('"', '""')
-            safe_scorer = str(scorer).replace('"', '""')
-            
-            weighted_score = float(results['average_score'])
-            raw_score = float(results.get('raw_average_score', results['average_score']))
-            
-            layout_string = layout_strings.get(layout_name, "") if layout_strings else ""
-            safe_layout_string = str(layout_string).replace('"', '""')
-            
-            lines.append(f'"{safe_layout_name}","{safe_scorer}",{weighted_score:.6f},{raw_score:.6f},"{safe_layout_string}"')
+        row_data = [f'"{layout_name}"']
+        
+        # Get letters and positions from layout string
+        layout_string = layout_strings.get(layout_name, "")
+        letters, positions = layout_string_to_letters_positions(layout_string)
+        row_data.append(f'"{letters}"')
+        row_data.append(f'"{positions}"')
+        
+        # Add scorer values
+        for scorer in scorers:
+            if scorer in layout_results:
+                score = float(layout_results[scorer]['average_score'])
+                row_data.append(f"{score:.6f}")
+            else:
+                row_data.append("")  # Missing score
+        
+        lines.append(','.join(row_data))
     
     return '\n'.join(lines)
 
@@ -826,66 +1174,18 @@ def format_comparison_table(comparison_results, layout_strings=None, quiet=False
     
     return '\n'.join(lines)
 
-def save_detailed_comparison_csv(comparison_results: Dict[str, Dict[str, Dict[str, float]]], 
-                               filename: str, layout_mappings: Dict[str, Dict[str, str]] = None, 
-                               use_raw: bool = False, layout_strings: Dict[str, str] = None):
-    """Save detailed comparison results to CSV."""
-    
-    rows = []
-    for layout_name, layout_results in comparison_results.items():
-        for display_scorer, results in layout_results.items():
-            row = {
-                'layout_name': layout_name,
-                'scorer': display_scorer,
-                'average_score': results['average_score'],
-                'total_score': results['total_score'],
-                'pair_count': results['pair_count'],
-                'coverage': results['coverage']
-            }
-            
-            if not use_raw and 'raw_average_score' in results:
-                row.update({
-                    'raw_average_score': results['raw_average_score'],
-                    'raw_total_score': results['raw_total_score'],
-                    'total_frequency': results.get('total_frequency', 0),
-                    'frequency_coverage': results.get('frequency_coverage', 0.0)
-                })
-            
-            if layout_strings and layout_name in layout_strings:
-                row['layout_string'] = layout_strings[layout_name]
-            
-            if layout_mappings and layout_name in layout_mappings:
-                mapping = layout_mappings[layout_name]
-                row['layout_letters'] = ''.join(sorted(mapping.keys()))
-                row['layout_positions'] = ''.join(mapping[c] for c in sorted(mapping.keys()))
-            
-            rows.append(row)
-    
-    if rows:
-        fieldnames = list(rows[0].keys())
-        with open(filename, 'w', newline='', encoding='utf-8') as f:
-            writer = csv.DictWriter(f, fieldnames=fieldnames)
-            writer.writeheader()
-            for row in rows:
-                formatted_row = {}
-                for key, value in row.items():
-                    if isinstance(value, float):
-                        formatted_row[key] = f"{value:.6f}"
-                    else:
-                        formatted_row[key] = value
-                writer.writerow(formatted_row)
-
 def create_cli_parser() -> argparse.ArgumentParser:
     """Create command-line argument parser."""
     
     parser = argparse.ArgumentParser(
-        description="Unified keyboard layout scorer with biomechanically-grounded defaults",
+        description="Keyboard layout scorer with CSV output format",
         formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="""
+        epilog=r"""
 Examples:
 
   # Basic usage (core biomechanical metrics only - recommended)
   # Note: Run 'python prep_scoring_tables.py --input-dir tables/' first to create required tables
+  # Note: Run 'python prep_keytriple_engram6_scores.py' to create 3-key Engram-6 tables
   python score_layouts.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ"
   
   # Include experimental distance/time metrics (caution: limitations noted below)
@@ -894,8 +1194,11 @@ Examples:
   # Raw (unweighted) scoring only
   python score_layouts.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --raw
   
-  # Compare layouts with core metrics - RECOMMENDED
+  # Compare layouts with CSV output (default) - RECOMMENDED
   python score_layouts.py --compare qwerty:"qwertyuiop" dvorak:"',.pyfgcrl"
+  
+  # Save CSV (compatible with display_layouts.py and compare_layouts.py)
+  python score_layouts.py --compare qwerty:"qwertyuiop" dvorak:"',.pyfgcrl" --csv layouts.csv
   
   # Compare with experimental metrics (caution: shows limitations)
   python score_layouts.py --compare qwerty:"qwertyuiop" dvorak:"',.pyfgcrl" --experimental-metrics
@@ -903,31 +1206,40 @@ Examples:
   # Specific experimental metrics
   python score_layouts.py --compare qwerty:"qwertyuiop" dvorak:"',.pyfgcrl" --scorer efficiency --experimental-metrics
   
-  # Mix core and experimental metrics
-  python score_layouts.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --scorers comfort_combo,comfort,efficiency --experimental-metrics
+  # Mix core and experimental metrics including 3-key
+  python score_layouts.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --scorers comfort_combo,comfort,engram6_3key,efficiency --experimental-metrics
+  
+  # Use only 3-key Engram-6 scoring
+  python score_layouts.py --compare qwerty:"qwertyuiop" dvorak:"',.pyfgcrl" --scorers engram6_3key,engram6_3key_strength,engram6_3key_curl
   
   # Use custom score table and frequency file
   python score_layouts.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --score-table custom_scores.csv --frequency-file custom_freqs.csv
   
-  # Minimal CSV output for programmatic use (no headers, scores only)
-  python score_layouts.py --compare qwerty:"qwertyuiop" dvorak:"',.pyfgcrl" --csv-output
-  
   # Verbose output (shows both weighted and raw scores)
   python score_layouts.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --verbose
-  
-  # Save to CSV file with frequency weighting
-  python score_layouts.py --compare qwerty:"qwerty" dvorak:"',.py" --csv results.csv
 
 Default behavior:
 - Uses tables/scores_2key_detailed.csv for key-pair scoring data (created by prep_scoring_tables.py)
+- Uses tables/engram_3key_scores*.csv for 3-key Engram-6 scoring data (created by prep_keytriple_engram6_scores.py)
 - Uses tables/key_scores.csv for individual key comfort scores (created by prep_scoring_tables.py)
 - Uses input/english-letter-pair-frequencies-google-ngrams.csv for frequency weighting (if it exists)
+- Uses input/english-letter-triple-frequencies-google-ngrams.csv for trigram frequency weighting (if it exists)
 - Uses input/english-letter-frequencies-google-ngrams.csv for letter frequencies (if it exists)
 - Falls back to raw scoring if frequency file is not found
 - With --raw: Ignores frequencies and uses raw (unweighted) scoring
 - With --verbose: Shows both weighted and raw scores for comparison
-- With --csv-output: Minimal CSV format for programmatic use (layout,scorer,weighted_score,raw_score)
+- Default CSV format: layout,letters,positions,scorer1,scorer2,...
 - With --experimental-metrics: Enables distance/efficiency AND time/speed metrics
+
+CSV Format:
+The default CSV output format is:
+layout,letters,positions,engram6,engram6_3key,dvorak7,comfort,comfort_key,comfort_combo
+QWERTY,qwertyuiopasdfghjkl;zxcvbnm\,./,QWERTYUIOPASDFGHJKL;ZXCVBNM\,./',0.645,0.712,0.723,0.612,0.678,0.651
+
+This format is compatible with:
+- display_layouts.py (uses layout,letters,positions columns)
+- compare_layouts.py (can read all scorer columns)
+- Spreadsheet applications (easy to analyze)
 
 Experimental Metrics Warning:
 Distance/efficiency and time/speed metrics are disabled by default due to significant limitations:
@@ -947,19 +1259,29 @@ Distance/efficiency and time/speed metrics are disabled by default due to signif
 Use --experimental-metrics to enable these metrics with full awareness of their limitations.
 
 Available scoring methods:
-Core (recommended): engram6, dvorak7, comfort_combo, comfort, comfort_key
+Core (recommended): engram6, engram6_3key, engram6_3key_*, dvorak7, comfort_combo, comfort, comfort_key
 Experimental (--experimental-metrics): distance→efficiency, time→speed
+
+3-key Engram-6 scoring:
+- engram6_3key: Overall 3-key Engram-6 score (sum of 6 criteria)
+- engram6_3key_strength: Finger strength criterion for trigrams
+- engram6_3key_stretch: Finger stretch criterion for trigrams
+- engram6_3key_curl: Finger curl criterion for trigrams
+- engram6_3key_rows: Row span criterion for trigrams
+- engram6_3key_columns: Column span criterion for trigrams
+- engram6_3key_order: Finger order criterion for trigrams
 
 Distance scores are automatically inverted (1-score) and renamed to efficiency.
 Time scores are automatically inverted (1-score) and renamed to speed (experimental only).
 comfort_combo and comfort_key scores are computed dynamically and require letter frequencies and key comfort scores.
+3-key scores require trigram frequency data for optimal weighting, but fall back to raw scoring if unavailable.
         """
     )
     
     parser.add_argument(
         '--score-table',
         default="tables/scores_2key_detailed.csv",
-        help="Path to unified score table CSV file (default: tables/scores_2key_detailed.csv)"
+        help="Path to score table CSV file (default: tables/scores_2key_detailed.csv)"
     )
     
     parser.add_argument(
@@ -972,12 +1294,6 @@ comfort_combo and comfort_key scores are computed dynamically and require letter
         '--raw',
         action='store_true',
         help="Use raw (unweighted) scoring only, ignore frequency weighting"
-    )
-    
-    parser.add_argument(
-        '--csv-output',
-        action='store_true',
-        help="Output minimal CSV format to stdout (scores only, no headers, for programmatic use)"
     )
     
     parser.add_argument(
@@ -1014,13 +1330,13 @@ comfort_combo and comfort_key scores are computed dynamically and require letter
     output_group = parser.add_argument_group('Output Options')
     output_group.add_argument(
         '--format',
-        choices=['detailed', 'csv', 'score_only', 'table'],
+        choices=['detailed', 'score_only', 'table'],
         default='table',
         help="Output format (default: table)"
     )
     output_group.add_argument(
         '--csv',
-        help="Save detailed comparison to CSV file"
+        help="Save CSV format to file (layout,letters,positions,scorer1,scorer2,...)"
     )
     output_group.add_argument(
         '--score-only',
@@ -1048,8 +1364,6 @@ def main() -> int:
     
     if args.score_only:
         args.format = 'score_only'
-    elif args.csv_output:
-        args.format = 'csv_output'
     
     try:
         frequency_file = None
@@ -1059,10 +1373,8 @@ def main() -> int:
             print(f"Error: Frequency file not found: {args.frequency_file}")
             return 1
         
-        suppress_verbose = args.format == 'csv_output'
         scorer = LayoutScorer(args.score_table, frequency_file, args.raw, 
-                             verbose=args.verbose and not suppress_verbose,
-                             experimental_metrics=args.experimental_metrics)
+                             verbose=args.verbose, experimental_metrics=args.experimental_metrics)
         
         if args.compare:
             layouts, layout_strings = parse_layout_compare(args.compare)
@@ -1085,7 +1397,7 @@ def main() -> int:
                 print("Error: No valid scorers specified")
                 return 1
             
-            if not args.quiet and args.format != 'csv_output':
+            if not args.quiet:
                 print(f"Comparing {len(layouts)} layouts using {len(scorers)} scoring methods...")
                 print(f"Layouts: {', '.join(layouts.keys())}")
                 print(f"Scorers: {', '.join(scorers)}")
@@ -1099,16 +1411,17 @@ def main() -> int:
             results = scorer.compare_layouts(layouts, scorers)
             
             if args.csv:
-                save_detailed_comparison_csv(results, args.csv, layouts, args.raw, layout_strings)
-                if not args.quiet and args.format != 'csv_output':
-                    print(f"Detailed comparison saved to: {args.csv}")
+                # Save CSV format
+                unified_csv = format_unified_csv_output(results, layout_strings, scorers)
+                with open(args.csv, 'w', encoding='utf-8') as f:
+                    f.write(unified_csv)
+                if not args.quiet:
+                    print(f"CSV saved to: {args.csv}")
             else:
-                if args.format == 'csv_output':
-                    print(format_csv_output(results, layout_strings))
-                elif args.format == 'score_only':
+                if args.format == 'score_only':
                     print(format_score_only_output(results))
                 else:
-                    if not args.quiet and args.format != 'csv_output':
+                    if not args.quiet:
                         print(f"\n=== RESULTS ===")
                     print(format_comparison_table(results, layout_strings, args.quiet))
 
@@ -1145,18 +1458,16 @@ def main() -> int:
             results = scorer.score_layout(layout_mapping, scorers)
             
             if args.csv:
+                # Save CSV format for single layout
                 comparison_results = {layout_name: results}
-                layout_mappings_for_csv = {layout_name: layout_mapping}
                 layout_strings_for_csv = {layout_name: args.letters}
-                save_detailed_comparison_csv(comparison_results, args.csv, layout_mappings_for_csv, args.raw, layout_strings_for_csv)
-                if not args.quiet and args.format != 'csv_output':
-                    print(f"Results saved to: {args.csv}")
+                unified_csv = format_unified_csv_output(comparison_results, layout_strings_for_csv, scorers)
+                with open(args.csv, 'w', encoding='utf-8') as f:
+                    f.write(unified_csv)
+                if not args.quiet:
+                    print(f"CSV saved to: {args.csv}")
             else:
-                if args.format == 'csv_output':
-                    comparison_results = {layout_name: results}
-                    layout_strings_for_output = {layout_name: args.letters}
-                    print(format_csv_output(comparison_results, layout_strings_for_output))
-                elif args.format == 'score_only':
+                if args.format == 'score_only':
                     comparison_results = {layout_name: results}
                     print(format_score_only_output(comparison_results))
                 else:

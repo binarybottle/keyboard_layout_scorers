@@ -12,28 +12,29 @@ and time/speed metrics can be included but have significant limitations:
 - Time metrics contain QWERTY practice bias from empirical data
 
 Examples:
-    # All available metrics (includes core biomechanical metrics by default)
+    # All available metrics (core metrics by default)
     poetry run python3 compare_layouts.py --tables layout_scores.csv
 
-    # Core biomechanical metrics only (recommended)
+    # Core metrics only (recommended)
     poetry run python3 compare_layouts.py --metrics engram6 dvorak7 comfort_combo comfort comfort_key --tables layout_scores.csv
 
     # Include experimental distance/time metrics (caution: limitations noted above)
     poetry run python3 compare_layouts.py --metrics engram6 comfort comfort_key dvorak7 efficiency speed --tables layout_scores.csv --experimental-metrics
 
     # Create plots with specific metrics and save summary
-    poetry run python3 compare_layouts.py --metrics engram6 comfort comfort_key dvorak7 --output comparison.png --summary summary.csv --tables layout_scores.csv
-
+    poetry run python3 compare_layouts.py --tables layouts.csv --metrics engram6_strength engram6_curl engram6_rows engram6_columns engram6_order engram6_3key_order  --summary summary.csv
+    
     # Compare multiple tables with core metrics
-    poetry run python3 compare_layouts.py --metrics engram6 comfort comfort_key dvorak7 --output output/layout_comparison.png --tables layout_scores.csv moo_layout_scores.csv
+    poetry run python3 compare_layouts.py --metrics engram6 comfort comfort_key dvorak7 --output output/layout_comparison.png --tables layout_scores1.csv layout_scores2.csv
 
-    # Detailed comparison with Dvorak-7 breakdown (biomechanical focus)
-    poetry run python3 compare_layouts.py --metrics engram6 comfort comfort_key dvorak7 dvorak7_distribution dvorak7_strength dvorak7_middle dvorak7_vspan dvorak7_columns dvorak7_remote dvorak7_inward --output output/layout_comparison_detailed.png --tables layout_scores.csv moo_layout_scores.csv
+    # Detailed comparison with Dvorak-7 breakdown
+    poetry run python3 compare_layouts.py --metrics engram6 comfort comfort_key dvorak7 dvorak7_distribution dvorak7_strength dvorak7_middle dvorak7_vspan dvorak7_columns dvorak7_remote dvorak7_inward --output output/layout_comparison_detailed.png --tables layout_scores.csv
 
 Input format:
-  CSV files should be output from: score_layouts.py --csv-output
-  Expected columns: layout_name,scorer,weighted_score,raw_score
-  Optional: layout_string (enables additional layout analysis columns)
+  CSV files should be output from: score_layouts.py --csv
+  Expected format: layout,letters,positions,scorer1,scorer2,...
+  - One row per layout with all scores in columns
+  - Compatible with display_layouts.py
 
 Summary output:
   CSV with columns: index, layout, [letters, positions], average_score, [metric_values]
@@ -89,108 +90,65 @@ def parse_layout_string(layout_string: str) -> tuple:
     
     return letters, positions
 
-def load_and_pivot_data(file_path: str, use_raw: bool = False, verbose: bool = False) -> pd.DataFrame:
-    """Load CSV data from score_layouts.py output and pivot to layout x scorer format."""
+def load_layout_data(file_path: str, verbose: bool = False) -> pd.DataFrame:
+    """Load CSV data: layout,letters,positions,scorer1,scorer2,..."""
     try:
         df = pd.read_csv(file_path)
         if verbose:
             print(f"\nLoaded {len(df)} rows from {file_path}")
             print(f"Columns: {list(df.columns)}")
         
-        # Check required columns
-        required_cols = ['layout_name', 'scorer']
+        # Check required columns with alternative names
+        if 'layout' not in df.columns:
+            raise ValueError("Missing required column: 'layout'")
         
-        # Handle different score column formats from score_layouts.py
-        if use_raw:
-            # For raw scoring, accept: 'raw_score', 'score', or any other numeric column
-            possible_cols = ['raw_score', 'score']
-            score_col = None
-            for col in possible_cols:
-                if col in df.columns:
-                    score_col = col
-                    break
-            
-            if score_col is None:
-                # Fallback: find any numeric column that's not layout_name/scorer
-                numeric_cols = [col for col in df.columns 
-                              if col not in ['layout_name', 'scorer'] and pd.api.types.is_numeric_dtype(df[col])]
-                if numeric_cols:
-                    score_col = numeric_cols[0]
-                    if verbose:
-                        print(f"Warning: Using '{score_col}' column for raw scores")
-                else:
-                    raise ValueError("No suitable score column found for raw scoring")
-        else:
-            # For weighted scoring, try in order of preference
-            possible_cols = ['weighted_score', 'average_score', 'raw_score', 'score']
-            score_col = None
-            for col in possible_cols:
-                if col in df.columns:
-                    score_col = col
-                    break
-            
-            if score_col is None:
-                # Fallback: find any numeric column
-                numeric_cols = [col for col in df.columns 
-                              if col not in ['layout_name', 'scorer'] and pd.api.types.is_numeric_dtype(df[col])]
-                if numeric_cols:
-                    score_col = numeric_cols[0]
-                    if verbose:
-                        print(f"Warning: Using '{score_col}' column for scoring")
-                else:
-                    raise ValueError("No suitable score column found")
-            
-            if score_col in ['raw_score', 'score'] and verbose:
-                print("Warning: No weighted_score column found, using raw scores")        
-
-        required_cols.append(score_col)
+        # Check for letters column (accept 'letters' or 'items')
+        letters_col = None
+        for col in ['letters', 'items']:
+            if col in df.columns:
+                letters_col = col
+                break
+        if not letters_col:
+            raise ValueError("Missing required column: 'letters' or 'items'")
         
-        missing_cols = [col for col in required_cols if col not in df.columns]
-        if missing_cols:
-            raise ValueError(f"Missing required columns: {missing_cols}")
+        # Check for positions column (accept 'positions' or 'keys')
+        positions_col = None
+        for col in ['positions', 'keys']:
+            if col in df.columns:
+                positions_col = col
+                break
+        if not positions_col:
+            raise ValueError("Missing required column: 'positions' or 'keys'")
+        
+        # Standardize column names
+        if letters_col != 'letters':
+            df = df.rename(columns={letters_col: 'letters'})
+        if positions_col != 'positions':
+            df = df.rename(columns={positions_col: 'positions'})
+        
+        # Find scorer columns (numeric columns after layout, letters, positions)
+        scorer_columns = []
+        for col in df.columns[3:]:  # Skip layout, letters, positions
+            if pd.api.types.is_numeric_dtype(df[col]):
+                scorer_columns.append(col)
         
         if verbose:
-            print(f"Using score column: '{score_col}'")
-            print(f"Found {len(df['layout_name'].unique())} unique layouts")
-            print(f"Found {len(df['scorer'].unique())} unique scorers")
-            print(f"Scorers: {', '.join(sorted(df['scorer'].unique()))}")
+            print(f"Found {len(df)} layouts")
+            print(f"Found {len(scorer_columns)} scorer columns: {', '.join(scorer_columns)}")
         
-        # Pivot the data: layouts as rows, scorers as columns
-        try:
-            pivoted = df.pivot(index='layout_name', columns='scorer', values=score_col)
-            pivoted = pivoted.reset_index()
-            pivoted = pivoted.rename(columns={'layout_name': 'layout'})
-            
-            # If layout_string column exists, preserve it
-            if 'layout_string' in df.columns:
-                # Get unique layout strings for each layout name
-                layout_strings = df.groupby('layout_name')['layout_string'].first()
-                pivoted = pivoted.merge(layout_strings.reset_index().rename(columns={'layout_name': 'layout'}), 
-                                      on='layout', how='left')
-            
-            if verbose:
-                print(f"Pivoted data shape: {pivoted.shape}")
-                print(f"Layouts: {len(pivoted)}")
-                print(f"Metrics (scorers): {len(pivoted.columns) - 1}")
-                if 'layout_string' in pivoted.columns:
-                    print("Layout strings preserved in data")
-            
-            return pivoted
-            
-        except Exception as e:
-            raise ValueError(f"Error pivoting data - possible duplicate layout+scorer combinations: {e}")
-    
+        return df
+        
     except Exception as e:
         print(f"Error loading {file_path}: {e}")
         sys.exit(1)
 
 def find_available_metrics(dfs: List[pd.DataFrame], verbose: bool = False) -> List[str]:
     """Find which scorer metrics are available in the data."""
-    # Get all columns that appear to be numeric metrics (excluding 'layout')
+    # Get all columns that appear to be numeric metrics (excluding 'layout', 'letters', 'positions')
     all_metrics = set()
     for df in dfs:
         for col in df.columns:
-            if col != 'layout' and col != 'layout_string' and pd.api.types.is_numeric_dtype(df[col]):
+            if col not in ['layout', 'letters', 'positions'] and pd.api.types.is_numeric_dtype(df[col]):
                 all_metrics.add(col)
     
     # Convert to sorted list (alphabetical order)
@@ -214,7 +172,7 @@ def find_available_metrics(dfs: List[pd.DataFrame], verbose: bool = False) -> Li
                 core_metrics.append(metric)
         
         if core_metrics:
-            print(f"  Core biomechanical metrics ({len(core_metrics)}):")
+            print(f"  Core metrics ({len(core_metrics)}):")
             for i, metric in enumerate(core_metrics):
                 print(f"    {i+1:2d}. {metric}")
         
@@ -317,13 +275,8 @@ def create_sorted_summary(dfs: List[pd.DataFrame], table_names: List[str],
             print(f"Warning: No 'layout' column found in {table_name}, skipping")
             continue
         
-        # Parse layout strings if available
-        has_layout_strings = 'layout_string' in summary_df.columns
-        if has_layout_strings:
-            # Parse layout strings to create the 2 new columns
-            parsed_data = summary_df['layout_string'].apply(parse_layout_string)
-            summary_df['letters'] = [x[0] for x in parsed_data]
-            summary_df['positions'] = [x[1] for x in parsed_data]
+        # Use existing letters/positions columns
+        has_layout_data = 'letters' in summary_df.columns and 'positions' in summary_df.columns
         
         # Filter to only include layouts with sufficient data
         valid_layouts = []
@@ -349,11 +302,11 @@ def create_sorted_summary(dfs: List[pd.DataFrame], table_names: List[str],
         summary_df = summary_df.sort_values('average_score', ascending=False)
         
         # Prepare output columns in requested order:
-        # layout_name, letters, positions, average_score, then original metrics
+        # layout, letters, positions, average_score, then original metrics
         output_columns = ['layout']
         
         # Add layout string columns if available
-        if has_layout_strings:
+        if has_layout_data:
             output_columns.extend(['letters', 'positions'])
         
         # Add average score column
@@ -415,7 +368,7 @@ def create_sorted_summary(dfs: List[pd.DataFrame], table_names: List[str],
     return combined_summary
 
 def create_heatmap_plot(dfs: List[pd.DataFrame], table_names: List[str], 
-                       metrics: List[str], use_raw: str, output_path: Optional[str] = None) -> None:
+                       metrics: List[str], output_path: Optional[str] = None) -> None:
     """Create heatmap visualization with layouts on y-axis and metrics on x-axis."""
     
     # Normalize data across all tables
@@ -514,8 +467,7 @@ def create_heatmap_plot(dfs: List[pd.DataFrame], table_names: List[str],
     if len(dfs) > 1:
         sort_info = " (sorted within each table)"
     
-    score_type = "raw scores" if use_raw else "weighted scores"
-    title = f'Keyboard Layout Comparison Heatmap ({score_type}){sort_info}\n{len(layout_names)} layouts across {len(metrics)} metrics'
+    title = f'Keyboard Layout Comparison Heatmap{sort_info}\n{len(layout_names)} layouts across {len(metrics)} metrics'
     
     ax.set_title(title, fontsize=14, fontweight='bold', pad=20)
     
@@ -540,7 +492,7 @@ def create_heatmap_plot(dfs: List[pd.DataFrame], table_names: List[str],
         plt.show()
 
 def create_parallel_plot(dfs: List[pd.DataFrame], table_names: List[str], 
-                        metrics: List[str], use_raw: str, output_path: Optional[str] = None,
+                        metrics: List[str], output_path: Optional[str] = None,
                         summary_df: Optional[pd.DataFrame] = None) -> None:
     """Create parallel coordinates plot with performance-based coloring."""
     # Normalize data across all tables
@@ -650,14 +602,12 @@ def create_parallel_plot(dfs: List[pd.DataFrame], table_names: List[str],
     ax.grid(True, alpha=0.3)
     
     # Title and legend
-    score_type = "raw scores" if use_raw else "weighted scores"
-    
     if use_performance_colors:
         title_suffix = f'\nPerformance-ordered visualization: dark red = best, light red = worst'
     else:
         title_suffix = f'\nParallel coordinates across {len(metrics)} scoring methods'
     
-    ax.set_title(f'Keyboard Layout Comparison ({score_type}){title_suffix}', 
+    ax.set_title(f'Keyboard Layout Comparison{title_suffix}', 
                 fontsize=16, fontweight='bold', pad=20)
 
     # Show legend
@@ -698,39 +648,40 @@ def print_summary_stats(dfs: List[pd.DataFrame], table_names: List[str], metrics
         
         # Sample layout names
         if 'layout' in df.columns:
-            sample_layouts = df['layout'].head(3).tolist()
+            sample_layouts = [str(x) for x in df['layout'].head(3).tolist()]
             print(f"  Sample layouts: {', '.join(sample_layouts)}")
         else:
             print("  Warning: No 'layout' column found")
 
 def main():
     parser = argparse.ArgumentParser(
-        description='Create parallel coordinates plots and heatmaps comparing keyboard layouts with performance-based sorting',
+        description='Create parallel coordinates plots and heatmaps comparing keyboard layouts',
         formatter_class=argparse.RawDescriptionHelpFormatter,
     epilog="""
 Examples:
-  # All available metrics (core biomechanical metrics by default)
-  python compare_layouts.py --tables layout_scores.csv
+  # All available metrics (core metrics by default)
+  python compare_layouts.py --tables layouts.csv
   
-  # Core biomechanical metrics only (recommended)
-  python compare_layouts.py --tables layout_scores.csv --metrics engram6 dvorak7 comfort_combo comfort comfort_key
+  # Core metrics only (recommended)
+  python compare_layouts.py --tables layouts.csv --metrics engram6 dvorak7 comfort_combo comfort comfort_key
   
   # Include experimental distance/time metrics (caution: limitations)
-  python compare_layouts.py --tables layout_scores.csv --metrics engram6 comfort efficiency --experimental-metrics
+  python compare_layouts.py --tables layouts.csv --metrics engram6 comfort efficiency --experimental-metrics
   
   # Create summary table with performance sorting
-  python compare_layouts.py --tables layout_scores.csv --metrics engram6 comfort dvorak7 --summary layout_summary.csv
+  python compare_layouts.py --tables layouts.csv --metrics engram6 comfort dvorak7 --summary layout_summary.csv
   
   # Create both plots and summary with performance-based coloring
-  python compare_layouts.py --tables layout_scores.csv --metrics engram6 comfort comfort_key dvorak7 --output comparison.png --summary summary.csv
+  python compare_layouts.py --tables layouts.csv --metrics engram6 comfort comfort_key dvorak7 --output comparison.png --summary summary.csv
   
   # Multiple tables with filtered metrics and summary
   python compare_layouts.py --tables scores1.csv scores2.csv --metrics comfort engram6 --summary combined_summary.csv
 
 Input format:
-  CSV files should be output from: score_layouts.py --csv-output
-  Expected columns: layout_name,scorer,weighted_score,raw_score
-  Optional: layout_string (enables additional layout analysis columns)
+  CSV files from: score_layouts.py --csv
+  Expected format: layout,letters,positions,scorer1,scorer2,...
+  - One row per layout with all scores in columns
+  - Compatible with display_layouts.py
 
 Summary output:
   CSV with columns: index, layout, [letters, positions], average_score, [metric_values]
@@ -743,7 +694,7 @@ Performance-based coloring:
   When --summary is used, parallel plot lines are colored from dark red (best) to light red (worst) based on average performance.
 
 Core vs Experimental Metrics:
-  Core biomechanical metrics (recommended): engram6, comfort, comfort_key, dvorak7
+  Core metrics (recommended): engram6, comfort, comfort_key, dvorak7
   Experimental metrics (use with caution): efficiency*, speed*
   
   Experimental metrics have significant limitations:
@@ -753,11 +704,9 @@ Core vs Experimental Metrics:
     )
     
     parser.add_argument('--tables', nargs='+', required=True,
-                       help='One or more CSV files containing layout scoring data from score_layouts.py')
+                       help='One or more CSV files: layout scoring (score_layouts.py --csv) or optimization results (optimize_moo.py)')
     parser.add_argument('--metrics', nargs='*',
                        help='Specific metrics to include (in order). If not specified, all available metrics are used alphabetically.')
-    parser.add_argument('--use-raw', action='store_true',
-                       help='Use raw scores instead of weighted scores (if available)')
     parser.add_argument('--output', '-o', 
                        help='Output file path (if not specified, plots are shown)')
     parser.add_argument('--summary', 
@@ -778,7 +727,7 @@ Core vs Experimental Metrics:
     table_names = []
     
     for table_path in args.tables:
-        df = load_and_pivot_data(table_path, args.use_raw, args.verbose)
+        df = load_layout_data(table_path, args.verbose)
         
         if len(df) == 0:
             if args.verbose:
@@ -818,16 +767,14 @@ Core vs Experimental Metrics:
             print(f"Tables: {len(dfs)}")
             print(f"Total layouts: {sum(len(df) for df in dfs)}")
             print(f"Metrics to plot: {len(metrics)} - {', '.join(metrics)}")
-            score_type = "raw" if args.use_raw else "weighted"
-            print(f"Using {score_type} scores")
             if summary_df is not None and len(summary_df) > 0:
                 print(f"Using performance-based coloring for parallel plot")
         
         # Generate parallel coordinates plot with optional performance-based coloring
-        create_parallel_plot(dfs, table_names, metrics, args.use_raw, args.output, summary_df)
+        create_parallel_plot(dfs, table_names, metrics, args.output, summary_df)
 
-        # Generate heatmap plot (unchanged)
-        create_heatmap_plot(dfs, table_names, metrics, args.use_raw, args.output)
+        # Generate heatmap plot
+        create_heatmap_plot(dfs, table_names, metrics, args.output)
 
 if __name__ == "__main__":
     main()
