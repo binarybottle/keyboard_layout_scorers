@@ -3,8 +3,8 @@
 Keyboard Layout Scorer using precomputed score table.
 
 A comprehensive tool for evaluating keyboard layouts using frequency-weighted scoring.
-Core scoring methods include engram6, dvorak7, comfort_combo, comfort, and comfort_key.
-Now includes 3-key (trigram) Engram-6 scoring in addition to 2-key (bigram) scoring.
+Core scoring methods include engram4, dvorak7, comfort_combo, comfort, and comfort_key.
+Now includes 3-key (trigram) Engram-4 scoring in addition to 2-key (bigram) scoring.
 
 (Note: experimental distance/efficiency and time/speed metrics are disabled by default.
 Distance metrics oversimplify biomechanical complexity (ignoring lateral stretching,
@@ -13,14 +13,14 @@ Use --experimental-metrics to enable them.)
 
 Setup:
 1. Generate individual score files (keypair_*_scores.csv) using scoring scripts in prep/
-2. Generate 3-key score files using: python prep_keytriple_engram6_scores.py
+2. Generate 3-key score files using: python prep_keytriple_engram4of4_scores.py
 3. Run: python prep_scoring_tables.py --input-dir tables/
    This creates: tables/scores_2key_detailed.csv and tables/key_scores.csv
 4. Run this script to score layouts using all available methods
 
 Default behavior:
 - Score table: tables/scores_2key_detailed.csv (created by prep_scoring_tables.py)
-- 3-key scores: tables/engram_3key_scores*.csv (created by prep_keytriple_engram6_scores.py)
+- 3-key scores: tables/engram_3key_scores*.csv (created by prep_keytriple_engram4of4_scores.py)
 - Key scores: tables/key_scores.csv (created by prep_scoring_tables.py)  
 - Frequency data: input/english-letter-pair-frequencies-google-ngrams.csv
 - Letter frequencies: input/english-letter-frequencies-google-ngrams.csv
@@ -29,16 +29,15 @@ Default behavior:
 
 Scoring ranges:
 - Comfort scores: Normalized 0-1 (higher = more comfortable)
-- Engram-6 scores: 0-6 raw (sum of 6 components), normalized 0-1
-- Engram-6 3-key scores: 0-6 raw (sum of 6 components), normalized 0-1  
+- Engram-4 scores: 0-3 raw (sum of 3 components), normalized 0-1
+- Engram-4 3-key scores, normalized 0-1  
 - Dvorak-7 scores: 0-7 raw (sum of 7 components), normalized 0-1  
 - Distance→efficiency: Inverted distance scores, normalized 0-1
 - Time→speed: Inverted time scores, normalized 0-1
 
 Core metrics (default):
-- engram6 (based on Typing Preference Study - 2-key bigrams)
-- engram6_3key (based on Typing Preference Study - 3-key trigrams)
-- engram6_3key_* (individual 3-key criteria: strength, stretch, curl, rows, columns, order)
+- engram4 (bigram scores)
+- engram4_3key_* (individual 3-key criteria: order)
 - dvorak7 (based on Dvorak's 7 typing principles)
 - comfort_combo (composite comfort model)
 - comfort_key (frequency-weighted key comfort)
@@ -68,10 +67,10 @@ Usage:
     python score_layouts.py --compare qwerty:"qwertyuiop" dvorak:"',.pyfgcrl" --experimental-metrics
     
     # Mix core and experimental metrics
-    python score_layouts.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --scorers engram6,comfort,efficiency --experimental-metrics
+    python score_layouts.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --scorers engram4,comfort,efficiency --experimental-metrics
     
-    # Use only 3-key Engram-6 scoring
-    python score_layouts.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --scorers engram6_3key
+    # Use only 3-key Engram-4 scoring
+    python score_layouts.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --scorers engram4_3key
     
     # Verbose output (shows both weighted and raw scores)
     python score_layouts.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --verbose
@@ -84,7 +83,7 @@ Features:
 - Fallback to raw scoring if frequency file missing
 - Support for all scoring methods in the score table
 - Dynamic comfort_combo and comfort_key scoring (requires prep_scoring_tables.py output)
-- 3-key Engram-6 scoring with individual criterion breakdown
+- 3-key Engram-4 scoring with individual criterion breakdown
 """
 
 import sys
@@ -168,13 +167,7 @@ class LayoutScorer:
         
         # Define 3-key score files
         score_files = {
-            'engram6_3key': 'engram_3key_scores.csv',
-            'engram6_3key_strength': 'engram_3key_scores_strength.csv',
-            'engram6_3key_stretch': 'engram_3key_scores_stretch.csv',
-            'engram6_3key_curl': 'engram_3key_scores_curl.csv',
-            'engram6_3key_rows': 'engram_3key_scores_rows.csv',
-            'engram6_3key_columns': 'engram_3key_scores_columns.csv',
-            'engram6_3key_order': 'engram_3key_scores_order.csv',
+            'engram4_3key_order': 'engram_3key_scores_order.csv',
         }
         
         for score_name, filename in score_files.items():
@@ -201,16 +194,16 @@ class LayoutScorer:
                         
                         # Find the score column
                         score_col = None
-                        if score_name == 'engram6_3key':
-                            score_col = 'engram6_score'
+                        if score_name == 'engram4_3key':
+                            score_col = 'engram4_score'
                         else:
-                            criterion = score_name.replace('engram6_3key_', '')
-                            score_col = f'engram6_{criterion}'
+                            criterion = score_name.replace('engram4_3key_', '')
+                            score_col = f'engram4_{criterion}'
                         
                         if score_col in df_indexed.columns:
-                            # Normalize scores (Engram-6 ranges from 0-6, individual criteria 0-1)
+                            # Normalize scores (Engram-4 ranges from 0-6, individual criteria 0-1)
                             scores = df_indexed[score_col].values
-                            if score_name == 'engram6_3key':
+                            if score_name == 'engram4_3key':
                                 # Overall score: normalize 0-6 to 0-1
                                 normalized_scores = scores / 6.0
                             else:
@@ -415,32 +408,26 @@ class LayoutScorer:
                 ordered_scorers.append(scorer)
         
         # 2. Core composite scores (2-key)
-        core_2key_composites = ['comfort', 'engram6', 'dvorak7']
+        core_2key_composites = ['comfort', 'engram4', 'dvorak7']
         for scorer in core_2key_composites:
             if scorer in available_scorers:
                 ordered_scorers.append(scorer)
         
         # 3. 3-key composite scores
-        key_3key_composites = ['engram6_3key']
+        key_3key_composites = ['engram4_3key']
         for scorer in key_3key_composites:
             if scorer in available_scorers:
                 ordered_scorers.append(scorer)
         
-        # 4. 2-key Engram-6 component scores (in logical order)
-        engram6_2key_components = [
-            'engram6_strength', 'engram6_stretch', 'engram6_curl', 
-            'engram6_rows', 'engram6_columns', 'engram6_order'
-        ]
-        for scorer in engram6_2key_components:
+        # 4. 2-key Engram-4 component scores (in logical order)
+        engram4_2key_components = ['engram4_position', 'engram4_rows', 'engram4_columns']
+        for scorer in engram4_2key_components:
             if scorer in available_scorers:
                 ordered_scorers.append(scorer)
         
-        # 5. 3-key Engram-6 component scores (in logical order)
-        engram6_3key_components = [
-            'engram6_3key_strength', 'engram6_3key_stretch', 'engram6_3key_curl',
-            'engram6_3key_rows', 'engram6_3key_columns', 'engram6_3key_order'
-        ]
-        for scorer in engram6_3key_components:
+        # 5. 3-key Engram-4 component scores (in logical order)
+        engram4_3key_components = ['engram4_3key_order']
+        for scorer in engram4_3key_components:
             if scorer in available_scorers:
                 ordered_scorers.append(scorer)
         
@@ -618,11 +605,11 @@ class LayoutScorer:
         score_table = self.score_3key_tables[scorer]
         
         # Determine score column
-        if scorer == 'engram6_3key':
-            score_col = 'engram6_score_normalized'
+        if scorer == 'engram4_3key':
+            score_col = 'engram4_score_normalized'
         else:
-            criterion = scorer.replace('engram6_3key_', '')
-            score_col = f'engram6_{criterion}_normalized'
+            criterion = scorer.replace('engram4_3key_', '')
+            score_col = f'engram4_{criterion}_normalized'
         
         if score_col not in score_table.columns:
             raise ValueError(f"Score column '{score_col}' not found in 3-key table")
@@ -715,7 +702,7 @@ class LayoutScorer:
         self._validate_layout_mapping(layout_mapping)
         
         # Check if this is a 3-key scorer
-        if scorer.startswith('engram6_3key'):
+        if scorer.startswith('engram4_3key'):
             return self._score_layout_3key(layout_mapping, scorer)
         
         if scorer == 'comfort_key':
@@ -1185,7 +1172,7 @@ Examples:
 
   # Basic usage (core biomechanical metrics only - recommended)
   # Note: Run 'python prep_scoring_tables.py --input-dir tables/' first to create required tables
-  # Note: Run 'python prep_keytriple_engram6_scores.py' to create 3-key Engram-6 tables
+  # Note: Run 'python prep_keytriple_engram4_scores.py' to create 3-key Engram-4 tables
   python score_layouts.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ"
   
   # Include experimental distance/time metrics (caution: limitations noted below)
@@ -1207,10 +1194,10 @@ Examples:
   python score_layouts.py --compare qwerty:"qwertyuiop" dvorak:"',.pyfgcrl" --scorer efficiency --experimental-metrics
   
   # Mix core and experimental metrics including 3-key
-  python score_layouts.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --scorers comfort_combo,comfort,engram6_3key,efficiency --experimental-metrics
+  python score_layouts.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --scorers comfort_combo,comfort,efficiency --experimental-metrics
   
-  # Use only 3-key Engram-6 scoring
-  python score_layouts.py --compare qwerty:"qwertyuiop" dvorak:"',.pyfgcrl" --scorers engram6_3key,engram6_3key_strength,engram6_3key_curl
+  # Use only 3-key Engram-4 scoring
+  python score_layouts.py --compare qwerty:"qwertyuiop" dvorak:"',.pyfgcrl" --scorers engram4_3key_order
   
   # Use custom score table and frequency file
   python score_layouts.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --score-table custom_scores.csv --frequency-file custom_freqs.csv
@@ -1220,7 +1207,7 @@ Examples:
 
 Default behavior:
 - Uses tables/scores_2key_detailed.csv for key-pair scoring data (created by prep_scoring_tables.py)
-- Uses tables/engram_3key_scores*.csv for 3-key Engram-6 scoring data (created by prep_keytriple_engram6_scores.py)
+- Uses tables/engram_3key_scores*.csv for 3-key Engram-4 scoring data (created by prep_keytriple_engram4of4_scores.py)
 - Uses tables/key_scores.csv for individual key comfort scores (created by prep_scoring_tables.py)
 - Uses input/english-letter-pair-frequencies-google-ngrams.csv for frequency weighting (if it exists)
 - Uses input/english-letter-triple-frequencies-google-ngrams.csv for trigram frequency weighting (if it exists)
@@ -1233,7 +1220,7 @@ Default behavior:
 
 CSV Format:
 The default CSV output format is:
-layout,letters,positions,engram6,engram6_3key,dvorak7,comfort,comfort_key,comfort_combo
+layout,letters,positions,engram4,engram4_3key,dvorak7,comfort,comfort_key,comfort_combo
 QWERTY,qwertyuiopasdfghjkl;zxcvbnm\,./,QWERTYUIOPASDFGHJKL;ZXCVBNM\,./',0.645,0.712,0.723,0.612,0.678,0.651
 
 This format is compatible with:
@@ -1243,6 +1230,8 @@ This format is compatible with:
 
 Experimental Metrics Warning:
 Distance/efficiency and time/speed metrics are disabled by default due to significant limitations:
+Distance scores are automatically inverted (1-score) and renamed to efficiency.
+Time scores are automatically inverted (1-score) and renamed to speed (experimental only).
 
 1. Distance/efficiency metrics oversimplify biomechanics:
    - Ignore lateral finger stretching vs. comfortable curling
@@ -1259,22 +1248,8 @@ Distance/efficiency and time/speed metrics are disabled by default due to signif
 Use --experimental-metrics to enable these metrics with full awareness of their limitations.
 
 Available scoring methods:
-Core (recommended): engram6, engram6_3key, engram6_3key_*, dvorak7, comfort_combo, comfort, comfort_key
+Core (recommended): engram4, engram4_3key, engram4_3key_*, dvorak7, comfort_combo, comfort, comfort_key
 Experimental (--experimental-metrics): distance→efficiency, time→speed
-
-3-key Engram-6 scoring:
-- engram6_3key: Overall 3-key Engram-6 score (sum of 6 criteria)
-- engram6_3key_strength: Finger strength criterion for trigrams
-- engram6_3key_stretch: Finger stretch criterion for trigrams
-- engram6_3key_curl: Finger curl criterion for trigrams
-- engram6_3key_rows: Row span criterion for trigrams
-- engram6_3key_columns: Column span criterion for trigrams
-- engram6_3key_order: Finger order criterion for trigrams
-
-Distance scores are automatically inverted (1-score) and renamed to efficiency.
-Time scores are automatically inverted (1-score) and renamed to speed (experimental only).
-comfort_combo and comfort_key scores are computed dynamically and require letter frequencies and key comfort scores.
-3-key scores require trigram frequency data for optimal weighting, but fall back to raw scoring if unavailable.
         """
     )
     

@@ -1,0 +1,52 @@
+> poetry run python3 prep_keypair_engram3of4_scores.py --input-tables ../tables
+Prepare Engram key-pair scores (overall + individual criteria)
+======================================================================
+QWERTY keys (32): ',./;ABCDEFGHIJKLMNOPQRSTUVWXYZ[
+Total key-pairs to compute: 1024
+
+Computing Engram scores for 1024 key-pairs...
+  Progress: 0/1024 (0.0%)
+  Progress: 100/1024 (9.8%)
+  Progress: 200/1024 (19.5%)
+  Progress: 300/1024 (29.3%)
+  Progress: 400/1024 (39.1%)
+  Progress: 500/1024 (48.8%)
+  Progress: 600/1024 (58.6%)
+  Progress: 700/1024 (68.4%)
+  Progress: 800/1024 (78.1%)
+  Progress: 900/1024 (87.9%)
+  Progress: 1000/1024 (97.7%)
+✅ Saved overall scores to: ../tables/engram_2key_scores.csv
+✅ Saved position scores to: ../tables/engram_2key_scores_position.csv
+✅ Saved rows scores to: ../tables/engram_2key_scores_rows.csv
+✅ Saved columns scores to: ../tables/engram_2key_scores_columns.csv
+
+📊 Validation Results:
+   Total key-pairs: 1024
+   Score range: 0.0000 to 3.0000
+   Average score: 1.6465
+   Valid range (0-ncriteria): ✅
+
+🧮 Mathematical Accuracy Check:
+   Accuracy check: 20/20 samples correct
+
+📁 Individual Criterion Files:
+   ✅ position: 1024 pairs
+   ✅ rows: 1024 pairs
+   ✅ columns: 1024 pairs
+
+🔍 Criteria-Specific Validation:
+   Same key repetition: ✅ (3/3)
+   Worst cases: ✅ (3/3)
+   Alternating hands: ❌ (0/3)
+   Perfect: 2 pairs (0.2%)
+
+✅ Validation complete!
+
+🏆 Perfect Score Verification (2 pairs):
+   DF: ✅
+   FD: ✅
+
+✅ Engram key-pair score generation complete!
+   Overall scores: ../tables/engram_2key_scores.csv
+   Individual criteria: ../tables/engram_2key_scores_*.csv
