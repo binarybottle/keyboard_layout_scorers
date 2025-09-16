@@ -65,7 +65,7 @@ def get_universal_normalization_ranges():
         'engram_rows': (0, 1),      
         'engram_columns': (0, 1),          
         'engram_order': (0, 1),          
-        'engram_side': (0, 1),          
+        'engram_outside': (0, 1),          
 
         # Dvorak-7 scores and components
         'dvorak7_score': (0, 7),          # Overall Dvorak-7 score range (sum of 7 components)
@@ -466,7 +466,7 @@ def create_unified_score_tables(input_dir: str, verbose: bool = False) -> Tuple[
         'engram_rows': 'engram_2key_scores_rows.csv',
         'engram_columns': 'engram_2key_scores_columns.csv',
         'engram_order': 'engram_2key_scores_order.csv',
-        'engram_side': 'engram_2key_scores_side.csv',
+        'engram_outside': 'engram_2key_scores_outside.csv',
         # Individual Dvorak-7 criteria
         'dvorak7_distribution': 'keypair_dvorak7_distribution_scores.csv',
         'dvorak7_strength': 'keypair_dvorak7_strength_scores.csv',

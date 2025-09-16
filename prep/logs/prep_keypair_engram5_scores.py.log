@@ -21,12 +21,12 @@ Computing Engram scores for 1024 key-pairs...
 ✅ Saved rows scores to: ../tables/engram_2key_scores_rows.csv
 ✅ Saved columns scores to: ../tables/engram_2key_scores_columns.csv
 ✅ Saved order scores to: ../tables/engram_2key_scores_order.csv
-✅ Saved side scores to: ../tables/engram_2key_scores_side.csv
+✅ Saved outside scores to: ../tables/engram_2key_scores_outside.csv
 
 📊 Validation Results:
    Total key-pairs: 1024
    Score range: 1.2157 to 4.9350
-   Average score: 3.4578
+   Average score: 3.4392
    Valid range (0-ncriteria): ✅
 
 🧮 Mathematical Accuracy Check:
@@ -37,7 +37,7 @@ Computing Engram scores for 1024 key-pairs...
    ✅ rows: 1024 pairs
    ✅ columns: 1024 pairs
    ✅ order: 1024 pairs
-   ✅ side: 1024 pairs
+   ✅ outside: 1024 pairs
 
 🔍 Criteria-Specific Validation:
    Same key repetition: ✅ (3/3)
@@ -52,4 +52,3 @@ Computing Engram scores for 1024 key-pairs...
 ✅ Engram key-pair score generation complete!
    Overall scores: ../tables/engram_2key_scores.csv
    Individual criteria: ../tables/engram_2key_scores_*.csv
-

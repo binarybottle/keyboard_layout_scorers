@@ -12,9 +12,11 @@ their corresponding scores.
 
 Main output files:
     - ../tables/engram_2key_scores.csv - Overall average score
-    - ../tables/engram_2key_scores_position.csv
+    - ../tables/engram_2key_scores_keys.csv
     - ../tables/engram_2key_scores_rows.csv
     - ../tables/engram_2key_scores_columns.csv
+    - ../tables/engram_2key_scores_order.csv
+    - ../tables/engram_2key_scores_outside.csv
 
 This precomputation allows the main scorer to simply look up scores rather
 than computing them on-demand, making layout scoring much faster.
@@ -63,6 +65,10 @@ QWERTY_LAYOUT = {
     "'": (2, 0, 1, 'R', 0), '[': (1, 0, 1, 'R', 0),
 }
 
+qwerty_home_blocks = ['Q', 'W', 'E', 'R', 'U', 'I', 'O', 'P', 
+                      'A', 'S', 'D', 'F', 'J', 'K', 'L', ';', 
+                      'Z', 'X', 'C', 'V', 'M', ',', '.', '/']
+
 # Define finger column assignments (1=pinky, 4=index)
 FINGER_COLUMNS = {
     'L': {
@@ -83,7 +89,7 @@ criteria = ['keys',
             'rows', 
             'columns',
             'order',
-            'side'] 
+            'outside'] 
 ncriteria = len(criteria)
 
 def get_key_info(key: str):
@@ -207,11 +213,10 @@ def score_bigram(bigram: str) -> Dict[str, float]:
     #    1.000: 0 column 5 keys
     #    0.846: 1 column 5 key
     #    0.716: 2 column 5 keys
-    column_5_keys = {'T', 'G', 'B', 'Y', 'H', 'N'}
-    scores['side'] = 1.0 
+    scores['outside'] = 1.0 
     for key in [char1, char2]: 
-        if key.upper() in column_5_keys: 
-            scores['side'] *= 0.846    # Apply 15.4% penalty each time
+        if key.upper() not in qwerty_home_blocks: 
+            scores['outside'] *= 0.846    # Apply 15.4% penalty each time
 
     return scores
 
