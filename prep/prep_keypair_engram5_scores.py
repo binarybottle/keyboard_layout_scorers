@@ -23,9 +23,11 @@ than computing them on-demand, making layout scoring much faster.
 
 Scoring criteria for typing bigrams come from the Typing Preference Study:
 
-    1.  Finger position
-    2.  Row span (same row, reaches, hurdles)
-    3.  Column span (same, adjacent, remote columns)
+    1. Finger positions (key preferences)
+    2. Row separation (same row, reaches, hurdles)
+    3. Same-row column separation (adjacent, remote columns)
+    4. Same-row finger order (inward roll toward the thumb vs. outward roll)
+    5. Side reach (lateral stretch outside finger-columns)
 
 Each criterion score for a layout is the average score across all bigrams.
 The overall Engram score is simply the average of the criterion scores.
