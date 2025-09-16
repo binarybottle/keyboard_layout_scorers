@@ -106,11 +106,11 @@ def score_trigram(trigram: str) -> Dict[str, float]:
     #----------------------------------------------------------------------------------
     # Engram scoring criteria
     #----------------------------------------------------------------------------------    
-    # 1. Finger order: Finger sequence toward the thumb
+    # 1. Finger sequence
     #----------------------------------------------------------------------------------    
-    # 1. Finger order: Finger sequence toward the thumb
+    # 1. Finger sequence
     #    1.0: inward roll
-    #    0.5: outward roll
+    #    1.0: outward roll
     #    0.0: mixed roll, or same finger
     # Initialize with default value to ensure key always exists
     scores['order'] = 0.0  # Default for mixed patterns or unhandled cases
@@ -122,20 +122,19 @@ def score_trigram(trigram: str) -> Dict[str, float]:
         if finger1 < finger2 < finger3:
             scores['order'] = 1.0      # inward roll
         elif finger1 > finger2 > finger3:
-            scores['order'] = 0.5      # outward roll
-        # else: keep default 0.0 for mixed patterns
+            scores['order'] = 1.0      # outward roll
+        elif char1 == char3:
+            scores['order'] = 1.0      # rock back to same key
     elif hand1 == hand2 and hand2 != hand3:
         if finger1 < finger2:
             scores['order'] = 1.0      # inward roll
         elif finger1 > finger2:
-            scores['order'] = 0.5      # outward roll
-        # else: keep default 0.0 for same finger
+            scores['order'] = 1.0      # outward roll
     elif hand1 != hand2 and hand2 == hand3:
         if finger2 < finger3:
             scores['order'] = 1.0      # inward roll
         elif finger2 > finger3:
-            scores['order'] = 0.5      # outward roll
-        # else: keep default 0.0 for same finger
+            scores['order'] = 1.0      # outward roll
 
     return scores
 

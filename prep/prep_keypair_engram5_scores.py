@@ -79,17 +79,11 @@ FINGER_COLUMNS = {
     }
 }
 
-# Define key preferences
-# from Bigram Typing Preference Study same-key bigram comparision effect sizes & CIs:
-key_preferences_level1 = ['F', 'D']
-key_preferences_level2 = ['E', 'S']
-key_preferences_level3 = ['V', 'R']
-key_preferences_level4 = ['W', 'A', 'C']
-key_preferences_level5 = ['Z', 'Q', 'X']
-
-criteria = ['position', 
+criteria = ['keys', 
             'rows', 
-            'columns'] 
+            'columns',
+            'order',
+            'side'] 
 ncriteria = len(criteria)
 
 def get_key_info(key: str):
@@ -121,69 +115,103 @@ def score_bigram(bigram: str) -> Dict[str, float]:
     row1, column1, finger1, hand1, homekey1 = key_info1
     row2, column2, finger2, hand2, homekey2 = key_info2
 
+    row_gap = abs(row1 - row2)
+    column_gap = abs(column1 - column2)
+    
     in_column1 = is_finger_in_column(char1, finger1, hand1)
     in_column2 = is_finger_in_column(char2, finger2, hand2)
     
     scores = {}
 
     #----------------------------------------------------------------------------------
-    # Engram's 3 bigram scoring criteria
+    # Engram's 5 bigram scoring criteria
     #----------------------------------------------------------------------------------    
-    #1.  Finger position
-    #2.  Row span (same row, reaches, hurdles)
-    #3.  Column span (same, adjacent, remote columns)
+    # 1. Finger positions (key preferences)
+    # 2. Row separation (same row, reaches, hurdles)
+    # 3. Same-row column separation (adjacent, remote columns)
+    # 4. Same-row finger order (inward roll toward the thumb vs. outward roll)
+    # 5. Side reach (lateral stretch outside finger-columns)
     #----------------------------------------------------------------------------------    
    
-    # 1. Finger position: Typing in preferred positions/keys
+    # 1. Finger positions: Typing in preferred positions/keys 
+    #    (empirical Bradley-Terry tiers)
+    tier_values = {
+        'F': 1.000,
+        'D': 0.870,
+        'E': 0.646,
+        'S': 0.646,
+        'V': 0.568,
+        'R': 0.568,
+        'W': 0.472,
+        'A': 0.410,
+        'C': 0.410,
+        'Z': 0.137,
+        'Q': 0.137,
+        'X': 0.137
+    }
+
     key_score = 0
     for key in [char1, char2]:
-        if   key in key_preferences_level1:
-            key_score += 1.00
-        elif key in key_preferences_level2:
-            key_score += 0.75
-        elif key in key_preferences_level3:
-            key_score += 0.50
-        elif key in key_preferences_level4:
-            key_score += 0.25
-        elif key in key_preferences_level5:
-            key_score += 0.00
-    scores['position'] = key_score / 2.0  # Average over 2 keys
+        key_score += tier_values.get(key, 0)  # Get tier value or 0 if not found
 
-    # 2. Row span: Same row, reaches, and hurdles 
-    #    1.0: 2 keys in the same row (or 2 hands)
-    #    0.5: 2 keys in adjacent rows (reach)
-    #    0.0: 2 keys straddling home row (hurdle)
+    scores['keys'] = key_score / 2.0  # Average over 2 keys
+
+    # 2. Row separation: same row, reaches, and hurdles 
+    #    (empirical meta-analysis of left-hand bigrams) 
+    #    1.000: 2 keys in the same row
+    #    0.588: 2 keys in adjacent rows (reach)
+    #    0.000: 2 keys straddling home row (hurdle)
     if hand1 != hand2:
-        scores['rows'] = 1.0          # opposite hands always score well
+        scores['rows'] = 1.0        # Opposite hands
     else:
-        if row1 == row2:
-            scores['rows'] = 1.0      # 2 keys in the same row
-        elif abs(row1 - row2) == 1:
-            scores['rows'] = 0.5      # 2 keys in adjacent rows (reach)
+        if row_gap == 0:
+            scores['rows'] = 1.0    # Same-row
+        elif row_gap == 1:
+            scores['rows'] = 0.588  # Adjacent row (reach)
         else:
-            scores['rows'] = 0.0      # 2 keys straddling home row (hurdle)
+            scores['rows'] = 0.0    # Hurdle
 
-    # 3. Column span: Adjacent columns in the same row and other separations
-    #    1.00: adjacent columns in the same row (or 2 hands)
-    #    0.75: adjacent columns in adjacent rows (reach)
-    #    0.50: other
-    #    0.25: adjacent column with 2-row separation (hurdle)
-    #    0.00: same finger
+    # 3. Column span: Adjacent columns in the same row and other separations 
+    #    (empirical meta-analysis of left-hand bigrams)
+    #    1.000: adjacent columns in the same row (or 2 hands)
+    #    0.811: remote columns in the same row
+    #    0.500: other
     if hand1 != hand2:
-        scores['columns'] = 1.0          # opposite hands
+        scores['columns'] = 1.0    # High score for opposite hands
+    elif column_gap == 1 and row_gap == 0:
+        scores['columns'] = 1.0    # Adjacent same-row (baseline)
+    elif column_gap >= 2 and row_gap == 0:
+        scores['columns'] = 0.811    # Distant same-row (empirical penalty)
+    else:
+        scores['columns'] = 0.5    # Neutral score for everything else
+
+    # 4. Same-row finger order (inward roll toward the thumb vs. outward roll)
+    #    (empirical analysis of left-hand bigrams)
+    #    1.000: same-row inward roll (or 2 hands)
+    #    0.779: same-row outward roll
+    #    0.500: other
+    #    0.000: same finger
+    scores['order'] = 0.5    # Neutral score by default   
+    if hand1 != hand2:
+        scores['order'] = 1.0    # Opposite hands
     elif finger1 == finger2:
-        scores['columns'] = 0.0          # same finger
-    else:
-        column_gap = abs(column1 - column2)
-        row_gap = abs(row1 - row2)
-        if   (column_gap == 1 and row_gap == 0):
-            scores['columns'] = 1.00     # adjacent column, same row
-        elif (column_gap == 1 and row_gap == 1):
-            scores['columns'] = 0.75     # adjacent column, adjacent row (reach)
-        elif (column_gap == 1 and row_gap == 2):
-            scores['columns'] = 0.25     # adjacent column, 2-row separation (hurdle)
-        else:
-            scores['columns'] = 0.50     # other
+        scores['order'] = 0.0    # Same finger
+    elif (hand1 == hand2 and finger1 != finger2 and row_gap == 0):
+        if finger2 > finger1:    # Same-row inward roll (pinky → index)
+            scores['order'] = 1.0
+        elif finger2 < finger1:    # Same-row outward roll (index → pinky)
+            scores['order'] = 0.779    # 100 - 22.1% effect penalty
+
+    # 5. Side reach (lateral stretch outside finger-columns)
+    #    (empirical analysis of left-hand bigrams)
+    #    1.000: 0 column 5 keys
+    #    0.846: 1 column 5 key
+    #    0.716: 2 column 5 keys
+    column_5_keys = {'T', 'G', 'B', 'Y', 'H', 'N'}
+    scores['side'] = 1.0 
+    for key in [char1, char2]: 
+        if key.upper() in column_5_keys: 
+            scores['side'] *= 0.846    # Apply 15.4% penalty each time
 
     return scores
 

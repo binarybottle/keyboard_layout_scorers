@@ -60,10 +60,12 @@ def get_universal_normalization_ranges():
         'comfort_combo_score': (0, 100), # Assuming 0-100 scale
 
         # Engram scores and components
-        'engram_score': (0, 3),         # Overall Engram score range (sum of 3 components)
-        'engram_position': (0, 1),       
+        'engram_score': (0, 5),         # Overall Engram score range (sum of 5 components)
+        'engram_keys': (0, 1),       
         'engram_rows': (0, 1),      
         'engram_columns': (0, 1),          
+        'engram_order': (0, 1),          
+        'engram_side': (0, 1),          
 
         # Dvorak-7 scores and components
         'dvorak7_score': (0, 7),          # Overall Dvorak-7 score range (sum of 7 components)
@@ -460,9 +462,11 @@ def create_unified_score_tables(input_dir: str, verbose: bool = False) -> Tuple[
         'engram_score': 'engram_2key_scores.csv',
         'comfort_combo_score': 'keypair_comfort_combo_scores.csv',
         # Individual Engram criteria (fixed filenames)
-        'engram_position': 'engram_2key_scores_position.csv',
+        'engram_keys': 'engram_2key_scores_keys.csv',
         'engram_rows': 'engram_2key_scores_rows.csv',
         'engram_columns': 'engram_2key_scores_columns.csv',
+        'engram_order': 'engram_2key_scores_order.csv',
+        'engram_side': 'engram_2key_scores_side.csv',
         # Individual Dvorak-7 criteria
         'dvorak7_distribution': 'keypair_dvorak7_distribution_scores.csv',
         'dvorak7_strength': 'keypair_dvorak7_strength_scores.csv',
@@ -768,7 +772,7 @@ Normalization:
     - Time components: 200-400ms (setup), 100-450ms (interval), 200-400ms (return), 570-1250ms (total)
     - Comfort scores: -1.5 to 0.0 range
     - Comfort-combo scores: 0-100 range
-    - Engram scores: 0-4 (overall), 0-1 (components)  
+    - Engram scores: 0-5 (overall), 0-1 (components)  
     - Dvorak-7 scores: 0-7 (overall), 0-1 (components)
     
     Values outside universal ranges are clipped. This ensures normalized scores
