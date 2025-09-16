@@ -62,7 +62,7 @@ QWERTY_LAYOUT = {
     'N': (3, 5, 4, 'R', 0), 'M': (3, 4, 4, 'R', 0), ',': (3, 3, 3, 'R', 0), '.': (3, 2, 2, 'R', 0), '/': (3, 1, 1, 'R', 0),
 
     # Additional common keys
-    "'": (2, 0, 1, 'R', 0), '[': (1, 0, 1, 'R', 0),
+    '[': (1, 0, 1, 'R', 0), "'": (2, 0, 1, 'R', 0), 
 }
 
 qwerty_home_blocks = ['Q', 'W', 'E', 'R', 'U', 'I', 'O', 'P', 
@@ -124,8 +124,8 @@ def score_bigram(bigram: str) -> Dict[str, float]:
     row_gap = abs(row1 - row2)
     column_gap = abs(column1 - column2)
     
-    in_column1 = is_finger_in_column(char1, finger1, hand1)
-    in_column2 = is_finger_in_column(char2, finger2, hand2)
+    inside_columns1 = is_finger_in_column(char1, finger1, hand1)
+    inside_columns2 = is_finger_in_column(char2, finger2, hand2)
     
     scores = {}
 
@@ -182,14 +182,14 @@ def score_bigram(bigram: str) -> Dict[str, float]:
     #    1.000: adjacent columns in the same row (or 2 hands)
     #    0.811: remote columns in the same row
     #    0.500: other
+    scores['columns'] = 0.5    # Neutral score by default
     if hand1 != hand2:
         scores['columns'] = 1.0    # High score for opposite hands
-    elif column_gap == 1 and row_gap == 0:
-        scores['columns'] = 1.0    # Adjacent same-row (baseline)
-    elif column_gap >= 2 and row_gap == 0:
-        scores['columns'] = 0.811    # Distant same-row (empirical penalty)
-    else:
-        scores['columns'] = 0.5    # Neutral score for everything else
+    elif finger1 != finger2:
+        if column_gap == 1 and row_gap == 0:
+            scores['columns'] = 1.0    # Adjacent same-row (baseline)
+        elif column_gap >= 2 and row_gap == 0:
+            scores['columns'] = 0.811    # Distant same-row (empirical penalty)
 
     # 4. Same-row finger order (inward roll toward the thumb vs. outward roll)
     #    (empirical analysis of left-hand bigrams)
@@ -210,13 +210,19 @@ def score_bigram(bigram: str) -> Dict[str, float]:
 
     # 5. Side reach (lateral stretch outside finger-columns)
     #    (empirical analysis of left-hand bigrams)
-    #    1.000: 0 column 5 keys
-    #    0.846: 1 column 5 key
-    #    0.716: 2 column 5 keys
-    scores['outside'] = 1.0 
-    for key in [char1, char2]: 
-        if key.upper() not in qwerty_home_blocks: 
-            scores['outside'] *= 0.846    # Apply 15.4% penalty each time
+    #    1.000: 0 outside keys
+    #    0.846: 1 outside key
+    #    0.716: 2 outside keys
+    
+    # Convert to set for O(1) lookup performance
+    qwerty_home_blocks_set = set(qwerty_home_blocks)
+
+    # Count how many keys are outside the home blocks
+    outside_count = sum(1 for key in [char1, char2] if key not in qwerty_home_blocks_set)
+
+    # Apply score based on count
+    outside_scores = {0: 1.0, 1: 0.846, 2: 0.716}
+    scores['outside'] = outside_scores[outside_count]
 
     return scores
 
