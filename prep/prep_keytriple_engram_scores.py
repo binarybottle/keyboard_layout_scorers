@@ -13,6 +13,21 @@ finger sequence toward the thumb in the same row.
 This precomputation allows the main scorer to simply look up scores rather
 than computing them on-demand, making layout scoring much faster.
 
+Scoring criteria for typing trigrams mirror those of bigrams:
+
+    1. Row separation (same row, reaches, hurdles)
+    2. Same-row column separation (adjacent, remote columns)
+    3. Finger order (inward roll toward the thumb vs. outward roll)
+
+Each criterion score for a layout is the average score across all trigrams.
+
+Addresses finger mechanics generally considered problematic:
+ - same-finger bigrams: penalized by bigram scoring criterion #4
+ - same-finger skipgrams: penalized by #
+ - redirects:             penalized by #3
+ - scissors: row separation penalized by bigram scoring criterion #2-4
+ - lateral stretches: penalized by bigram scoring criterion #5
+
 Usage:
     python prep_keytriple_engram4of4_scores.py
 
@@ -104,26 +119,24 @@ def score_trigram(trigram: str) -> Dict[str, float]:
     scores = {}
 
     #----------------------------------------------------------------------------------
-    # Engram scoring criteria
+    # Engram's trigram scoring criteria
+    # same-finger bigrams & skipgrams, scissors, redirects, lateral stretches
     #----------------------------------------------------------------------------------    
-    # 1. Finger sequence
+    # 1. Finger sequence/switchbacks (type in one direction vs. switch to the opposite)
     #----------------------------------------------------------------------------------    
     # 1. Finger sequence
     #    1.0: inward roll
     #    1.0: outward roll
-    #    0.0: mixed roll, or same finger
-    # Initialize with default value to ensure key always exists
-    scores['order'] = 0.0  # Default for mixed patterns or unhandled cases
-    if finger1 == finger2 == finger3:
-        scores['order'] = 0.0          # same finger scores zero
-    elif hand1 != hand2 and hand1 == hand3:
+    #    0.0: mixed patterns, same finger, unhandled cases
+    scores['order'] = 0.0  # Default for mixed patterns, same finger, unhandled cases
+    if hand1 != hand2 and hand1 == hand3:
         scores['order'] = 1.0          # alternating hands
     elif hand1 == hand2 == hand3:
         if finger1 < finger2 < finger3:
             scores['order'] = 1.0      # inward roll
         elif finger1 > finger2 > finger3:
             scores['order'] = 1.0      # outward roll
-        elif char1 == char3:
+        elif char1 == char3 and finger1 != finger2:
             scores['order'] = 1.0      # rock back to same key
     elif hand1 == hand2 and hand2 != hand3:
         if finger1 < finger2:

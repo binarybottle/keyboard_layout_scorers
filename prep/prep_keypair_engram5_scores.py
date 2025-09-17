@@ -21,14 +21,26 @@ Main output files:
 This precomputation allows the main scorer to simply look up scores rather
 than computing them on-demand, making layout scoring much faster.
 
-Scoring criteria for typing bigrams come from the Typing Preference Study:
+Scoring criteria from the Bigram Typing Preference Study:
 
-    1. Finger positions (key preferences)
+    1. Key preferences
     2. Row separation (same row, reaches, hurdles)
-    3. Same-row column separation (adjacent, remote columns)
-    4. Same-row finger order (inward roll toward the thumb vs. outward roll)
+    3. Same-row column separation (adjacent vs. remote)
+    4. Same-row finger order (toward vs. away from the thumb)
     5. Side reach (lateral stretch outside finger-columns)
 
+Additional scoring criteria considered problematic by the ALT-Keyboard Layout communities:
+
+    6. Same-finger bigrams
+    7. Scissors (adjacent column reaches or hurdles)
+
+Collectively, these criteria address finger mechanics generally considered problematic:
+ - same-finger bigrams: penalized by #6 (and #4)
+ - same-finger skipgrams: addressed by the trigram scoring criteria
+ - redirects:             addressed by the trigram scoring criteria
+ - scissors: penalized by #7 (row separation is also penalized by #2-4)
+ - lateral stretches: penalized by #5
+   
 Each criterion score for a layout is the average score across all bigrams.
 The overall Engram score is simply the average of the criterion scores.
 
@@ -134,15 +146,14 @@ def score_bigram(bigram: str) -> Dict[str, float]:
     #----------------------------------------------------------------------------------
     # Engram's 5 bigram scoring criteria
     #----------------------------------------------------------------------------------    
-    # 1. Finger positions (key preferences)
+    # 1. Key preferences
     # 2. Row separation (same row, reaches, hurdles)
-    # 3. Same-row column separation (adjacent, remote columns)
-    # 4. Same-row finger order (inward roll toward the thumb vs. outward roll)
+    # 3. Same-row column separation (adjacent vs. remote)
+    # 4. Same-row finger order (toward vs. away from the thumb)
     # 5. Side reach (lateral stretch outside finger-columns)
     #----------------------------------------------------------------------------------    
    
-    # 1. Finger positions: Typing in preferred positions/keys 
-    #    (empirical Bradley-Terry tiers)
+    # 1. Key preferences (empirical Bradley-Terry tiers)
     tier_values = {
         'F': 1.000,
         'D': 0.870,
@@ -164,7 +175,7 @@ def score_bigram(bigram: str) -> Dict[str, float]:
 
     scores['keys'] = key_score / 2.0  # Average over 2 keys
 
-    # 2. Row separation: same row, reaches, and hurdles 
+    # 2. Row separation (same row, reaches, hurdles) 
     #    (empirical meta-analysis of left-hand bigrams) 
     #    1.000: 2 keys in the same row
     #    0.588: 2 keys in adjacent rows (reach)
@@ -179,7 +190,7 @@ def score_bigram(bigram: str) -> Dict[str, float]:
         else:
             scores['rows'] = 0.0    # Hurdle
 
-    # 3. Column span: Adjacent columns in the same row and other separations 
+    # 3. Same-row column separation (adjacent vs. remote) 
     #    (empirical meta-analysis of left-hand bigrams)
     #    1.000: adjacent columns in the same row (or 2 hands)
     #    0.811: remote columns in the same row
@@ -193,7 +204,7 @@ def score_bigram(bigram: str) -> Dict[str, float]:
         elif column_gap >= 2 and row_gap == 0:
             scores['columns'] = 0.811    # Distant same-row (empirical penalty)
 
-    # 4. Same-row finger order (inward roll toward the thumb vs. outward roll)
+    # 4. Same-row finger order (toward vs. away from the thumb)
     #    (empirical analysis of left-hand bigrams)
     #    1.000: same-row inward roll (or 2 hands)
     #    0.779: same-row outward roll
