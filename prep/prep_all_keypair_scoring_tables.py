@@ -11,7 +11,7 @@ Input files expected:
 - keypair_distance_scores.csv (key_pair, distance_setup, distance_interval, distance_return, distance_total)
 - keypair_dvorak7_scores.csv (key_pair, dvorak7_score)
 - individual Dvorak-7 component files
-- engram_2key_scores_scores.csv (key_pair, engram_score)
+- engram_2key_scores.csv (key_pair, engram_score)
 - individual Engram component files
 
 Output:
@@ -60,12 +60,14 @@ def get_universal_normalization_ranges():
         'comfort_combo_score': (0, 100), # Assuming 0-100 scale
 
         # Engram scores and components
-        'engram_score': (0, 5),         # Overall Engram score range (sum of 5 components)
-        'engram_keys': (0, 1),       
-        'engram_rows': (0, 1),      
-        'engram_columns': (0, 1),          
-        'engram_order': (0, 1),          
+        'engram_score': (0, 7),         # Overall Engram score range (sum of 7 components)
+        'engram_key_preference': (0, 1),       
+        'engram_row_separation': (0, 1),      
+        'engram_same_row': (0, 1),          
         'engram_outside': (0, 1),          
+        'engram_same_finger': (0, 1),          
+        'engram_scissor': (0, 1),          
+        'engram_half_scissor': (0, 1),          
 
         # Dvorak-7 scores and components
         'dvorak7_score': (0, 7),          # Overall Dvorak-7 score range (sum of 7 components)
@@ -462,11 +464,13 @@ def create_unified_score_tables(input_dir: str, verbose: bool = False) -> Tuple[
         'engram_score': 'engram_2key_scores.csv',
         'comfort_combo_score': 'keypair_comfort_combo_scores.csv',
         # Individual Engram criteria (fixed filenames)
-        'engram_keys': 'engram_2key_scores_keys.csv',
-        'engram_rows': 'engram_2key_scores_rows.csv',
-        'engram_columns': 'engram_2key_scores_columns.csv',
-        'engram_order': 'engram_2key_scores_order.csv',
+        'engram_key_preference': 'engram_2key_scores_key_preference.csv',
+        'engram_row_separation': 'engram_2key_scores_row_separation.csv',
+        'engram_same_row': 'engram_2key_scores_same_row.csv',
         'engram_outside': 'engram_2key_scores_outside.csv',
+        'engram_same_finger': 'engram_2key_scores_same_finger.csv',
+        'engram_scissor': 'engram_2key_scores_scissor.csv',
+        'engram_half_scissor': 'engram_2key_scores_half_scissor.csv',
         # Individual Dvorak-7 criteria
         'dvorak7_distribution': 'keypair_dvorak7_distribution_scores.csv',
         'dvorak7_strength': 'keypair_dvorak7_strength_scores.csv',
