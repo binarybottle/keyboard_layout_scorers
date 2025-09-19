@@ -115,30 +115,30 @@ def score_trigram(trigram: str) -> Dict[str, float]:
     # 1. Finger sequence/switchbacks (type in one direction vs. switch to the opposite)
     #----------------------------------------------------------------------------------    
     # 1. Finger sequence
-    #    1.0: alternating hands
-    #    1.0: inward roll
-    #    1.0: outward roll
+    #    1.0: 2 hands
+    #    1.0: inward (toward thumb)
+    #    1.0: outward (away from thumb)
     #    0.0: mixed patterns, same finger, unhandled cases
     scores['order'] = 0.0  # Default for mixed patterns, same finger, unhandled cases
     if hand1 != hand2 and hand1 == hand3:
-        scores['order'] = 1.0          # alternating hands
+        scores['order'] = 1.0          # two hands
     elif hand1 == hand2 == hand3:
         if finger1 < finger2 < finger3:
-            scores['order'] = 1.0      # inward roll
+            scores['order'] = 1.0      # inward
         elif finger1 > finger2 > finger3:
-            scores['order'] = 1.0      # outward roll
+            scores['order'] = 1.0      # outward
         #elif char1 == char3 and finger1 != finger2:  # switchback to same key
         #    scores['order'] = 1.0      # rock back to same key
     elif hand1 == hand2 and hand2 != hand3:
         if finger1 < finger2:
-            scores['order'] = 1.0      # inward roll
+            scores['order'] = 1.0      # inward
         elif finger1 > finger2:
-            scores['order'] = 1.0      # outward roll
+            scores['order'] = 1.0      # outward
     elif hand1 != hand2 and hand2 == hand3:
         if finger2 < finger3:
-            scores['order'] = 1.0      # inward roll
+            scores['order'] = 1.0      # inward
         elif finger2 > finger3:
-            scores['order'] = 1.0      # outward roll
+            scores['order'] = 1.0      # outward
 
     return scores
 
