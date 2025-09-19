@@ -28,7 +28,7 @@ Computing Engram scores for 1024 key-pairs...
 📊 Validation Results:
    Total key-pairs: 1024
    Score range: 2.7160 to 7.0000
-   Average score: 5.6022
+   Average score: 5.5976
    Valid range (0-ncriteria): ✅
 
 🧮 Mathematical Accuracy Check:
@@ -58,4 +58,3 @@ Computing Engram scores for 1024 key-pairs...
 ✅ Engram key-pair score generation complete!
    Overall scores: ../tables/engram_2key_scores.csv
    Individual criteria: ../tables/engram_2key_scores_*.csv
-

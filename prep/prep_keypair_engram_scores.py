@@ -209,8 +209,8 @@ def score_bigram(bigram: str) -> Dict[str, float]:
     #    1.000: 2 hands
     #    1.000: adjacent columns, inward roll, in the same row
     #    0.779: adjacent columns, outward roll, in the same row
-    #    0.811: remote columns, inward roll, in the same row
-    #    0.779 x 0.811: remote columns, outward roll, in the same row
+    #    0.750: remote columns, inward roll, in the same row
+    #    0.779 x 0.750: remote columns, outward roll, in the same row
     #    0.500: different rows, different fingers
     #    0.000: same finger
     if hand1 != hand2:
@@ -227,7 +227,7 @@ def score_bigram(bigram: str) -> Dict[str, float]:
         
         # Apply column separation penalty (weaker effect)
         if column_gap >= 2:             # Remote columns
-            scores['same_row'] *= 0.811
+            scores['same_row'] *= 0.750
 
     else:
         scores['same_row'] = 0.5        # Different rows, different fingers
