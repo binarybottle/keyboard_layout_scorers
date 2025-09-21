@@ -22,8 +22,10 @@ Default behavior:
 - Score table: tables/scores_2key_detailed.csv (created by prep_scoring_tables.py)
 - 3-key scores: tables/engram_3key_scores*.csv (created by prep_keytriple_engram_scores.py)
 - Key scores: tables/key_scores.csv (created by prep_scoring_tables.py)  
-- Frequency data: input/english-letter-pair-frequencies-google-ngrams.csv
-- Letter frequencies: input/english-letter-frequencies-google-ngrams.csv
+- Frequency data:
+  - Letter frequencies:  input/english-letter-counts-google-ngrams_normalized.csv
+  - Bigram frequencies:  input/english-letter-pair-counts-google-ngrams_normalized.csv
+  - Trigram frequencies: input/english-letter-triple-counts-google-ngrams_normalized.csv
 - Scoring mode: Frequency-weighted (prioritizes common English letter combinations)
 - Score mapping: Letter-pair frequencies → Key-pair scores, Letter-triple frequencies → Key-triple scores
 
@@ -244,8 +246,8 @@ class LayoutScorer:
                 print(f"Error reading frequency file: {e}")
             return None
         
-        bigram_col = self._find_column(df, ['bigram', 'pair', 'key_pair', 'letter_pair'])
-        freq_col = self._find_column(df, ['normalized_frequency', 'frequency'])
+        bigram_col = self._find_column(df, ['bigram', 'pair', 'key_pair', 'letter_pair', 'item', 'item_pair'])
+        freq_col = self._find_column(df, ['normalized_frequency', 'frequency', 'count', 'score'])
         
         if not bigram_col or not freq_col:
             if self.verbose:
@@ -268,7 +270,7 @@ class LayoutScorer:
 
     def _load_trigram_frequencies(self) -> Optional[Dict[str, float]]:
         """Load trigram frequency data from CSV file."""
-        filepath = "input/english-letter-triple-frequencies-google-ngrams.csv"
+        filepath = "input/english-letter-triple-counts-google-ngrams_normalized.csv"
         
         if not Path(filepath).exists():
             if self.verbose:
@@ -282,8 +284,8 @@ class LayoutScorer:
                 print(f"Error reading trigram frequency file: {e}")
             return None
         
-        trigram_col = self._find_column(df, ['trigram', 'triple', 'key_triple', 'letter_triple'])
-        freq_col = self._find_column(df, ['normalized_frequency', 'frequency'])
+        trigram_col = self._find_column(df, ['trigram', 'triple', 'key_triple', 'letter_triple', 'item', 'item_triple'])
+        freq_col = self._find_column(df, ['normalized_frequency', 'frequency', 'count', 'score'])
         
         if not trigram_col or not freq_col:
             if self.verbose:
@@ -306,15 +308,15 @@ class LayoutScorer:
     
     def _load_letter_frequencies(self) -> Optional[Dict[str, float]]:
         """Load individual letter frequency data."""
-        filepath = "input/english-letter-frequencies-google-ngrams.csv"
+        filepath = "input/english-letter-counts-google-ngrams_normalized.csv"
         
         if not Path(filepath).exists():
             return None
         
         try:
             df = pd.read_csv(filepath)
-            letter_col = self._find_column(df, ['letter', 'char', 'character'])
-            freq_col = self._find_column(df, ['normalized_frequency', 'frequency'])
+            letter_col = self._find_column(df, ['letter', 'char', 'character', 'item'])
+            freq_col = self._find_column(df, ['normalized_frequency', 'frequency', 'count', 'score'])
             
             if not letter_col or not freq_col:
                 return None
@@ -802,7 +804,7 @@ class LayoutScorer:
         if not self.letter_frequencies or not self.key_comfort_scores:
             missing = []
             if not self.letter_frequencies:
-                missing.append("input/english-letter-frequencies-google-ngrams.csv")
+                missing.append("input/english-letter-counts-google-ngrams_normalized.csv")
             if not self.key_comfort_scores:
                 missing.append("tables/key_scores.csv")
             raise ValueError(f"Required files missing for comfort_key scoring: {missing}")
@@ -867,7 +869,7 @@ class LayoutScorer:
         if not self.letter_frequencies or not self.key_comfort_scores:
             missing = []
             if not self.letter_frequencies:
-                missing.append("input/english-letter-frequencies-google-ngrams.csv")
+                missing.append("input/english-letter-counts-google-ngrams_normalized.csv")
             if not self.key_comfort_scores:
                 missing.append("tables/key_scores.csv")
             raise ValueError(f"Required files missing for comfort_combo scoring: {missing}")
@@ -1054,7 +1056,7 @@ def format_unified_csv_output(comparison_results: Dict[str, Dict[str, Dict[str, 
     lines = []
     
     # Header: layout,letters,positions,scorer1,scorer2,...
-    header = ['layout', 'letters', 'positions']
+    header = ['layout', 'items', 'letters', 'keys', 'positions']
     header.extend(scorers)
     lines.append(','.join(header))
     
@@ -1210,9 +1212,9 @@ Default behavior:
 - Uses tables/scores_2key_detailed.csv for key-pair scoring data (created by prep_scoring_tables.py)
 - Uses tables/engram_3key_scores*.csv for 3-key Engram scoring data (created by prep_keytriple_engram_scores.py)
 - Uses tables/key_scores.csv for individual key comfort scores (created by prep_scoring_tables.py)
-- Uses input/english-letter-pair-frequencies-google-ngrams.csv for frequency weighting (if it exists)
-- Uses input/english-letter-triple-frequencies-google-ngrams.csv for trigram frequency weighting (if it exists)
-- Uses input/english-letter-frequencies-google-ngrams.csv for letter frequencies (if it exists)
+- Uses input/english-letter-pair-counts-google-ngrams_normalized.csv for frequency weighting (if it exists)
+- Uses input/english-letter-triple-counts-google-ngrams_normalized.csv for trigram frequency weighting (if it exists)
+- Uses input/english-letter-counts-google-ngrams_normalized.csv for letter frequencies (if it exists)
 - Falls back to raw scoring if frequency file is not found
 - With --raw: Ignores frequencies and uses raw (unweighted) scoring
 - With --verbose: Shows both weighted and raw scores for comparison
@@ -1262,8 +1264,8 @@ Experimental (--experimental-metrics): distance→efficiency, time→speed
     
     parser.add_argument(
         '--frequency-file',
-        default="input/english-letter-pair-frequencies-google-ngrams.csv",
-        help="Path to bigram frequency CSV file (default: input/english-letter-pair-frequencies-google-ngrams.csv)"
+        default="input/english-letter-pair-counts-google-ngrams_normalized.csv",
+        help="Path to bigram frequency CSV file (default: input/english-letter-pair-counts-google-ngrams_normalized.csv)"
     )
     
     parser.add_argument(
@@ -1345,7 +1347,7 @@ def main() -> int:
         frequency_file = None
         if Path(args.frequency_file).exists():
             frequency_file = args.frequency_file
-        elif args.frequency_file != "input/english-letter-pair-frequencies-google-ngrams.csv":
+        elif args.frequency_file != "input/english-letter-pair-counts-google-ngrams_normalized.csv":
             print(f"Error: Frequency file not found: {args.frequency_file}")
             return 1
         
