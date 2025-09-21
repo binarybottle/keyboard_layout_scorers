@@ -1056,7 +1056,7 @@ def format_unified_csv_output(comparison_results: Dict[str, Dict[str, Dict[str, 
     lines = []
     
     # Header: layout,letters,positions,scorer1,scorer2,...
-    header = ['layout', 'items', 'letters', 'keys', 'positions']
+    header = ['layout', 'letters', 'positions']
     header.extend(scorers)
     lines.append(','.join(header))
     
