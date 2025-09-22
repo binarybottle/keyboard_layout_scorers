@@ -50,7 +50,8 @@ Experimental metrics (--experimental-metrics) should be interpreted with caution
 - speed_* (inverted from time-based metrics, contains QWERTY training bias)
 
 Usage:
-    # Core biomechanical metrics only (recommended)
+    # Input a set of letters and their corresponding (Qwerty key positions); compute core metrics (recommended)
+    # If --positions is not supplied, --letters are assumed to be in Qwerty key order.
     python score_layouts.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ"
     
     # Include experimental distance/time metrics (with limitations)
