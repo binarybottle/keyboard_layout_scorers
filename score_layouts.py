@@ -11,6 +11,46 @@ Distance metrics oversimplify biomechanical complexity (ignoring lateral stretch
 finger strength differences, etc.). Time metrics contain QWERTY practice bias.
 Use --experimental-metrics to enable them.)
 
+IMPORTANT: Data Format Clarification
+==========================================
+Command Line Input:
+- --letters: Letters in arbitrary order (e.g., "abc")  
+- --positions: QWERTY positions where those letters go (e.g., "XYZ")
+- --compare: Layout string in QWERTY key order (e.g., "name:qwertyuiop...")
+
+CSV Table Input/Output:
+- letters: Layout string in QWERTY key order (what's at each QWERTY position)
+- positions: QWERTY reference string (constant: "QWERTYUIOPASDFGHJKL;ZXCVBNM,./['")  
+- layout_qwerty: Same as letters (alternative column name for MOO compatibility)
+
+MOO Format Support:
+- items: Letters in assignment order (e.g., "etaoinsrhldcum")
+- positions: QWERTY positions where those letters go (e.g., "KJ;ASDVRLFUEIM")  
+- layout_qwerty: Layout string in QWERTY key order (primary format for scoring)
+
+Usage:
+    # Command line (arbitrary order)
+    python score_layouts.py --letters "etaoinsrhldcum" --positions "KJ;ASDVRLFUEIM"
+    python score_layouts.py --letters "  cr  du  oinl  teha   s  m     " --positions "QWERTYUIOPASDFGHJKL;ZXCVBNM,./['"
+    
+    # CSV comparison (QWERTY order)
+    python score_layouts.py --compare qwerty:"qwertyuiop" dvorak:"',.pyfgcrl"
+    
+    # CSV file input (auto-detects layout_qwerty, letters, or MOO format)
+    python score_layouts.py --compare-file layouts.csv --csv output.csv
+    
+    # Compare multiple layouts - CSV format
+    python score_layouts.py --compare qwerty:"qwertyuiop" dvorak:"',.pyfgcrl" colemak:"qwfpgjluy;"
+    
+    # Save CSV (compatible with display_layouts.py and compare_layouts.py)
+    python score_layouts.py --compare qwerty:"qwertyuiop" dvorak:"',.pyfgcrl" --csv layouts.csv
+    
+    # Compare with experimental metrics (caution: limitations noted above)
+    python score_layouts.py --compare qwerty:"qwertyuiop" dvorak:"',.pyfgcrl" --experimental-metrics
+    
+    # Mix core and experimental metrics
+    python score_layouts.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --scorers engram,comfort,efficiency --experimental-metrics
+    
 Setup:
 1. Generate individual score files (keypair_*_scores.csv) using scoring scripts in prep/
 2. Generate 3-key score files using: python prep_keytriple_engram_scores.py
@@ -49,35 +89,6 @@ Experimental metrics (--experimental-metrics) should be interpreted with caution
 - efficiency_* (inverted (1-score) from distance-based metrics, oversimplifies biomechanics)
 - speed_* (inverted from time-based metrics, contains QWERTY training bias)
 
-Usage:
-    # Input a set of letters and their corresponding (Qwerty key positions); compute core metrics (recommended)
-    # If --positions is not supplied, --letters are assumed to be in Qwerty key order.
-    python score_layouts.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ"
-    
-    # Include experimental distance/time metrics (with limitations)
-    python score_layouts.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --experimental-metrics
-    
-    # Force raw (unweighted) scoring
-    python score_layouts.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --raw
-    
-    # Compare multiple layouts (recommended approach) - CSV format
-    python score_layouts.py --compare qwerty:"qwertyuiop" dvorak:"',.pyfgcrl" colemak:"qwfpgjluy;"
-    
-    # Save CSV (compatible with display_layouts.py and compare_layouts.py)
-    python score_layouts.py --compare qwerty:"qwertyuiop" dvorak:"',.pyfgcrl" --csv layouts.csv
-    
-    # Compare with experimental metrics (caution: limitations noted above)
-    python score_layouts.py --compare qwerty:"qwertyuiop" dvorak:"',.pyfgcrl" --experimental-metrics
-    
-    # Mix core and experimental metrics
-    python score_layouts.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --scorers engram,comfort,efficiency --experimental-metrics
-    
-    # Use only 3-key Engram scoring
-    python score_layouts.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --scorers engram_3key
-    
-    # Verbose output (shows both weighted and raw scores)
-    python score_layouts.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --verbose
-    
 Features:
 - Automatic frequency weighting using English bigram and trigram frequencies
 - Letter-pair → Key-pair mapping (e.g., "TH" frequency weights T→H key transition)
@@ -100,6 +111,92 @@ from typing import Dict, List, Tuple, Optional, Set
 # QWERTY reference order for positions
 QWERTY_POSITIONS = "QWERTYUIOPASDFGHJKL;ZXCVBNM,./['"
 
+def load_layouts_from_csv(filepath: str, verbose: bool = False) -> Dict[str, str]:
+    """
+    Load layouts from CSV file, auto-detecting format.
+    
+    Supports multiple input formats:
+    - layout_qwerty column (preferred)
+    - letters column (QWERTY order)  
+    - items + positions columns (MOO format - converts to layout_qwerty)
+    
+    Args:
+        filepath: Path to CSV file
+        verbose: Print format detection info
+        
+    Returns:
+        Dict mapping layout names to layout strings in QWERTY order
+    """
+    try:
+        df = pd.read_csv(filepath)
+        layouts = {}
+        
+        if 'layout_qwerty' in df.columns:
+            # Preferred format: layout_qwerty column
+            if verbose:
+                print(f"Using layout_qwerty column from {filepath}")
+            
+            layout_col = df.columns[0] if 'layout' in df.columns[0].lower() else 'layout'
+            if layout_col not in df.columns:
+                layout_col = 'layout'  # fallback
+                
+            for i, row in df.iterrows():
+                layout_name = row.get(layout_col, f"layout_{i}")
+                layout_qwerty = str(row['layout_qwerty'])
+                layouts[layout_name] = layout_qwerty
+                
+        elif 'letters' in df.columns:
+            # Standard format: letters in QWERTY order
+            if verbose:
+                print(f"Using letters column from {filepath}")
+                
+            layout_col = df.columns[0] if 'layout' in df.columns[0].lower() else 'layout'
+            if layout_col not in df.columns:
+                layout_col = 'layout'  # fallback
+                
+            for i, row in df.iterrows():
+                layout_name = row.get(layout_col, f"layout_{i}")
+                letters = str(row['letters'])
+                layouts[layout_name] = letters
+                
+        elif 'items' in df.columns and 'positions' in df.columns:
+            # MOO format: convert items + positions to layout_qwerty
+            if verbose:
+                print(f"Converting MOO format (items + positions) from {filepath}")
+                
+            layout_col = df.columns[0] if 'layout' in df.columns[0].lower() else 'config_id'
+            if layout_col not in df.columns:
+                layout_col = 'layout'  # fallback
+                
+            QWERTY_ORDER = "QWERTYUIOPASDFGHJKL;ZXCVBNM,./['"
+            
+            for i, row in df.iterrows():
+                layout_name = row.get(layout_col, f"layout_{i}")
+                items = str(row['items'])
+                positions = str(row['positions'])
+                
+                # Convert to layout_qwerty format
+                pos_to_letter = dict(zip(positions, items))
+                layout_chars = []
+                for qwerty_pos in QWERTY_ORDER:
+                    if qwerty_pos in pos_to_letter:
+                        layout_chars.append(pos_to_letter[qwerty_pos])
+                    else:
+                        layout_chars.append(' ')
+                
+                layout_qwerty = ''.join(layout_chars)
+                layouts[layout_name] = layout_qwerty
+        else:
+            raise ValueError("CSV file must contain either 'layout_qwerty', 'letters', or 'items'+'positions' columns")
+            
+        if verbose:
+            print(f"Loaded {len(layouts)} layouts from {filepath}")
+            
+        return layouts
+        
+    except Exception as e:
+        raise ValueError(f"Error loading layouts from {filepath}: {e}")
+    
 class LayoutScorer:
     """Layout scorer using pre-computed score table."""
     
@@ -977,12 +1074,14 @@ class LayoutScorer:
         
         return results
 
-def safe_string_conversion(value) -> str:
+def safe_string_conversion(value, preserve_spaces: bool = False) -> str:
     """Safely convert value to string, preserving apostrophes and avoiding NaN issues."""
     if value == "'":
         return "'"
     
-    str_value = str(value).strip()
+    str_value = str(value)
+    if not preserve_spaces:
+        str_value = str_value.strip()
     
     if str_value.upper() in ['NAN', 'NA']:
         raise ValueError(f"Detected problematic value conversion: {value} -> {str_value}")
@@ -1013,7 +1112,7 @@ def parse_layout_compare(compare_args: List[str]) -> Tuple[Dict[str, Dict[str, s
         
         name, layout_str = arg.split(':', 1)
         name = safe_string_conversion(name)
-        layout_str = safe_string_conversion(layout_str)
+        layout_str = safe_string_conversion(layout_str, preserve_spaces=True)
         
         layout_strings[name] = layout_str
         
@@ -1028,10 +1127,11 @@ def parse_layout_compare(compare_args: List[str]) -> Tuple[Dict[str, Dict[str, s
         
         mapping = {}
         for i, char in enumerate(layout_str):
-            char_upper = safe_string_conversion(char).upper()
-            pos_str = safe_string_conversion(qwerty_positions[i])
-            mapping[char_upper] = pos_str
-        
+            if char != ' ':  # Skip spaces
+                char_upper = safe_string_conversion(char).upper()
+                qwerty_pos = qwerty_positions[i]
+                mapping[char_upper] = qwerty_pos
+    
         layouts[name] = mapping
     
     return layouts, layout_strings
@@ -1056,8 +1156,8 @@ def format_unified_csv_output(comparison_results: Dict[str, Dict[str, Dict[str, 
     """Format CSV output compatible with display scripts and compare_layouts.py."""
     lines = []
     
-    # Header: layout,letters,positions,scorer1,scorer2,...
-    header = ['layout', 'letters', 'positions']
+    # Header: layout,letters,positions,layout_qwerty,scorer1,scorer2,...
+    header = ['layout', 'letters', 'positions', 'layout_qwerty']
     header.extend(scorers)
     lines.append(','.join(header))
     
@@ -1070,6 +1170,9 @@ def format_unified_csv_output(comparison_results: Dict[str, Dict[str, Dict[str, 
         letters, positions = layout_string_to_letters_positions(layout_string)
         row_data.append(f'"{letters}"')
         row_data.append(f'"{positions}"')
+        
+        # Add layout_qwerty (same as letters for this format)
+        row_data.append(f'"{letters}"')
         
         # Add scorer values
         for scorer in scorers:
@@ -1172,88 +1275,30 @@ def create_cli_parser() -> argparse.ArgumentParser:
         description="Keyboard layout scorer with CSV output format",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=r"""
-Examples:
+Data Format Clarification:
+=========================
 
-  # Basic usage (core biomechanical metrics only - recommended)
-  # Note: Run 'python prep_scoring_tables.py --input-dir tables/' first to create required tables
-  # Note: Run 'python prep_keytriple_engram_scores.py' to create 3-key Engram tables
+Command Line Input:
+  --letters: Letters in arbitrary order (e.g., "abc")  
+  --positions: QWERTY positions where those letters go (e.g., "XYZ")
+
+CSV Input/Output Formats:
+  Standard: letters (QWERTY order), positions (QWERTY reference)
+  MOO: items (arbitrary order), positions (where they go), layout_qwerty (QWERTY order)
+  Preferred: layout_qwerty (QWERTY order), positions (QWERTY reference)
+
+Examples:
+  # Command line scoring (arbitrary order)
   python score_layouts.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ"
   
-  # Include experimental distance/time metrics (caution: limitations noted below)
-  python score_layouts.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --experimental-metrics
-  
-  # Raw (unweighted) scoring only
-  python score_layouts.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --raw
-  
-  # Compare layouts with CSV output (default) - RECOMMENDED
+  # Compare layouts (QWERTY order) 
   python score_layouts.py --compare qwerty:"qwertyuiop" dvorak:"',.pyfgcrl"
   
-  # Save CSV (compatible with display_layouts.py and compare_layouts.py)
-  python score_layouts.py --compare qwerty:"qwertyuiop" dvorak:"',.pyfgcrl" --csv layouts.csv
+  # CSV file input (auto-detects format)
+  python score_layouts.py --compare-file layouts.csv --csv output.csv
   
-  # Compare with experimental metrics (caution: shows limitations)
-  python score_layouts.py --compare qwerty:"qwertyuiop" dvorak:"',.pyfgcrl" --experimental-metrics
-  
-  # Specific experimental metrics
-  python score_layouts.py --compare qwerty:"qwertyuiop" dvorak:"',.pyfgcrl" --scorer efficiency --experimental-metrics
-  
-  # Mix core and experimental metrics including 3-key
-  python score_layouts.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --scorers comfort_combo,comfort,efficiency --experimental-metrics
-  
-  # Use only 3-key Engram scoring
-  python score_layouts.py --compare qwerty:"qwertyuiop" dvorak:"',.pyfgcrl" --scorers engram_3key_order
-  
-  # Use custom score table and frequency file
-  python score_layouts.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --score-table custom_scores.csv --frequency-file custom_freqs.csv
-  
-  # Verbose output (shows both weighted and raw scores)
-  python score_layouts.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --verbose
-
-Default behavior:
-- Uses tables/scores_2key_detailed.csv for key-pair scoring data (created by prep_scoring_tables.py)
-- Uses tables/engram_3key_scores*.csv for 3-key Engram scoring data (created by prep_keytriple_engram_scores.py)
-- Uses tables/key_scores.csv for individual key comfort scores (created by prep_scoring_tables.py)
-- Uses input/english-letter-pair-counts-google-ngrams_normalized.csv for frequency weighting (if it exists)
-- Uses input/english-letter-triple-counts-google-ngrams_normalized.csv for trigram frequency weighting (if it exists)
-- Uses input/english-letter-counts-google-ngrams_normalized.csv for letter frequencies (if it exists)
-- Falls back to raw scoring if frequency file is not found
-- With --raw: Ignores frequencies and uses raw (unweighted) scoring
-- With --verbose: Shows both weighted and raw scores for comparison
-- Default CSV format: layout,letters,positions,scorer1,scorer2,...
-- With --experimental-metrics: Enables distance/efficiency AND time/speed metrics
-
-CSV Format:
-The default CSV output format is:
-layout,letters,positions,engram,engram_3key,dvorak7,comfort,comfort_key,comfort_combo
-QWERTY,qwertyuiopasdfghjkl;zxcvbnm\,./,QWERTYUIOPASDFGHJKL;ZXCVBNM\,./',0.645,0.712,0.723,0.612,0.678,0.651
-
-This format is compatible with:
-- display_layouts.py (uses layout,letters,positions columns)
-- compare_layouts.py (can read all scorer columns)
-- Spreadsheet applications (easy to analyze)
-
-Experimental Metrics Warning:
-Distance/efficiency and time/speed metrics are disabled by default due to significant limitations:
-Distance scores are automatically inverted (1-score) and renamed to efficiency.
-Time scores are automatically inverted (1-score) and renamed to speed (experimental only).
-
-1. Distance/efficiency metrics oversimplify biomechanics:
-   - Ignore lateral finger stretching vs. comfortable curling
-   - Don't account for finger strength differences (pinky vs. index)
-   - Miss awkward hand positions and wrist angles
-   - Treat all finger movements as equivalent
-
-2. Time/speed metrics contain QWERTY practice bias:
-   - Empirical timing data reflects years of QWERTY training
-   - QWERTY letter-pairs map to heavily-practiced key-pairs
-   - Other layouts map to less-practiced combinations
-   - Creates artificial advantages for QWERTY
-
-Use --experimental-metrics to enable these metrics with full awareness of their limitations.
-
-Available scoring methods:
-Core (recommended): engram, engram_3key, engram_3key_*, dvorak7, comfort_combo, comfort, comfort_key
-Experimental (--experimental-metrics): distance→efficiency, time→speed
+  # Save CSV output
+  python score_layouts.py --compare qwerty:"qwertyuiop" --csv layouts.csv
         """
     )
     
@@ -1295,7 +1340,11 @@ Experimental (--experimental-metrics): distance→efficiency, time→speed
         nargs='+',
         help="Compare layouts (e.g., qwerty:qwertyuiop dvorak:',.pyfgcrl)"
     )
-    
+    parser.add_argument(
+        '--compare-file',
+        help="Compare layouts from CSV file (auto-detects layout_qwerty, letters, or items+positions format)"
+    )
+
     layout_group = parser.add_argument_group('Layout Definition')
     layout_group.add_argument(
         '--letters',
@@ -1355,8 +1404,17 @@ def main() -> int:
         scorer = LayoutScorer(args.score_table, frequency_file, args.raw, 
                              verbose=args.verbose, experimental_metrics=args.experimental_metrics)
         
-        if args.compare:
-            layouts, layout_strings = parse_layout_compare(args.compare)
+        if args.compare or args.compare_file:
+            # Handle CSV file input
+            if args.compare_file:
+                # Load from CSV file
+                layouts_from_file = load_layouts_from_csv(args.compare_file, args.verbose)
+                # Convert to the format expected by parse_layout_compare
+                compare_args = [f"{name}:{layout}" for name, layout in layouts_from_file.items()]
+                layouts, layout_strings = parse_layout_compare(compare_args)
+            else:
+                # Use command line compare arguments
+                layouts, layout_strings = parse_layout_compare(args.compare)
             
             if args.scorer:
                 scorers = [args.scorer] if args.scorer in scorer.available_scorers else []

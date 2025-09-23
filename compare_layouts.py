@@ -6,41 +6,64 @@ Creates parallel coordinates and heatmap plots comparing keyboard layouts
 across performance metrics, and allows filtering to specific metrics in a specified order.
 Layouts are automatically sorted by average performance across selected metrics.
 
+IMPORTANT: Data Format Support (Auto-Detected)
+===============================================
+
+CSV Input Formats Supported:
+1. Preferred: layout_qwerty column (layout string in QWERTY key order)
+2. Standard: letters column (layout string in QWERTY key order) + positions
+3. MOO: items + positions columns (letters in assignment order + where they go)
+4. Legacy: items + keys columns (alternative names)
+
+Column Meanings:
+- layout_qwerty: What's at each QWERTY position (e.g., "  cr  du  oinl  teha   s  m     ")
+- letters: What's at each QWERTY position (same as layout_qwerty)  
+- items: Letters in assignment order (e.g., "etaoinsrhldcum")
+- positions/keys: QWERTY positions where those letters go (e.g., "KJ;ASDVRLFUEIM")
+
 Core metrics are recommended by default. Experimental distance/efficiency 
 and time/speed metrics can be included but have significant limitations:
 - Distance metrics oversimplify biomechanics (ignore lateral stretching, finger strength, etc.)
 - Time metrics contain QWERTY practice bias from empirical data
 
 Examples:
-    # All available metrics (core metrics by default)
-    poetry run python3 compare_layouts.py --tables layout_scores.csv
+    # Standard format with layout_qwerty column (preferred)
+    python compare_layouts.py --tables layout_scores.csv
+
+    # MOO format with items + positions (auto-converted)
+    python compare_layouts.py --tables moo_results.csv --metrics engram dvorak7 comfort
 
     # Core metrics only (recommended)
-    poetry run python3 compare_layouts.py --metrics engram dvorak7 comfort_combo comfort comfort_key --tables layout_scores.csv
+    python compare_layouts.py --metrics engram dvorak7 comfort_combo comfort comfort_key --tables layout_scores.csv
 
     # Include experimental distance/time metrics (caution: limitations noted above)
-    poetry run python3 compare_layouts.py --metrics engram comfort comfort_key dvorak7 efficiency speed --tables layout_scores.csv --experimental-metrics
+    python compare_layouts.py --metrics engram comfort comfort_key dvorak7 efficiency speed --tables layout_scores.csv --experimental-metrics
 
     # Create plots with specific metrics and save summary
-    poetry run python3 compare_layouts.py --tables layouts.csv --metrics engram_strength engram_curl engram_rows engram_columns engram_order engram_3key_order  --summary summary.csv
+    python compare_layouts.py --tables layouts.csv --metrics engram_strength engram_curl engram_rows engram_columns engram_order engram_3key_order --summary summary.csv
     
     # Compare multiple tables with core metrics
-    poetry run python3 compare_layouts.py --metrics engram comfort comfort_key dvorak7 --output output/layout_comparison.png --tables layout_scores1.csv layout_scores2.csv
+    python compare_layouts.py --metrics engram comfort comfort_key dvorak7 --output output/layout_comparison.png --tables layout_scores1.csv layout_scores2.csv
 
-    # Detailed comparison with Dvorak-7 breakdown
-    poetry run python3 compare_layouts.py --metrics engram comfort comfort_key dvorak7 dvorak7_distribution dvorak7_strength dvorak7_middle dvorak7_vspan dvorak7_columns dvorak7_remote dvorak7_inward --output output/layout_comparison_detailed.png --tables layout_scores.csv
-
-Input format:
-  CSV files should be output from: score_layouts.py --csv
-  Expected format: layout,letters,positions,scorer1,scorer2,...
-  - One row per layout with all scores in columns
-  - Compatible with display_layouts.py
+Input format examples:
+  
+  Preferred format:
+  layout,layout_qwerty,engram,dvorak7,comfort
+  Dvorak,',.pyfgcrlaeoiduhtns;qjkxbmwvz,0.712,0.698,0.654
+  
+  Standard format:
+  layout,letters,positions,engram,dvorak7,comfort
+  Dvorak,',.pyfgcrlaeoiduhtns;qjkxbmwvz,QWERTYUIOPASDFGHJKL;ZXCVBNM\,./[',0.712,0.698,0.654
+  
+  MOO format (auto-converted):
+  config_id,items,positions,engram_key_preference,engram_row_separation
+  2438,etaoinsrhldcum,KJ;ASDVRLFUEIM,0.742,0.960
 
 Summary output:
-  CSV with columns: index, layout, [letters, positions], average_score, [metric_values]
+  CSV with columns: index, layout, [layout_qwerty, positions], average_score, [metric_values]
   - index: 1-based ranking by performance
-  - letters: what letter is at each QWERTY position
-  - positions: QWERTY reference positions
+  - layout_qwerty: what letter is at each QWERTY position (preferred format)
+  - positions: QWERTY reference positions  
   Layouts ordered by average performance across selected metrics (higher = better)
   
 Performance-based coloring:
@@ -91,40 +114,68 @@ def parse_layout_string(layout_string: str) -> tuple:
     return letters, positions
 
 def load_layout_data(file_path: str, verbose: bool = False) -> pd.DataFrame:
-    """Load CSV data: layout,letters,positions,scorer1,scorer2,..."""
+    """
+    Load CSV data with automatic format detection.
+    
+    Supports multiple CSV formats:
+    - Preferred: layout_qwerty column (layout string in QWERTY key order)
+    - Standard: letters + positions columns (letters in QWERTY order + reference)  
+    - MOO: items + positions columns (letters in assignment order + where they go)
+    - Legacy: items + keys columns (alternative column names)
+    
+    Args:
+        file_path: Path to CSV file
+        verbose: Print format detection details
+        
+    Returns:
+        DataFrame with standardized column names (letters, positions)
+    """
     try:
         df = pd.read_csv(file_path)
         if verbose:
             print(f"\nLoaded {len(df)} rows from {file_path}")
             print(f"Columns: {list(df.columns)}")
         
-        # Check required columns with alternative names
+        # Check required columns with automatic format detection
         if 'layout' not in df.columns:
             raise ValueError("Missing required column: 'layout'")
         
-        # Check for letters column (accept 'letters' or 'items')
+        # Detect and handle different layout column formats
         letters_col = None
-        for col in ['letters', 'items']:
-            if col in df.columns:
-                letters_col = col
-                break
-        if not letters_col:
-            raise ValueError("Missing required column: 'letters' or 'items'")
-        
-        # Check for positions column (accept 'positions' or 'keys')
         positions_col = None
+        
+        # Priority order: layout_qwerty > letters > items
+        if 'layout_qwerty' in df.columns:
+            letters_col = 'layout_qwerty'
+            if verbose:
+                print("  Format: layout_qwerty (preferred)")
+        elif 'letters' in df.columns:
+            letters_col = 'letters'
+            if verbose:
+                print("  Format: letters (standard)")
+        elif 'items' in df.columns:
+            letters_col = 'items'
+            if verbose:
+                print("  Format: items (MOO format)")
+        else:
+            raise ValueError("Missing layout data column: need 'layout_qwerty', 'letters', or 'items'")
+        
+        # Handle positions column
         for col in ['positions', 'keys']:
             if col in df.columns:
                 positions_col = col
                 break
-        if not positions_col:
-            raise ValueError("Missing required column: 'positions' or 'keys'")
+        if not positions_col and letters_col == 'items':
+            raise ValueError("MOO format requires 'positions' or 'keys' column")
         
-        # Standardize column names
+        # Standardize column names for internal use
         if letters_col != 'letters':
             df = df.rename(columns={letters_col: 'letters'})
-        if positions_col != 'positions':
+        if positions_col and positions_col != 'positions':
             df = df.rename(columns={positions_col: 'positions'})
+        
+        # Note: The script already handles the conversion internally in parse_layout_string
+        # if needed for MOO format items+positions
         
         # Find scorer columns (numeric columns after layout, letters, positions)
         scorer_columns = []
@@ -657,10 +708,13 @@ def main():
     parser = argparse.ArgumentParser(
         description='Create parallel coordinates plots and heatmaps comparing keyboard layouts',
         formatter_class=argparse.RawDescriptionHelpFormatter,
-    epilog="""
+        epilog="""
 Examples:
-  # All available metrics (core metrics by default)
+  # Preferred format with layout_qwerty column
   python compare_layouts.py --tables layouts.csv
+  
+  # MOO format with items+positions (auto-converted)
+  python compare_layouts.py --tables moo_results.csv --metrics engram dvorak7
   
   # Core metrics only (recommended)
   python compare_layouts.py --tables layouts.csv --metrics engram dvorak7 comfort_combo comfort comfort_key
@@ -671,27 +725,24 @@ Examples:
   # Create summary table with performance sorting
   python compare_layouts.py --tables layouts.csv --metrics engram comfort dvorak7 --summary layout_summary.csv
   
-  # Create both plots and summary with performance-based coloring
-  python compare_layouts.py --tables layouts.csv --metrics engram comfort comfort_key dvorak7 --output comparison.png --summary summary.csv
-  
   # Multiple tables with filtered metrics and summary
   python compare_layouts.py --tables scores1.csv scores2.csv --metrics comfort engram --summary combined_summary.csv
 
-Input format:
-  CSV files from: score_layouts.py --csv
-  Expected format: layout,letters,positions,scorer1,scorer2,...
-  - One row per layout with all scores in columns
-  - Compatible with display_layouts.py
+Input format support (auto-detected):
+  Preferred: layout,layout_qwerty,scorer1,scorer2,...
+  Standard:  layout,letters,positions,scorer1,scorer2,...  
+  MOO:       config_id,items,positions,objective1,objective2,...
+  
+  - layout_qwerty: what's at each QWERTY position (preferred)
+  - letters: what's at each QWERTY position (standard)
+  - items: letters in assignment order + positions where they go (MOO)
 
 Summary output:
-  CSV with columns: index, layout, [letters, positions], average_score, [metric_values]
+  CSV with columns: index, layout, [layout_qwerty, positions], average_score, [metric_values]
   - index: 1-based ranking by performance
-  - letters: what letter is at each QWERTY position
+  - layout_qwerty: what letter is at each QWERTY position
   - positions: QWERTY reference positions
   Layouts ordered by average performance across selected metrics (higher = better)
-  
-Performance-based coloring:
-  When --summary is used, parallel plot lines are colored from dark red (best) to light red (worst) based on average performance.
 
 Core vs Experimental Metrics:
   Core metrics (recommended): engram, comfort, comfort_key, dvorak7
