@@ -2,9 +2,8 @@
 """
 Display multiple keyboard layouts from CSV file
 
-IMPORTANT: Data Format Support
+Data Format Support
 =============================
-
 CSV Input Formats (auto-detected):
 1. Preferred: layout_qwerty column (layout string in QWERTY key order)
 2. Standard: letters column (layout string in QWERTY key order) 
@@ -105,19 +104,19 @@ def extract_layout_data(row, format_type, letters_col, positions_col):
         Tuple of (letters_in_qwerty_order, qwerty_positions)
     """
     if format_type == 'layout_qwerty':
-        # layout_qwerty format
-        letters = row[letters_col].strip()
+        # layout_qwerty format - preserve all spaces (they represent empty key positions)
+        letters = row[letters_col]  # Don't strip!
         positions = QWERTY_ORDER
         
     elif format_type == 'letters':
-        # Standard letters + positions format
-        letters = row[letters_col].strip()
+        # Standard letters + positions format - preserve all spaces
+        letters = row[letters_col]  # Don't strip!
         positions = row.get(positions_col, QWERTY_ORDER).strip() if positions_col else QWERTY_ORDER
         
     elif format_type == 'moo':
         # MOO items + positions format - convert to QWERTY order
-        items = row[letters_col].strip()  # items column
-        item_positions = row[positions_col].strip()  # positions column
+        items = row[letters_col].strip()  # OK to strip - just letter names
+        item_positions = row[positions_col].strip()  # OK to strip - just position names
         
         # Convert to QWERTY layout string
         letters = convert_moo_to_qwerty_layout(items, item_positions)

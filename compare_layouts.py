@@ -6,9 +6,8 @@ Creates parallel coordinates and heatmap plots comparing keyboard layouts
 across performance metrics, and allows filtering to specific metrics in a specified order.
 Layouts are automatically sorted by average performance across selected metrics.
 
-IMPORTANT: Data Format Support (Auto-Detected)
+Data Format Support (Auto-Detected)
 ===============================================
-
 CSV Input Formats Supported:
 1. Preferred: layout_qwerty column (layout string in QWERTY key order)
 2. Standard: letters column (layout string in QWERTY key order) + positions
@@ -53,7 +52,7 @@ Input format examples:
   
   Standard format:
   layout,letters,positions,engram,dvorak7,comfort
-  Dvorak,',.pyfgcrlaeoiduhtns;qjkxbmwvz,QWERTYUIOPASDFGHJKL;ZXCVBNM\,./[',0.712,0.698,0.654
+  Dvorak,',.pyfgcrlaeoiduhtns;qjkxbmwvz,QWERTYUIOPASDFGHJKL;ZXCVBNM,./[',0.712,0.698,0.654
   
   MOO format (auto-converted):
   config_id,items,positions,engram_key_preference,engram_row_separation

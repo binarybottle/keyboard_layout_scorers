@@ -6,12 +6,7 @@ A comprehensive tool for evaluating keyboard layouts using frequency-weighted sc
 Core scoring methods include engram, dvorak7, comfort_combo, comfort, and comfort_key.
 Now includes 3-key (trigram) Engram scoring in addition to 2-key (bigram) scoring.
 
-(Note: experimental distance/efficiency and time/speed metrics are disabled by default.
-Distance metrics oversimplify biomechanical complexity (ignoring lateral stretching,
-finger strength differences, etc.). Time metrics contain QWERTY practice bias.
-Use --experimental-metrics to enable them.)
-
-IMPORTANT: Data Format Clarification
+Data Format Clarification
 ==========================================
 Command Line Input:
 - --letters: Letters in arbitrary order (e.g., "abc")  
@@ -45,12 +40,6 @@ Usage:
     # Save CSV (compatible with display_layouts.py and compare_layouts.py)
     python score_layouts.py --compare qwerty:"qwertyuiop" dvorak:"',.pyfgcrl" --csv layouts.csv
     
-    # Compare with experimental metrics (caution: limitations noted above)
-    python score_layouts.py --compare qwerty:"qwertyuiop" dvorak:"',.pyfgcrl" --experimental-metrics
-    
-    # Mix core and experimental metrics
-    python score_layouts.py --letters "etaoinshrlcu" --positions "FDESGJWXRTYZ" --scorers engram,comfort,efficiency --experimental-metrics
-    
 Setup:
 1. Generate individual score files (keypair_*_scores.csv) using scoring scripts in prep/
 2. Generate 3-key score files using: python prep_keytriple_engram_scores.py
@@ -74,8 +63,6 @@ Scoring ranges:
 - Engram scores: 0-7 raw (sum of 7 components), normalized 0-1
 - Engram 3-key scores, normalized 0-1  
 - Dvorak-7 scores: 0-7 raw (sum of 7 components), normalized 0-1  
-- Distance→efficiency: Inverted distance scores, normalized 0-1
-- Time→speed: Inverted time scores, normalized 0-1
 
 Core metrics (default):
 - engram (bigram scores)
@@ -84,10 +71,6 @@ Core metrics (default):
 - comfort_combo (composite comfort model)
 - comfort_key (frequency-weighted key comfort)
 - comfort (frequency-weighted key-pair comfort)  
-
-Experimental metrics (--experimental-metrics) should be interpreted with caution:
-- efficiency_* (inverted (1-score) from distance-based metrics, oversimplifies biomechanics)
-- speed_* (inverted from time-based metrics, contains QWERTY training bias)
 
 Features:
 - Automatic frequency weighting using English bigram and trigram frequencies

@@ -1,0 +1,159 @@
+> poetry run python3 test_io.py --verbose
+Layout Format Compatibility Debug Tool
+==================================================
+[DEBUG] Generating test layouts...
+Generated 5 test layouts:
+  - Partial_Common: Partial layout with 10 common letters
+  - Partial_Uncommon: Partial layout with less common letters
+  - Medium_Dvorak: Medium Dvorak-style layout
+  - Medium_QWERTY: Medium QWERTY layout
+  - Minimal: Minimal 3-letter layout
+[DEBUG] Creating CSV files in different formats...
+[DEBUG] Created temp file: /var/folders/mt/hgj3z46x08s9mb5685h348bh0000gn/T/tmpt9skyf4d.csv
+[DEBUG] Created temp file: /var/folders/mt/hgj3z46x08s9mb5685h348bh0000gn/T/tmpey9p3sei.csv
+[DEBUG] Created temp file: /var/folders/mt/hgj3z46x08s9mb5685h348bh0000gn/T/tmpw84vwml2.csv
+[DEBUG] Created temp file: /var/folders/mt/hgj3z46x08s9mb5685h348bh0000gn/T/tmp4yceo28t.csv
+[DEBUG] Created temp file: /var/folders/mt/hgj3z46x08s9mb5685h348bh0000gn/T/tmpznq47fhq.csv
+Created 5 CSV format files
+  - layout_qwerty: /var/folders/mt/hgj3z46x08s9mb5685h348bh0000gn/T/tmpt9skyf4d.csv
+  - letters_positions: /var/folders/mt/hgj3z46x08s9mb5685h348bh0000gn/T/tmpey9p3sei.csv
+  - moo_format: /var/folders/mt/hgj3z46x08s9mb5685h348bh0000gn/T/tmpw84vwml2.csv
+  - moo_output: /var/folders/mt/hgj3z46x08s9mb5685h348bh0000gn/T/tmp4yceo28t.csv
+  - mixed_format: /var/folders/mt/hgj3z46x08s9mb5685h348bh0000gn/T/tmpznq47fhq.csv
+
+Testing format round-trips...
+[DEBUG] round_trip partial_common: ✓ - OK
+[DEBUG] round_trip partial_uncommon: ✓ - OK
+[DEBUG] round_trip medium_dvorak: ✓ - OK
+[DEBUG] round_trip medium_qwerty: ✓ - OK
+[DEBUG] round_trip minimal: ✓ - OK
+Testing CSV format consistency...
+[DEBUG] Format layout_qwerty: extracted 5 layouts
+[DEBUG] Format letters_positions: extracted 5 layouts
+[DEBUG] Format moo_format: extracted 5 layouts
+[DEBUG] Format mixed_format: extracted 5 layouts
+[DEBUG] CSV formats can be read consistently - functional compatibility verified
+Testing score_layouts.py...
+[DEBUG] score_layouts cmdline partial_common: ✓
+[DEBUG] score_layouts cmdline partial_uncommon: ✓
+[DEBUG] score_layouts cmdline medium_dvorak: ✓
+[DEBUG] score_layouts cmdline medium_qwerty: ✓
+[DEBUG] score_layouts cmdline minimal: ✓
+[DEBUG] Created temp file: /var/folders/mt/hgj3z46x08s9mb5685h348bh0000gn/T/tmpqdpab_us.csv
+[DEBUG] score_layouts compare: ✓
+[DEBUG] Created temp file: /var/folders/mt/hgj3z46x08s9mb5685h348bh0000gn/T/tmpow756w40.csv
+[DEBUG] score_layouts CSV layout_qwerty: ✓
+[DEBUG] Created temp file: /var/folders/mt/hgj3z46x08s9mb5685h348bh0000gn/T/tmpem9l4n1f.csv
+[DEBUG] score_layouts CSV letters_positions: ✓
+[DEBUG] Created temp file: /var/folders/mt/hgj3z46x08s9mb5685h348bh0000gn/T/tmp4mdeei8v.csv
+[DEBUG] score_layouts CSV moo_format: ✓
+[DEBUG] Created temp file: /var/folders/mt/hgj3z46x08s9mb5685h348bh0000gn/T/tmphtsm9i8x.csv
+[DEBUG] score_layouts CSV moo_output: ✓
+[DEBUG] Created temp file: /var/folders/mt/hgj3z46x08s9mb5685h348bh0000gn/T/tmpg3y4ufem.csv
+[DEBUG] score_layouts CSV mixed_format: ✓
+Testing display_layout.py...
+[DEBUG] display_layout partial_common: ✓
+[DEBUG] display_layout partial_uncommon: ✓
+[DEBUG] display_layout medium_dvorak: ✓
+[DEBUG] display_layout medium_qwerty: ✓
+[DEBUG] display_layout minimal: ✓
+Testing display_layouts.py...
+[DEBUG] display_layouts layout_qwerty: ✓
+[DEBUG] display_layouts letters_positions: ✓
+[DEBUG] display_layouts moo_format: ✓
+[DEBUG] display_layouts moo_output: ✓
+[DEBUG] display_layouts mixed_format: ✓
+Testing compare_layouts.py...
+[DEBUG] Created temp file: /var/folders/mt/hgj3z46x08s9mb5685h348bh0000gn/T/tmproae7kqo_summary.csv
+[DEBUG] compare_layouts layout_qwerty: ✓
+[DEBUG] Created temp file: /var/folders/mt/hgj3z46x08s9mb5685h348bh0000gn/T/tmp3hi1lj4e_summary.csv
+[DEBUG] compare_layouts letters_positions: ✓
+[DEBUG] Created temp file: /var/folders/mt/hgj3z46x08s9mb5685h348bh0000gn/T/tmpyjw5y2a9_summary.csv
+[DEBUG] compare_layouts moo_format: ✓
+[DEBUG] Created temp file: /var/folders/mt/hgj3z46x08s9mb5685h348bh0000gn/T/tmpc4ool4ii_summary.csv
+[DEBUG] compare_layouts moo_output: ✓
+[DEBUG] Created temp file: /var/folders/mt/hgj3z46x08s9mb5685h348bh0000gn/T/tmpntknfkuc_summary.csv
+[DEBUG] compare_layouts mixed_format: ✓
+
+================================================================================
+TEST RESULTS SUMMARY
+================================================================================
+Total tests: 32
+Passed: 32 (100.0%)
+Failed: 0
+
+ALL TESTS:
+--------------------------------------------------------------------------------
+✓ round_trip_partial_common: Round-trip format conversion: Partial layout with 10 common letters
+✓ round_trip_partial_uncommon: Round-trip format conversion: Partial layout with less common letters
+✓ round_trip_medium_dvorak: Round-trip format conversion: Medium Dvorak-style layout
+✓ round_trip_medium_qwerty: Round-trip format conversion: Medium QWERTY layout
+✓ round_trip_minimal: Round-trip format conversion: Minimal 3-letter layout
+✓ csv_format_consistency: CSV format functional compatibility verification
+✓ score_layouts_cmdline_partial_common: Command line scoring of Partial layout with 10 common letters
+✓ score_layouts_cmdline_partial_uncommon: Command line scoring of Partial layout with less common letters
+✓ score_layouts_cmdline_medium_dvorak: Command line scoring of Medium Dvorak-style layout
+✓ score_layouts_cmdline_medium_qwerty: Command line scoring of Medium QWERTY layout
+✓ score_layouts_cmdline_minimal: Command line scoring of Minimal 3-letter layout
+✓ score_layouts_compare: Compare format with CSV output
+✓ score_layouts_csv_layout_qwerty: CSV input format: layout_qwerty
+✓ score_layouts_csv_letters_positions: CSV input format: letters_positions
+✓ score_layouts_csv_moo_format: CSV input format: moo_format
+✓ score_layouts_csv_moo_output: CSV input format: moo_output
+✓ score_layouts_csv_mixed_format: CSV input format: mixed_format
+✓ display_layout_partial_common: Display single layout: Partial layout with 10 common letters
+✓ display_layout_partial_uncommon: Display single layout: Partial layout with less common letters
+✓ display_layout_medium_dvorak: Display single layout: Medium Dvorak-style layout
+✓ display_layout_medium_qwerty: Display single layout: Medium QWERTY layout
+✓ display_layout_minimal: Display single layout: Minimal 3-letter layout
+✓ display_layouts_layout_qwerty: Display multiple layouts from CSV format: layout_qwerty
+✓ display_layouts_letters_positions: Display multiple layouts from CSV format: letters_positions
+✓ display_layouts_moo_format: Display multiple layouts from CSV format: moo_format
+✓ display_layouts_moo_output: Display multiple layouts from CSV format: moo_output
+✓ display_layouts_mixed_format: Display multiple layouts from CSV format: mixed_format
+✓ compare_layouts_layout_qwerty: Compare layouts from CSV format: layout_qwerty
+✓ compare_layouts_letters_positions: Compare layouts from CSV format: letters_positions
+✓ compare_layouts_moo_format: Compare layouts from CSV format: moo_format
+✓ compare_layouts_moo_output: Compare layouts from CSV format: moo_output
+✓ compare_layouts_mixed_format: Compare layouts from CSV format: mixed_format
+[DEBUG] Deleted temp file: /var/folders/mt/hgj3z46x08s9mb5685h348bh0000gn/T/tmpt9skyf4d.csv
+[DEBUG] Deleted temp file: /var/folders/mt/hgj3z46x08s9mb5685h348bh0000gn/T/tmpey9p3sei.csv
+[DEBUG] Deleted temp file: /var/folders/mt/hgj3z46x08s9mb5685h348bh0000gn/T/tmpw84vwml2.csv
+[DEBUG] Deleted temp file: /var/folders/mt/hgj3z46x08s9mb5685h348bh0000gn/T/tmp4yceo28t.csv
+[DEBUG] Deleted temp file: /var/folders/mt/hgj3z46x08s9mb5685h348bh0000gn/T/tmpznq47fhq.csv
+[DEBUG] Deleted temp file: /var/folders/mt/hgj3z46x08s9mb5685h348bh0000gn/T/tmpqdpab_us.csv
+[DEBUG] Deleted temp file: /var/folders/mt/hgj3z46x08s9mb5685h348bh0000gn/T/tmpow756w40.csv
+[DEBUG] Deleted temp file: /var/folders/mt/hgj3z46x08s9mb5685h348bh0000gn/T/tmpem9l4n1f.csv
+[DEBUG] Deleted temp file: /var/folders/mt/hgj3z46x08s9mb5685h348bh0000gn/T/tmp4mdeei8v.csv
+[DEBUG] Deleted temp file: /var/folders/mt/hgj3z46x08s9mb5685h348bh0000gn/T/tmphtsm9i8x.csv
+[DEBUG] Deleted temp file: /var/folders/mt/hgj3z46x08s9mb5685h348bh0000gn/T/tmpg3y4ufem.csv
+[DEBUG] Deleted temp file: /var/folders/mt/hgj3z46x08s9mb5685h348bh0000gn/T/tmproae7kqo_summary.csv
+[DEBUG] Deleted temp file: /var/folders/mt/hgj3z46x08s9mb5685h348bh0000gn/T/tmp3hi1lj4e_summary.csv
+[DEBUG] Deleted temp file: /var/folders/mt/hgj3z46x08s9mb5685h348bh0000gn/T/tmpyjw5y2a9_summary.csv
+[DEBUG] Deleted temp file: /var/folders/mt/hgj3z46x08s9mb5685h348bh0000gn/T/tmpc4ool4ii_summary.csv
+[DEBUG] Deleted temp file: /var/folders/mt/hgj3z46x08s9mb5685h348bh0000gn/T/tmpntknfkuc_summary.csv
+> poetry run python3 test_io.py
+Layout Format Compatibility Debug Tool
+==================================================
+Generated 5 test layouts:
+  - Partial_Common: Partial layout with 10 common letters
+  - Partial_Uncommon: Partial layout with less common letters
+  - Medium_Dvorak: Medium Dvorak-style layout
+  - Medium_QWERTY: Medium QWERTY layout
+  - Minimal: Minimal 3-letter layout
+Created 5 CSV format files
+
+Testing format round-trips...
+Testing CSV format consistency...
+Testing score_layouts.py...
+Testing display_layout.py...
+Testing display_layouts.py...
+Testing compare_layouts.py...
+
+================================================================================
+TEST RESULTS SUMMARY
+================================================================================
+Total tests: 32
+Passed: 32 (100.0%)
+Failed: 0
+
