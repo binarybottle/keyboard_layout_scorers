@@ -224,7 +224,6 @@ class LayoutScorer:
         
         # Determine which pair column to use
         position_column_name = None
-        print(df.columns)
         if 'key_pair' in df.columns:
             position_column_name = 'key_pair'
         elif 'position_pair' in df.columns:
