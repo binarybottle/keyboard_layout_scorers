@@ -11,12 +11,12 @@ Input files expected:
 - keypair_distance_scores.csv (key_pair, distance_setup, distance_interval, distance_return, distance_total)
 - keypair_dvorak7_scores.csv (key_pair, dvorak7_score)
 - individual Dvorak-7 component files
-- engram_2key_scores.csv (key_pair, engram_score)
+- engram_2key_scores_avg4.csv (key_pair, engram_avg4_score)
 - individual Engram component files
 
 Output:
 - tables/scores_2key_detailed.csv: All individual components with normalized versions
-- tables/scores_2key_composite.csv: Composite scores (engram, dvorak7, time, distance, comfort)
+- tables/scores_2key_composite.csv: Composite scores (engram_avg4, dvorak7, time, distance, comfort)
 
 Usage:
     python prep_scoring_tables.py --input-dir ../tables/
@@ -60,7 +60,7 @@ def get_universal_normalization_ranges():
         'comfort_combo_score': (0, 100), # Assuming 0-100 scale
 
         # Engram scores and components
-        'engram_score': (0, 7),         # Overall Engram score range (sum of 7 components)
+        'engram_avg4_score': (0, 1),    # Engram avg4 score range (average of 4 components)
         'engram_key_preference': (0, 1),       
         'engram_row_separation': (0, 1),      
         'engram_same_row': (0, 1),          
@@ -292,17 +292,17 @@ def create_composite_scores(unified_df: pd.DataFrame, verbose: bool = False) -> 
             print("  ✓ Comfort-combo: Using direct score")
     
     # Engram composite
-    engram_components = [col for col in unified_df.columns if col.startswith('engram_') and col != 'engram_score']
+    engram_components = [col for col in unified_df.columns if col.startswith('engram_') and col != 'engram_avg4_score']
     if len(engram_components) > 1:
         # Create weighted composite from components
-        composite_df['engram_score'] = unified_df[engram_components].mean(axis=1)
+        composite_df['engram_avg4_score'] = unified_df[engram_components].mean(axis=1)
         if verbose:
-            print(f"  ✓ Engram: Composite from {len(engram_components)} components")
-    elif 'engram_score' in unified_df.columns:
-        composite_df['engram_score'] = unified_df['engram_score']
+            print(f"  ✅ Engram: Composite from {len(engram_components)} components")
+    elif 'engram_avg4_score' in unified_df.columns:
+        composite_df['engram_avg4_score'] = unified_df['engram_avg4_score']
         if verbose:
-            print("  ✓ Engram: Using direct score")
-    
+            print("  ✅ Engram: Using direct avg4 score")
+                
     # Dvorak-7 composite
     dvorak7_components = [col for col in unified_df.columns if col.startswith('dvorak7_') and col != 'dvorak7_score']
     if len(dvorak7_components) > 1:
@@ -461,7 +461,7 @@ def create_unified_score_tables(input_dir: str, verbose: bool = False) -> Tuple[
     simple_score_files = {
         'comfort_score': 'keypair_comfort_scores.csv',
         'dvorak7_score': 'keypair_dvorak7_scores.csv',
-        'engram_score': 'engram_2key_scores.csv',
+        'engram_avg4_score': 'engram_2key_scores_avg4.csv',
         'comfort_combo_score': 'keypair_comfort_combo_scores.csv',
         # Individual Engram criteria (fixed filenames)
         'engram_key_preference': 'engram_2key_scores_key_preference.csv',
@@ -776,7 +776,7 @@ Normalization:
     - Time components: 200-400ms (setup), 100-450ms (interval), 200-400ms (return), 570-1250ms (total)
     - Comfort scores: -1.5 to 0.0 range
     - Comfort-combo scores: 0-100 range
-    - Engram scores: 0-5 (overall), 0-1 (components)  
+    - Engram avg4 scores: 0-1 (average of 4 core transition criteria)
     - Dvorak-7 scores: 0-7 (overall), 0-1 (components)
     
     Values outside universal ranges are clipped. This ensures normalized scores

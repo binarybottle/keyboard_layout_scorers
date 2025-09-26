@@ -41,7 +41,7 @@ The output files contain all possible key-pairs (e.g., "QW", "QE", "AS") with
 their corresponding scores.
 
 Main output files:
-    - ../tables/engram_2key_scores.csv - Overall average score
+    - ../tables/engram_2key_scores_avg4.csv - Average of 4 core transition mechanics criteria
     - ../tables/engram_2key_scores_key_preference.csv
     - ../tables/engram_2key_scores_row_separation.csv
     - ../tables/engram_2key_scores_same_row.csv
@@ -50,6 +50,13 @@ Main output files:
     - ../tables/engram_2key_scores_scissor.csv
     - ../tables/engram_2key_scores_half_scissor.csv
 
+The avg4 score focuses on core 2-key transition mechanics by averaging four fundamental
+criteria that directly impact finger movement efficiency during key-pair sequences:
+- row_separation: Rewards same-row transitions, penalizes reaches and hurdles
+- same_row: Finger order and column separation within rows (inward vs outward rolls)
+- same_finger: Penalizes awkward same-finger transitions
+- outside: Penalizes lateral stretches outside the home block area
+
 This precomputation allows the main scorer to simply look up scores rather
 than computing them on-demand, making layout scoring much faster.
 
@@ -57,7 +64,9 @@ Usage:
     python prep_keypair_engram3of4_scores.py
 
 Output:
-    ../tables/engram_2key_scores.csv - CSV with columns: key_pair, engram_score
+    ../tables/engram_2key_scores_avg4.csv - CSV with columns: key_pair, engram_avg4_score
+        - engram_avg4_score: Average of 4 core 2-key transition criteria (0-1 range)
+          Focuses on fundamental finger movement mechanics during key-pair transitions
     ../tables/engram_2key_scores_*.csv - Individual criterion scores
 """
 
@@ -112,6 +121,9 @@ criteria = ['key_preference', 'row_separation', 'same_row',
             'outside', 'same_finger',
             'scissor', 'half_scissor'] 
 ncriteria = len(criteria)
+
+# Define the four criteria for engram_avg4_score
+engram_avg4_criteria = ['row_separation', 'same_row', 'same_finger', 'outside']
 
 def get_key_info(key: str):
     """Get (row, finger, hand) for a key."""
@@ -301,8 +313,8 @@ def compute_key_pair_scores():
     key_pairs = generate_all_key_pairs()
     results = {}
     
-    # Initialize results for overall and individual criteria
-    results['overall'] = []
+    # Initialize results for avg4 and individual criteria
+    results['avg4'] = []
     
     for criterion in criteria:
         results[criterion] = []
@@ -316,13 +328,13 @@ def compute_key_pair_scores():
         # Compute individual Engram criteria scores using the scorer's function
         bigram_scores = score_bigram(key_pair)
         
-        # Calculate sum (baseline Engram score)
-        engram_score = sum(bigram_scores.values())
+        # Calculate engram_avg4_score as average of the four specified criteria
+        engram_avg4_score = sum(bigram_scores[criterion] for criterion in engram_avg4_criteria) / len(engram_avg4_criteria)
         
-        # Store overall score
-        results['overall'].append({
+        # Store avg4 score
+        results['avg4'].append({
                 'key_pair': key_pair,
-                'engram_score': engram_score
+                'engram_avg4_score': engram_avg4_score
         })
     
         # Store individual criterion scores
@@ -335,21 +347,21 @@ def compute_key_pair_scores():
     return results
 
 def save_all_score_files(results, output_dir="../tables"):
-    """Save overall and individual criterion scores to separate CSV files."""
+    """Save avg4 and individual criterion scores to separate CSV files."""
     
     # Create output directory if it doesn't exist
     Path(output_dir).mkdir(parents=True, exist_ok=True)
     
-    # Save overall scores
-    overall_file = f"{output_dir}/engram_2key_scores.csv"
-    overall_results = sorted(results['overall'], key=lambda x: x['key_pair'])
+    # Save avg4 scores (average of 4 core transition criteria)
+    avg4_file = f"{output_dir}/engram_2key_scores_avg4.csv"
+    avg4_results = sorted(results['avg4'], key=lambda x: x['key_pair'])
     
-    with open(overall_file, 'w', newline='', encoding='utf-8') as f:
-        writer = csv.DictWriter(f, fieldnames=['key_pair', 'engram_score'])
+    with open(avg4_file, 'w', newline='', encoding='utf-8') as f:
+        writer = csv.DictWriter(f, fieldnames=['key_pair', 'engram_avg4_score'])
         writer.writeheader()
-        writer.writerows(overall_results)
+        writer.writerows(avg4_results)
     
-    print(f"✅ Saved overall scores to: {overall_file}")
+    print(f"✅ Saved avg4 scores to: {avg4_file}")
     
     for criterion in criteria:
         criterion_file = f"{output_dir}/engram_2key_scores_{criterion}.csv"
@@ -366,36 +378,36 @@ def validate_output(output_dir="../tables"):
     """
     Validation with comprehensive accuracy checking.
     
-    This function performs extensive validation of the generated Engram scores,
+    This function performs extensive validation of the generated Engram avg4 scores,
     including mathematical verification of scoring criteria and edge case testing.
     """
     import csv
     import random
     from pathlib import Path
     
-    overall_file = f"{output_dir}/engram_2key_scores.csv"
+    avg4_file = f"{output_dir}/engram_2key_scores_avg4.csv"
     
-    if not Path(overall_file).exists():
-        print(f"❌ Overall output file not found: {overall_file}")
+    if not Path(avg4_file).exists():
+        print(f"❌ Avg4 output file not found: {avg4_file}")
         return False
     
-    # Load overall data
-    with open(overall_file, 'r', encoding='utf-8') as f:
+    # Load avg4 data
+    with open(avg4_file, 'r', encoding='utf-8') as f:
         reader = csv.DictReader(f)
         rows = list(reader)
     
     print(f"\n📊 Validation Results:")
     print(f"   Total key-pairs: {len(rows)}")
     
-    # Statistical validation
-    scores = [float(row['engram_score']) for row in rows]
-    min_score, max_score = min(scores), max(scores)
-    avg_score = sum(scores) / len(scores)
+    # Statistical validation for engram_avg4 scores
+    engram_avg4_scores = [float(row['engram_avg4_score']) for row in rows]
     
-    print(f"   Score range: {min_score:.4f} to {max_score:.4f}")
-    print(f"   Average score: {avg_score:.4f}")
-    # Now checking for 0-ncriteria range instead of 0-1
-    print(f"   Valid range (0-ncriteria): {'✅' if 0 <= min_score and max_score <= ncriteria else '❌'}")
+    min_engram_avg4, max_engram_avg4 = min(engram_avg4_scores), max(engram_avg4_scores)
+    avg_engram_avg4 = sum(engram_avg4_scores) / len(engram_avg4_scores)
+    
+    print(f"   Engram avg4 score range: {min_engram_avg4:.4f} to {max_engram_avg4:.4f}")
+    print(f"   Engram avg4 score average: {avg_engram_avg4:.4f}")
+    print(f"   Valid range (0-1): {'✅' if 0 <= min_engram_avg4 and max_engram_avg4 <= 1 else '❌'}")
 
     # Test mathematical accuracy on random samples
     print(f"\n🧮 Mathematical Accuracy Check:")
@@ -404,15 +416,14 @@ def validate_output(output_dir="../tables"):
     
     for row in random_samples:
         key_pair = row['key_pair']
-        csv_score = float(row['engram_score'])
+        csv_engram_avg4 = float(row['engram_avg4_score'])
         
         # Recalculate score using the same logic
         calculated_scores = score_bigram(key_pair)
-        # Use raw sum instead of normalized average
-        calculated_sum = sum(calculated_scores.values())
-        
-        if abs(calculated_sum - csv_score) > 0.0001:
-            print(f"   ❌ Accuracy error: {key_pair} - CSV: {csv_score:.4f}, Calc: {calculated_sum:.4f}")
+        calculated_engram_avg4 = sum(calculated_scores[criterion] for criterion in engram_avg4_criteria) / len(engram_avg4_criteria)
+            
+        if abs(calculated_engram_avg4 - csv_engram_avg4) > 0.0001:
+            print(f"   ❌ Accuracy error (engram_avg4): {key_pair} - CSV: {csv_engram_avg4:.4f}, Calc: {calculated_engram_avg4:.4f}")
             accuracy_errors += 1
     
     print(f"   Accuracy check: {len(random_samples) - accuracy_errors}/{len(random_samples)} samples correct")
@@ -432,9 +443,9 @@ def validate_output(output_dir="../tables"):
     # Test specific criteria with known examples
     print(f"\n🔍 Criteria-Specific Validation:")
     criteria_tests = [
-        ("Same key repetition", ['AA', 'SS', 'FF'], lambda s: 1.0 <= s <= 5.0),
-        ("Worst cases", ['QZ', '/[', 'ZW'], lambda s: s <= 3.0),
-        ("Alternating hands", ['FJ', 'AK', 'TN'], lambda s: s >= 3.5)
+        ("Alternating hands", ['FJ', 'AK', 'TN'], lambda s: s >= 0.8),
+        ("Same finger", ['AA', 'SS', 'FF'], lambda s: s <= 0.7),
+        ("Mixed cases", ['QW', 'AS', 'ZX'], lambda s: 0.0 <= s <= 1.0)
     ]
     
     for test_name, test_pairs, score_check in criteria_tests:
@@ -442,50 +453,54 @@ def validate_output(output_dir="../tables"):
         for pair in test_pairs:
             row = next((r for r in rows if r['key_pair'] == pair), None)
             if row:
-                test_scores.append(float(row['engram_score']))
+                test_scores.append(float(row['engram_avg4_score']))
         
         all_pass = all(score_check(score) for score in test_scores)
         print(f"   {test_name}: {'✅' if all_pass else '❌'} ({len([s for s in test_scores if score_check(s)])}/{len(test_scores)})")
     
     # Perfect scores count
-    perfect_count = len([s for s in scores if s == ncriteria])
-    print(f"   Perfect: {perfect_count} pairs ({perfect_count/len(scores)*100:.1f}%)")
+    perfect_engram_avg4_count = len([s for s in engram_avg4_scores if s == 1.0])
+    print(f"   Perfect (engram_avg4): {perfect_engram_avg4_count} pairs ({perfect_engram_avg4_count/len(engram_avg4_scores)*100:.1f}%)")
 
     print(f"\n✅ Validation complete!")
     return accuracy_errors == 0
 
 def validate_perfect_scores(output_dir="../tables"):
-    """Specifically validate that perfect scores are mathematically correct."""
+    """Specifically validate that perfect engram_avg4 scores are mathematically correct."""
     import csv
     
-    overall_file = f"{output_dir}/engram_2key_scores.csv"
+    avg4_file = f"{output_dir}/engram_2key_scores_avg4.csv"
     
-    with open(overall_file, 'r', encoding='utf-8') as f:
+    with open(avg4_file, 'r', encoding='utf-8') as f:
         reader = csv.DictReader(f)
-        perfect_pairs = [row for row in reader if float(row['engram_score']) == ncriteria]
+        perfect_pairs = [row for row in reader if float(row['engram_avg4_score']) == 1.0]
     
-    print(f"\n🏆 Perfect Score Verification ({len(perfect_pairs)} pairs):")
+    print(f"\n🏆 Perfect Engram Avg4 Score Verification ({len(perfect_pairs)} pairs):")
     for row in perfect_pairs:
         key_pair = row['key_pair']
         scores = score_bigram(key_pair)
-        total_score = sum(scores.values())
-        is_perfect = total_score == ncriteria
-        print(f"   {key_pair}: {'✅' if is_perfect else '❌'}")
-        if not is_perfect:
-            print(f"      Individual scores: {scores}")
-            print(f"      Sum: {total_score}")
+        engram_avg4_score = sum(scores[criterion] for criterion in engram_avg4_criteria) / len(engram_avg4_criteria)
+        csv_engram_avg4 = float(row['engram_avg4_score'])
+        
+        engram_avg4_correct = abs(engram_avg4_score - csv_engram_avg4) < 0.0001 and engram_avg4_score == 1.0
+        
+        print(f"   {key_pair}: {'✅' if engram_avg4_correct else '❌'}")
+        if not engram_avg4_correct:
+            print(f"      Engram avg4 calc: {engram_avg4_score:.4f}, CSV: {csv_engram_avg4:.4f}")
+            print(f"      Individual scores: {[scores[c] for c in engram_avg4_criteria]}")
     
     return True
 
 def main():
     """Main entry point."""
-    print("Prepare Engram key-pair scores (overall + individual criteria)")
+    print("Prepare Engram key-pair avg4 scores (4 core transition criteria + individual)")
     print("=" * 70)
     
     # Load QWERTY keys to show what we're working with
     keys = get_all_qwerty_keys()
     print(f"QWERTY keys ({len(keys)}): {''.join(sorted(keys))}")
     print(f"Total key-pairs to compute: {len(keys)**2}")
+    print(f"Engram avg4 criteria: {engram_avg4_criteria}")
     print()
     
     # Compute scores
@@ -500,7 +515,8 @@ def main():
     validate_perfect_scores(output_dir)
 
     print(f"\n✅ Engram key-pair score generation complete!")
-    print(f"   Overall scores: {output_dir}/engram_2key_scores.csv")
+    print(f"   Avg4 scores: {output_dir}/engram_2key_scores_avg4.csv")
+    print(f"     - engram_avg4_score: Average of row_separation, same_row, same_finger, outside")
     print(f"   Individual criteria: {output_dir}/engram_2key_scores_*.csv")
 
 if __name__ == "__main__":

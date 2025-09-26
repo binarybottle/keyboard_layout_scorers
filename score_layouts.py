@@ -217,31 +217,44 @@ class LayoutScorer:
         
         try:
             df = pd.read_csv(filepath, 
-                           dtype={'key_pair': 'str'},
-                           keep_default_na=False,
-                           na_values=['', 'NULL', 'null', 'NaN', 'nan'])
+                        keep_default_na=False,
+                        na_values=['', 'NULL', 'null', 'NaN', 'nan'])
         except Exception as e:
             raise ValueError(f"Error reading score table: {e}")
         
-        if 'key_pair' not in df.columns:
-            raise ValueError("Score table must have 'key_pair' column")
+        # Determine which pair column to use
+        position_column_name = None
+        print(df.columns)
+        if 'key_pair' in df.columns:
+            position_column_name = 'key_pair'
+        elif 'position_pair' in df.columns:
+            position_column_name = 'position_pair'
+        elif 'key_triple' in df.columns:
+            position_column_name = 'key_triple'
+        elif 'position_triple' in df.columns:
+            position_column_name = 'position_triple'
+        else:
+            raise ValueError("Score table must have either 'key_pair/position_pair/key_triple/position_triple' column")
         
-        missing_count = df['key_pair'].isna().sum()
+        # Apply string dtype to the pair column
+        df[position_column_name] = df[position_column_name].astype('str')
+        
+        missing_count = df[position_column_name].isna().sum()
         if missing_count > 0:
-            df = df.dropna(subset=['key_pair'])
+            df = df.dropna(subset=[position_column_name])
             if self.verbose:
-                print(f"Removed {missing_count} rows with missing key_pair values")
+                print(f"Removed {missing_count} rows with missing {position_column_name} values")
         
-        empty_count = (df['key_pair'].astype(str).str.strip() == '').sum()
+        empty_count = (df[position_column_name].astype(str).str.strip() == '').sum()
         if empty_count > 0:
-            df = df[df['key_pair'].astype(str).str.strip() != '']
+            df = df[df[position_column_name].astype(str).str.strip() != '']
             if self.verbose:
-                print(f"Removed {empty_count} rows with empty key_pair values")
+                print(f"Removed {empty_count} rows with empty {position_column_name} values")
         
-        if self.verbose and 'NA' in df['key_pair'].values:
-            print("'NA' key pair preserved in score table")
+        if self.verbose and 'NA' in df[position_column_name].values:
+            print(f"'NA' {position_column_name} preserved in score table")
         
-        return df.set_index('key_pair')
+        return df.set_index(position_column_name)
 
     def _load_3key_score_tables(self) -> Dict[str, pd.DataFrame]:
         """Load all 3-key score tables."""
@@ -250,7 +263,7 @@ class LayoutScorer:
         
         # Define 3-key score files
         score_files = {
-            'engram_3key_order': 'engram_3key_scores_order.csv',
+            'engram_order': 'engram_3key_scores_order.csv',
         }
         
         for score_name, filename in score_files.items():
@@ -275,14 +288,21 @@ class LayoutScorer:
                         # Set index and normalize scores to 0-1 range
                         df_indexed = df.set_index('key_triple')
                         
-                        # Find the score column
-                        score_col = None
-                        if score_name == 'engram_3key':
-                            score_col = 'engram_score'
+                        # Find the score column - check direct match first
+                        potential_columns = [score_name]  # Try direct match first
+                        if score_name.startswith('engram_'):
+                            # Also try without the engram_ prefix
+                            criterion = score_name.replace('engram_', '', 1)
+                            potential_columns.append(f'engram_{criterion}')
                         else:
-                            criterion = score_name.replace('engram_3key_', '')
-                            score_col = f'engram_{criterion}'
-                        
+                            potential_columns.append(f'engram_{score_name}')
+
+                        score_col = None
+                        for col in potential_columns:
+                            if col in df_indexed.columns:
+                                score_col = col
+                                break
+
                         if score_col in df_indexed.columns:
                             # Normalize scores (Engram ranges from 0-6, individual criteria 0-1)
                             scores = df_indexed[score_col].values
@@ -688,12 +708,22 @@ class LayoutScorer:
         
         score_table = self.score_3key_tables[scorer]
         
-        # Determine score column
-        if scorer == 'engram_3key':
-            score_col = 'engram_score_normalized'
-        else:
-            criterion = scorer.replace('engram_3key_', '')
-            score_col = f'engram_{criterion}_normalized'
+        # Determine score column - try multiple possibilities
+        score_col = None
+        potential_columns = [
+            scorer,  # Direct match (e.g., 'engram_order')
+            f'{scorer}_normalized',  # With _normalized suffix
+            scorer.replace('engram_', ''),  # Without engram_ prefix
+            f'{scorer.replace("engram_", "")}_normalized'  # Without prefix, with suffix
+        ]
+
+        for col in potential_columns:
+            if col in score_table.columns:
+                score_col = col
+                break
+
+        if score_col is None:
+            raise ValueError(f"Score column for '{scorer}' not found. Available columns: {list(score_table.columns)}")
         
         if score_col not in score_table.columns:
             raise ValueError(f"Score column '{score_col}' not found in 3-key table")
@@ -786,7 +816,7 @@ class LayoutScorer:
         self._validate_layout_mapping(layout_mapping)
         
         # Check if this is a 3-key scorer
-        if scorer.startswith('engram_3key'):
+        if scorer in self.score_3key_tables:
             return self._score_layout_3key(layout_mapping, scorer)
         
         if scorer == 'comfort_key':
