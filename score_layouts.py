@@ -39,7 +39,25 @@ Usage:
     
     # Save CSV (compatible with display_layouts.py and compare_layouts.py)
     python score_layouts.py --compare qwerty:"qwertyuiop" dvorak:"',.pyfgcrl" --csv layouts.csv
-    
+
+    # Keyboard layout optimization study command:
+    poetry run python3 score_layouts.py --compare \
+        engram:"byou'\"ldwvciea,.htsngxjk-?rmfpzq" \
+        halmak:"wlrbz;qudjshnt,.aeoifmvc/gpxky['" \
+        hieamstrn:"jyou'=kdclhiea,-mtsrxqf.;zwgbvpn" \
+        colemakdh:"qwfpbjluy;arstgmneiozxcdvkh,./['" \
+        norman:"qwdfkjurl;asetgyniohzxcvbpm,./['" \
+        workman:"qdrwbjfup;ashtgyneoizxmcvkl,./['" \
+        mtgap2:",fhdkjcul.oantgmseriqxbpzyw'v;['" \
+        qgmlwb:"qgmlwbyuv;dstnriaeohzxcfjkp,./['" \
+        colemak:"qwfpgjluy;arstdhneiozxcvbkm,./['" \
+        asset:"qwjfgypul;asetdhniorzxcvbkm,./['" \
+        capewelldvorak:"',.pyqfgrkoaeiudhtnszxcvjlmwb;/-" \
+        dvorak:"',.pyfgcrlaoeuidhtns;qjkxbmwvz/-" \
+        qwerty:"qwertyuiopasdfghjkl;zxcvbnm,./['" \
+        --csv engram_and_12_layouts.csv
+
+
 Setup:
 1. Generate individual score files (keypair_*_scores.csv) using scoring scripts in prep/
 2. Generate 3-key score files using: python prep_keytriple_engram_scores.py
