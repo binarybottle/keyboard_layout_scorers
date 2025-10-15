@@ -42,20 +42,38 @@ Usage:
 
     # Keyboard layout optimization study command:
     poetry run python3 score_layouts.py --compare \
-        engram:"byou'\"ldwvciea,.htsngxjk-?rmfpzq" \
-        halmak:"wlrbz;qudjshnt,.aeoifmvc/gpxky['" \
-        hieamstrn:"jyou'=kdclhiea,-mtsrxqf.;zwgbvpn" \
-        colemakdh:"qwfpbjluy;arstgmneiozxcdvkh,./['" \
-        norman:"qwdfkjurl;asetgyniohzxcvbpm,./['" \
-        workman:"qdrwbjfup;ashtgyneoizxmcvkl,./['" \
-        mtgap2:",fhdkjcul.oantgmseriqxbpzyw'v;['" \
-        qgmlwb:"qgmlwbyuv;dstnriaeohzxcfjkp,./['" \
-        colemak:"qwfpgjluy;arstdhneiozxcvbkm,./['" \
-        asset:"qwjfgypul;asetdhniorzxcvbkm,./['" \
-        capewelldvorak:"',.pyqfgrkoaeiudhtnszxcvjlmwb;/-" \
-        dvorak:"',.pyfgcrlaoeuidhtns;qjkxbmwvz/-" \
-        qwerty:"qwertyuiopasdfghjkl;zxcvbnm,./['" \
-        --csv engram_and_12_layouts.csv
+        Focal:"vlhgkqfoujsrntbycaeizxmdp'w.;,['" \
+        Hanster-23:"qyouxkgnfwhiea.dtrscj-'./bplmv;z" \
+        Recurva:"frdpvqjuoysntcb.heaizxkgwml;',[/" \
+        Graphite:"bldwz'foujnrtsgyhaeiqxmcvkp.-/;," \
+        Gallium:"bldcvjfou,nrtsgyhaeixqmwzkp';.[/" \
+        Seht-Drai:"fulvbqgnojsehtk'drai;mpwzycx/,[." \
+        Octa8:"youkxgwdl,iaenfbstrc/zh'qvpmj.[;" \
+        Canary:"wlypkzxou;crstbfneiajvdgqmh/,.['" \
+        CTGAP:"qplcjxfou/rntsgyheiazbmwvkd',.['" \
+        Nerps:"xldpvzkou;nrtsgyheiajmcwqbf',.['" \
+        Whorf:"flhdmvwou,srntkgyaeixjbzqpc';.[/" \
+        Sturdy:"vmlcpxfoujstrdy.naeizkqgwbh';,[/" \
+        APTv3:"wgdfbqluoyrsthkjneaicmpvxz,.'/[;" \
+        Semimak:"flhvzqwuoysrntkcdeaix'bmjpg,./[;" \
+        ISRT:"yclmkzfu,'isrtgpneaoqvwdjbh/.x-;" \
+        Engram-2021:"byou'\"ldwvciea,.htsngxjk-?rmfpzq" \
+        Colemak-Q:";lcmkjfuyqarstgpneiozxwdvbh/.,-'" \
+        Boo:",.ucvqfdlyaoesgbntri;x'wzphmkj[/" \
+        BEAKL43:"qhou,glrfbjieaydtsnpxk\".'vmcwz/;" \
+        Halmak:"wlrbz;qudjshnt,.aeoifmvc/gpxky['" \
+        Hieamstrn:"jyou'=kdclhiea,-mtsrxqf.;zwgbvpn" \
+        Colemak-DH:"qwfpbjluy;arstgmneiozxcdvkh,./['" \
+        Norman:"qwdfkjurl;asetgyniohzxcvbpm,./['" \
+        MTGap:"ypou-kdlcwinea,mhtsr()'._bfgvjx\"" \
+        Workman:"qdrwbjfup;ashtgyneoizxmcvkl,./['" \
+        QGMLWB:"qgmlwbyuv;dstnriaeohzxcfjkp,./['" \
+        Colemak:"qwfpgjluy;arstdhneiozxcvbkm,./['" \
+        Asset:"qwjfgypul;asetdhniorzxcvbkm,./['" \
+        Capewell:"',.pyqfgrkoaeiudhtnszxcvjlmwb;/-" \
+        Dvorak:"',.pyfgcrlaoeuidhtns;qjkxbmwvz/-" \
+        QWERTY:"qwertyuiopasdfghjkl;zxcvbnm,./['" \
+        --csv 31_layouts.csv
 
 
 Setup:
