@@ -66,14 +66,12 @@ def get_universal_normalization_ranges():
         'engram_same_row': (0, 1),          
         'engram_outside': (0, 1),          
         'engram_same_finger': (0, 1),          
-        'engram_scissor': (0, 1),          
-        'engram_half_scissor': (0, 1),          
 
         # Dvorak-7 scores and components
         'dvorak7_score': (0, 7),          # Overall Dvorak-7 score range (sum of 7 components)
         'dvorak7_distribution': (0, 1),   # Individual component ranges
         'dvorak7_strength': (0, 1),      
-        'dvorak7_middle': (0, 1),      
+        'dvorak7_home': (0, 1),      
         'dvorak7_vspan': (0, 1),    
         'dvorak7_columns': (0, 1),      
         'dvorak7_remote': (0, 1),          
@@ -469,12 +467,10 @@ def create_unified_score_tables(input_dir: str, verbose: bool = False) -> Tuple[
         'engram_same_row': 'engram_2key_scores_same_row.csv',
         'engram_outside': 'engram_2key_scores_outside.csv',
         'engram_same_finger': 'engram_2key_scores_same_finger.csv',
-        'engram_scissor': 'engram_2key_scores_scissor.csv',
-        'engram_half_scissor': 'engram_2key_scores_half_scissor.csv',
         # Individual Dvorak-7 criteria
         'dvorak7_distribution': 'keypair_dvorak7_distribution_scores.csv',
         'dvorak7_strength': 'keypair_dvorak7_strength_scores.csv',
-        'dvorak7_middle': 'keypair_dvorak7_middle_scores.csv',
+        'dvorak7_home': 'keypair_dvorak7_home_scores.csv',
         'dvorak7_vspan': 'keypair_dvorak7_vspan_scores.csv',
         'dvorak7_columns': 'keypair_dvorak7_columns_scores.csv',
         'dvorak7_remote': 'keypair_dvorak7_remote_scores.csv',

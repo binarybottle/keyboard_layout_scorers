@@ -20,7 +20,7 @@ Computing Dvorak-7 scores for 1024 key-pairs...
 ✅ Saved overall scores to: ../tables/keypair_dvorak7_scores.csv
 ✅ Saved distribution scores to: ../tables/keypair_dvorak7_distribution_scores.csv
 ✅ Saved strength scores to: ../tables/keypair_dvorak7_strength_scores.csv
-✅ Saved middle scores to: ../tables/keypair_dvorak7_middle_scores.csv
+✅ Saved home scores to: ../tables/keypair_dvorak7_home_scores.csv
 ✅ Saved vspan scores to: ../tables/keypair_dvorak7_vspan_scores.csv
 ✅ Saved columns scores to: ../tables/keypair_dvorak7_columns_scores.csv
 ✅ Saved remote scores to: ../tables/keypair_dvorak7_remote_scores.csv
@@ -29,7 +29,7 @@ Computing Dvorak-7 scores for 1024 key-pairs...
 📊 Validation Results:
    Total key-pairs: 1024
    Score range: 0.5000 to 7.0000
-   Average score: 4.5742
+   Average score: 4.6484
    Valid range (0-7): ✅
 
 🧮 Mathematical Accuracy Check:
@@ -38,7 +38,7 @@ Computing Dvorak-7 scores for 1024 key-pairs...
 📁 Individual Criterion Files:
    ✅ distribution: 1024 pairs
    ✅ strength: 1024 pairs
-   ✅ middle: 1024 pairs
+   ✅ home: 1024 pairs
    ✅ vspan: 1024 pairs
    ✅ columns: 1024 pairs
    ✅ remote: 1024 pairs
@@ -50,11 +50,11 @@ Computing Dvorak-7 scores for 1024 key-pairs...
    Alternating hands: ✅ (3/3)
 
 📈 Score Distribution:
-   Very Poor (0.0-1.4): 18 pairs (1.8%)
-   Poor (1.4-2.8): 127 pairs (12.4%)
-   Fair (2.8-4.2): 224 pairs (21.9%)
-   Good (4.2-5.6): 431 pairs (42.1%)
-   Excellent (5.6-7.0): 216 pairs (21.1%)
+   Very Poor (0.0-1.4): 17 pairs (1.7%)
+   Poor (1.4-2.8): 100 pairs (9.8%)
+   Fair (2.8-4.2): 231 pairs (22.6%)
+   Good (4.2-5.6): 450 pairs (43.9%)
+   Excellent (5.6-7.0): 218 pairs (21.3%)
    Perfect (7.0): 8 pairs (0.8%)
 
 ✅ Validation complete!

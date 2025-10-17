@@ -14,7 +14,7 @@ Main output files:
     - ../tables/keypair_dvorak7_scores.csv - Overall average score
     - ../tables/keypair_dvorak7_distribution_scores.csv
     - ../tables/keypair_dvorak7_strength_scores.csv
-    - ../tables/keypair_dvorak7_middle_scores.csv
+    - ../tables/keypair_dvorak7_home_scores.csv
     - ../tables/keypair_dvorak7_vspan_scores.csv
     - ../tables/keypair_dvorak7_columns_scores.csv
     - ../tables/keypair_dvorak7_remote_scores.csv
@@ -28,7 +28,7 @@ The 7 scoring criteria for typing bigrams are derived from Dvorak's
 
     1.  Distribution: Typing with 2 hands or 2 fingers
     2.  Strength: Typing with stronger fingers 3 and 4
-    3.  Middle row: Typing within the middle/home row
+    3.  Home row: Typing within the home row
     4.  Row separation: Typing in the same row, reaches, and hurdles 
     5.  Finger columns: Typing within the 8 finger columns
     6.  Remote fingers: Typing with non-adjacent fingers (except fingers 1 and 2)
@@ -95,7 +95,7 @@ FINGER_COLUMNS = {
 
 criteria = ['distribution', 
             'strength', 
-            'middle', 
+            'home', 
             'vspan', 
             'columns',
             'remote', 
@@ -140,7 +140,7 @@ def score_bigram_dvorak7(bigram: str) -> Dict[str, float]:
     #----------------------------------------------------------------------------------    
     # 1.  Distribution: Typing with 2 hands or 2 fingers
     # 2.  Strength: Typing with stronger fingers 3 and 4
-    # 3.  Middle row: Typing within the middle/home row
+    # 3.  Home row: Typing within the home row
     # 4.  Row separation: Typing in the same row, reaches, and hurdles 
     # 5.  Finger columns: Typing within the 8 finger columns
     # 6.  Remote fingers: Typing with non-adjacent fingers (except fingers 1 and 2)
@@ -170,17 +170,17 @@ def score_bigram_dvorak7(bigram: str) -> Dict[str, float]:
     else:
         scores['strength'] = 0.0      # 0 keys typed with strong finger
 
-    # 3. Middle row: Typing within the middle/home row
-    #    1.0: 2 middle row keys
-    #    0.5: 1 middle row key
-    #    0.0: 0 middle row keys
-    middle_count = sum(1 for row in [row1, row2] if row == HOME_ROW)
-    if middle_count == 2:
-        scores['middle'] = 1.0      # 2 middle row keys
-    elif middle_count == 1:
-        scores['middle'] = 0.5      # 1 middle row key
+    # 3. Home row: Typing within the home row
+    #    1.0: 2 home row keys
+    #    0.5: 1 home row key
+    #    0.0: 0 home row keys
+    home_count = sum(1 for row in [row1, row2] if row == HOME_ROW)
+    if home_count == 2:
+        scores['home'] = 1.0      # 2 home row keys
+    elif home_count == 1:
+        scores['home'] = 0.5      # 1 home row key
     else:
-        scores['middle'] = 0.0      # 0 middle row keys
+        scores['home'] = 0.0      # 0 home row keys
 
     # 4. Row separation: Typing in the same row, reaches, and hurdles 
     #    1.0: 2 keys in the same row, or opposite hands
@@ -207,11 +207,14 @@ def score_bigram_dvorak7(bigram: str) -> Dict[str, float]:
     else:
         scores['columns'] = 0.0      # 0 keys within finger columns
 
-    # 6. Remote fingers: Typing with non-adjacent fingers (except strong pair of fingers 1 and 2)
-    #    1.0: non-adjacent fingers, strong finger pair, or opposite hands
+    # 6. Remote fingers: Typing with non-adjacent fingers
+    #    (except on the same row, or strong pair of fingers 1 and 2)
+    #    1.0: non-adjacent fingers, adjacent on same row, strong finger pair, or opposite hands
     #    0.0: same finger, or adjacent fingers where at least one is weak
     if hand1 != hand2:
         scores['remote'] = 1.0      # opposite hands always score well
+    elif row1 == row2:
+        scores['remote'] = 1.0      # same row always scores well
     elif finger1 == finger2:
         scores['remote'] = 0.0      # same finger scores zero
     elif finger1 in STRONG_FINGERS and finger2 in STRONG_FINGERS:

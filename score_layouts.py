@@ -70,7 +70,7 @@ Usage:
         QGMLWB:"qgmlwbyuv;dstnriaeohzxcfjkp,./['" \
         Colemak:"qwfpgjluy;arstdhneiozxcvbkm,./['" \
         Asset:"qwjfgypul;asetdhniorzxcvbkm,./['" \
-        Capewell:"',.pyqfgrkoaeiudhtnszxcvjlmwb;/-" \
+        Capewell-Dvorak:"',.pyqfgrkoaeiudhtnszxcvjlmwb;/-" \
         Dvorak:"',.pyfgcrlaoeuidhtns;qjkxbmwvz/-" \
         QWERTY:"qwertyuiopasdfghjkl;zxcvbnm,./['" \
         --csv 31_layouts.csv
@@ -559,7 +559,7 @@ class LayoutScorer:
         
         # 4. 2-key Engram component scores (in logical order)
         engram_2key_components = ['engram_key_preference', 'engram_row_separation', 'engram_same_row', 'engram_same_finger', 
-                                  'engram_outside', 'engram_scissor', 'engram_half_scissor']
+                                  'engram_outside']
         for scorer in engram_2key_components:
             if scorer in available_scorers:
                 ordered_scorers.append(scorer)
@@ -572,7 +572,7 @@ class LayoutScorer:
         
         # 6. Dvorak-7 component scores (in logical order)
         dvorak7_components = [
-            'dvorak7_distribution', 'dvorak7_strength', 'dvorak7_middle', 'dvorak7_vspan',
+            'dvorak7_distribution', 'dvorak7_strength', 'dvorak7_home', 'dvorak7_vspan',
             'dvorak7_columns', 'dvorak7_remote', 'dvorak7_inward'
         ]
         for scorer in dvorak7_components:
