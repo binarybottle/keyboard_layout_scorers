@@ -5,7 +5,7 @@ Repository: https://github.com/binarybottle/keyboard_layout_scorers.git
 Author: Arno Klein (arnoklein.info)  
 License: MIT License (see LICENSE)
 
-This framework provides fast keyboard layout evaluation using precomputed scoring tables across multiple metrics. It uses a two-phase approach: first generate comprehensive scoring tables for all possible key-pair combinations, then use those tables for rapid layout scoring and comparison.
+This framework provides fast keyboard layout evaluation using precomputed scoring tables across multiple metrics. It uses a two-phase approach: first generate comprehensive scoring tables for all possible key-pair combinations, then use those tables for rapid layout scoring and comparison. This work was part of a study described in a peer-reviewed manuscript in the International Journal of Human-Computer Interaction titled "Optimizing comfortable keyboard layouts using human typing preferences and language-dependent n-grams: the Engram Study" (http://dx.doi.org/10.1080/10447318.2026.2665409).
 
 ## Scoring Methods
 
